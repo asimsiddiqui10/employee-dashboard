@@ -1,21 +1,30 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/authContext';
+
 
 const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState(null);
+    const {login} = useAuth();
     const navigate = useNavigate();
 
     const handleSubmit = async(e) => {
+        const {user} = useContext(userContext);
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
             console.log(response.data);
             if (response.data.success) {
+                login(response.data.user);
                 localStorage.setItem('token', response.data.token);
-                navigate('/admin-dashboard');
+                if(response.data.user.role === 'admin') {
+                    navigate('/admin-dashboard');
+                } else {
+                    navigate('/employee-dashboard');
+                }
             } else {
                 setError(response.data.error)
             }
@@ -42,6 +51,7 @@ const Login = () => {
                     placeholder="Enter Email" 
                     className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     onChange={(e) => setEmail(e.target.value)}
+                    required
                   />
               </div>
               <div className="mb-6">
@@ -51,6 +61,7 @@ const Login = () => {
                     placeholder="Enter Password" 
                     className="w-full px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-black focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     onChange={(e) => setPassword(e.target.value)}
+                    required
                   />
               </div>
               <div className="flex items-center justify-between mb-4">
