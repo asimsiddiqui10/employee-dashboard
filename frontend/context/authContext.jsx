@@ -1,16 +1,15 @@
 import React, { createContext, useState, useEffect, useContext } from 'react'
 import axios from 'axios'
-import { useNavigate } from 'react-router-dom'
+
 
 const userContext = createContext();
 
 const AuthContext = ({children}) => {
     const [user, setUser] = useState(null);
-    const navigate = useNavigate();
+    const [loading, setLoading] = useState(true);
     
     useEffect(() => {
         const verifyUser = async () => {
-            
             try {
                 const token = localStorage.getItem('token');
                 if (!token) {
@@ -29,10 +28,12 @@ const AuthContext = ({children}) => {
                 if (error.response && !error.response.data.success) {
                     setUser(null);
                 }
+            } finally {
+                setLoading(false);
             }
-        };
+        } 
         verifyUser();
-    }, [navigate]);
+    }, []);
 
     const login = (user) => {
         setUser(user);
@@ -44,7 +45,7 @@ const AuthContext = ({children}) => {
     };
     
     return (
-        <userContext.Provider value={{user, login, logout}}>
+        <userContext.Provider value={{user, login, logout, loading}}>
             {children}
         </userContext.Provider>
     );
