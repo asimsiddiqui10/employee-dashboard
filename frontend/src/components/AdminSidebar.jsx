@@ -13,24 +13,25 @@ const AdminSidebar = () => {
     return (
         <div className="h-screen w-64 bg-slate-900 text-slate-50 p-4 flex flex-col"> 
             <div className="mb-6">
-                <h3 className="text-xl font-semibold px-4 py-2">Admin Panel</h3>
+                <h3 className="text-xl font-semibold px-4 py-2">Admin Dashboard</h3>
             </div>
             <div className="space-y-1">
                 <NavLink 
-                    to="/admin/dashboard" 
+                    to="/admin-dashboard" 
+                    end
                     className={({ isActive }) => 
                         `flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
                             isActive 
                                 ? 'bg-slate-800 text-slate-50' 
                                 : 'text-slate-400 hover:text-slate-50 hover:bg-slate-800'
                         }`
-                    }
+                    } 
                 >
                     <LayoutDashboard size={18} />
                     <span>Dashboard</span>
                 </NavLink>
                 <NavLink 
-                    to="/admin/employees" 
+                    to="/admin-dashboard/employees" 
                     className={({ isActive }) => 
                         `flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
                             isActive 
@@ -43,7 +44,7 @@ const AdminSidebar = () => {
                     <span>Employees</span>
                 </NavLink>
                 <NavLink 
-                    to="/admin/departments" 
+                    to="/admin-dashboard/departments" 
                     className={({ isActive }) => 
                         `flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
                             isActive 
@@ -56,7 +57,7 @@ const AdminSidebar = () => {
                     <span>Department</span>
                 </NavLink>
                 <NavLink 
-                    to="/admin/leave" 
+                    to="/admin-dashboard/leave" 
                     className={({ isActive }) => 
                         `flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
                             isActive 
@@ -69,7 +70,7 @@ const AdminSidebar = () => {
                     <span>Leave</span>
                 </NavLink>
                 <NavLink 
-                    to="/admin/salary" 
+                    to="/admin-dashboard/salary" 
                     className={({ isActive }) => 
                         `flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
                             isActive 
@@ -82,7 +83,7 @@ const AdminSidebar = () => {
                     <span>Salary</span>
                 </NavLink>
                 <NavLink 
-                    to="/admin/settings" 
+                    to="/admin-dashboard/settings" 
                     className={({ isActive }) => 
                         `flex items-center gap-3 px-4 py-2 rounded-md transition-colors ${
                             isActive 
