@@ -12,7 +12,7 @@ const verifyUser = async(req, res, next) => {
         if(!decoded) {
             return res.status(404).json({success: false, error: 'Invalid token'});
         }
-        const user = await User.findById({_id: decoded.id}).select('-password')
+        const user = await User.findById(decoded._id).select('-password')
 
         if(!user) {
             return res.status(404).json({success: false, error: 'User not found'});

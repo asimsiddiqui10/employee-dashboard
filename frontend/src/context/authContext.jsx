@@ -1,6 +1,5 @@
-import React, { createContext, useState, useEffect, useContext } from 'react'
-import axios from 'axios'
-
+import React, { createContext, useState, useEffect, useContext } from 'react';
+import axios from 'axios';
 
 const userContext = createContext();
 
@@ -20,9 +19,11 @@ const AuthContext = ({children}) => {
                     });
                     if(response.data.success) {
                         setUser(response.data.user);
+                        localStorage.setItem('token', response.data.token);
                     }   
                 } else {
                     setUser(null);
+                    setLoading(false);
                 }
             } catch(error) {
                 if (error.response && !error.response.data.success) {
@@ -52,4 +53,4 @@ const AuthContext = ({children}) => {
 };
 
 export const useAuth = () => useContext(userContext);
-export default AuthContext;
+export default AuthContext; 

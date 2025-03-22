@@ -12,7 +12,6 @@ const Login = () => {
     const navigate = useNavigate();
 
     const handleSubmit = async(e) => {
-        const {user} = useContext(userContext);
         e.preventDefault();
         try {
             const response = await axios.post('http://localhost:5001/api/auth/login', { email, password });
