@@ -9,6 +9,7 @@ const AuthContext = ({children}) => {
     
     useEffect(() => {
         const verifyUser = async () => {
+            setLoading(true);
             try {
                 const token = localStorage.getItem('token');
                 if (token) {
@@ -19,16 +20,15 @@ const AuthContext = ({children}) => {
                     });
                     if(response.data.success) {
                         setUser(response.data.user);
-                        localStorage.setItem('token', response.data.token);
-                    }   
+                    } else {
+                        setUser(null);
+                    }
                 } else {
                     setUser(null);
-                    setLoading(false);
                 }
             } catch(error) {
-                if (error.response && !error.response.data.success) {
-                    setUser(null);
-                }
+                console.error("Auth verification error:", error);
+                setUser(null);
             } finally {
                 setLoading(false);
             }
