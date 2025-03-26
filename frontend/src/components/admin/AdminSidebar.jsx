@@ -30,6 +30,8 @@ const AdminSidebar = () => {
                     <LayoutDashboard size={16} className="flex-shrink-0" />
                     <span className="truncate text-sm md:text-base">Dashboard</span>
                 </NavLink>
+                {/* Comment out or remove routes that don't exist yet */}
+                {/* 
                 <NavLink 
                     to="/admin-dashboard/employees" 
                     className={({ isActive }) => 
@@ -95,6 +97,7 @@ const AdminSidebar = () => {
                     <Settings size={16} className="flex-shrink-0" />
                     <span className="truncate text-sm md:text-base">Settings</span>
                 </NavLink>
+                */}
             </div>
         </div>
     )   

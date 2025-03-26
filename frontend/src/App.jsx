@@ -4,8 +4,12 @@ import AdminDashboard from './pages/AdminDashboard'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import PrivateRoutes from './utils/PrivateRoutes'
 import RoleBasedRoutes from './utils/RoleBasedRoutes'
-import AdminSummary from './components/AdminSummary'
-import DepartmentList from './components/departments/departmentList'
+import AdminSummary from './components/admin/AdminSummary'
+import EmployeeSummary from './components/employee/EmployeeSummary'
+import Payroll from './components/employee/Payroll'
+import Leave from './components/employee/Leave'
+import Notifications from './components/employee/Notifications'
+import Settings from './components/employee/Settings'
 
 
 function App() {
@@ -23,10 +27,21 @@ function App() {
           </PrivateRoutes>
           }>
             <Route index element={<AdminSummary/>}></Route>
-            <Route path="departments" element={<DepartmentList/>}></Route>
         </Route>
 
-        <Route path="/employee-dashboard" element={<EmployeeDashboard />}></Route>
+        <Route path="/employee-dashboard" element={
+          <PrivateRoutes>
+            <RoleBasedRoutes requiredRole={['employee']}>
+              <EmployeeDashboard />
+            </RoleBasedRoutes>
+          </PrivateRoutes>
+        }>
+          <Route index element={<EmployeeSummary/>}></Route>
+          <Route path="payroll" element={<Payroll/>}></Route>
+          <Route path="leave" element={<Leave/>}></Route>
+          <Route path="notifications" element={<Notifications/>}></Route>
+          <Route path="settings" element={<Settings/>}></Route>
+        </Route>
       </Routes>
     </BrowserRouter>
   )
