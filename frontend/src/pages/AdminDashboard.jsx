@@ -8,13 +8,13 @@ import EmployeeList from '../components/admin/EmployeeList';
 const AdminDashboard = () => {
   const {user} = useAuth();
 
-  return (  
+  return (
     <div className='flex'>
       <AdminSidebar/>
-      <div className='flex-1 p-4'>
+      <main className='flex-1 p-4 ml-64'> {/* Added ml-64 to match sidebar width */}
         <Navbar/>
         <Outlet/>
-      </div>
+      </main>
     </div>
   )
 }

@@ -4,7 +4,10 @@ import mongoose from "mongoose"
 import authRouter from "./routes/auth.js"
 import employeeRouter from "./routes/employeeRoutes.js"
 import connectToDatabase from "./db/db.js"
+import { config } from 'dotenv';
 
+// Load environment variables
+config();
 
 const app = express()
 app.use(cors())

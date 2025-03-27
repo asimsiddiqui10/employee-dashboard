@@ -147,13 +147,14 @@ const EmployeeManagement = () => {
         <EmployeeList />
       </div>
       <div className="w-full p-6 bg-white shadow-md rounded-lg mb-6">
-        <h1 className="text-2xl font-bold mb-4">Employee Management</h1>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="bg-green-500 text-white p-2 rounded hover:bg-green-600 mb-4"
-        >
-          {showAddForm ? 'Hide Add Employee Form' : 'Add Employee'}
-        </button>
+        <div className="flex justify-end">
+          <button
+            onClick={() => setShowAddForm(!showAddForm)}
+            className="bg-blue-500 text-white py-1 px-2 rounded hover:bg-blue-600 mb-4"
+          >
+            {showAddForm ? 'Hide Add Employee Form' : 'Add Employee'}
+          </button>
+        </div>
         {showAddForm && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

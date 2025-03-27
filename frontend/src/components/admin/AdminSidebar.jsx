@@ -11,11 +11,11 @@ import {
 
 const AdminSidebar = () => {
     return (
-        <div className="h-screen w-64 bg-slate-900 text-slate-50 p-4 flex flex-col overflow-y-auto max-w-full md:w-64 sm:w-56 xs:w-48"> 
+        <div className="fixed top-0 left-0 h-screen w-64 bg-slate-900 text-slate-50 p-4 flex flex-col overflow-y-auto max-w-full md:w-64 sm:w-56 xs:w-48"> 
             <div className="mb-6">
                 <h3 className="text-sm md:text-base font-semibold px-4 py-2 truncate">Admin Dashboard</h3>
             </div>
-            <div className="space-y-1">
+            <div className="space-y-1 flex-grow">
                 <NavLink 
                     to="/admin-dashboard" 
                     end
@@ -84,23 +84,10 @@ const AdminSidebar = () => {
                     <DollarSign size={16} className="flex-shrink-0" />
                     <span className="truncate text-sm md:text-base">Salary</span>
                 </NavLink>
-                <NavLink 
-                    to="/admin-dashboard/settings" 
-                    className={({ isActive }) => 
-                        `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-md transition-colors ${
-                            isActive 
-                                ? 'bg-slate-800 text-slate-50' 
-                                : 'text-slate-400 hover:text-slate-50 hover:bg-slate-800'
-                        }`
-                    }
-                >
-                    <Settings size={16} className="flex-shrink-0" />
-                    <span className="truncate text-sm md:text-base">Settings</span>
-                </NavLink>
                 */}
             </div>
         </div>
-    )   
-}
+    );
+};
 
 export default AdminSidebar;
