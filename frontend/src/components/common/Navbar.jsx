@@ -3,6 +3,7 @@ import { useAuth } from '../../context/authContext';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
+  console.log('Navbar user:', user);
   return (
     <nav className="border-b border-gray-200 bg-white py-3 px-4 shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between">

@@ -1,3 +1,4 @@
+import React from 'react';
 import {BrowserRouter, Routes, Route, Navigate} from 'react-router-dom'
 import Login from './pages/Login'
 import AdminDashboard from './pages/AdminDashboard'
@@ -5,45 +6,71 @@ import EmployeeDashboard from './pages/EmployeeDashboard'
 import PrivateRoutes from './utils/PrivateRoutes'
 import RoleBasedRoutes from './utils/RoleBasedRoutes'
 import AdminSummary from './components/admin/AdminSummary'
-import EmployeeSummary from './components/employee/EmployeeSummary'
-import Payroll from './components/employee/Payroll'
-import Leave from './components/employee/Leave'
-import Notifications from './components/employee/Notifications'
-import Settings from './components/employee/Settings'
+import EmployeeManagement from './components/admin/EmployeeManagement'
+import Unauthorized from './pages/Unauthorized'
+import AuthProvider from './context/authContext'
 
+// Error Boundary Component
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error) {
+    // Update state so the next render will show the fallback UI.
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // You can also log the error to an error reporting service
+    console.error("Error caught in ErrorBoundary:", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      // You can render any custom fallback UI
+      return <h1>Something went wrong.</h1>;
+    }
+
+    return this.props.children; 
+  }
+}
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Navigate to="/login" />}></Route>
-        <Route path="/login" element={<Login />}></Route>
-        
-        <Route path="/admin-dashboard" element={
-          <PrivateRoutes>
-            <RoleBasedRoutes requiredRole={['admin']}>
-              <AdminDashboard />
-            </RoleBasedRoutes>
-          </PrivateRoutes>
-          }>
-            <Route index element={<AdminSummary/>}></Route>
-        </Route>
+    <AuthProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" />}></Route>
+            <Route path="/login" element={<Login />}></Route>
+            
+            <Route path="/admin-dashboard" element={
+              <PrivateRoutes>
+                <RoleBasedRoutes requiredRole={['admin']}>
+                  <AdminDashboard />
+                </RoleBasedRoutes>
+              </PrivateRoutes>
+              }>
+                <Route index element={<AdminSummary/>}></Route>
+                <Route path="employees" element={<EmployeeManagement/>}></Route>
+            </Route>
 
-        <Route path="/employee-dashboard" element={
-          <PrivateRoutes>
-            <RoleBasedRoutes requiredRole={['employee']}>
-              <EmployeeDashboard />
-            </RoleBasedRoutes>
-          </PrivateRoutes>
-        }>
-          <Route index element={<EmployeeSummary/>}></Route>
-          <Route path="payroll" element={<Payroll/>}></Route>
-          <Route path="leave" element={<Leave/>}></Route>
-          <Route path="notifications" element={<Notifications/>}></Route>
-          <Route path="settings" element={<Settings/>}></Route>
-        </Route>
-      </Routes>
-    </BrowserRouter>
+            <Route path="/employee-dashboard" element={
+              <PrivateRoutes>
+                <RoleBasedRoutes requiredRole={['employee']}>
+                  <EmployeeDashboard />
+                </RoleBasedRoutes>
+              </PrivateRoutes>
+            }>
+            </Route>
+
+            <Route path="/unauthorized" element={<Unauthorized />} />
+          </Routes>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </AuthProvider>
   )
 }
 

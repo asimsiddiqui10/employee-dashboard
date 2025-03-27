@@ -1,12 +1,90 @@
-# React + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+I want you to create a Employee Database Schema first.
+User schema handles authentication, Employee schema handles employee information.They are linked through references. 
 
-Currently, two official plugins are available:
+Admin should be able to add, edit, delete employees. when admin adds an employee, it should be with login credentials. 
+Employee should be able to login to the system with that credentials.
+When an admin adds a new employee, the system should create a corresponding User record with login credentials. The User document should include a reference to the Employee document for consistency between authentication and employee information.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+In Admin Dashboard add a link in sidebar called "Employees". When clicked on that link, it should navigate to a page where admin can add, edit, delete employees.
 
-## Expanding the ESLint configuration
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+
+Database Schema:
+
+  employeeId: { type: String, required: true, unique: true },
+  role: { type: String, enum: ['admin', 'employee'], default: 'employee', required: true },
+  name: { type: String, required: true },
+  gender: { type: String, enum: ['Male', 'Female', 'Other'], required: true },
+  picture: { type: String },
+  phoneNumber: { type: String },
+  dateOfBirth: { type: Date },
+  email: { type: String, required: true, unique: true },
+  address: { type: String },
+  ssn: { type: String, required: true, unique: true },
+  nationality: { type: String },
+  educationLevel: { type: String },
+  certifications: [String],
+  emergencyContact: {
+    name: { type: String },
+    phone: { type: String },
+  },
+  
+  // Work Information
+  department: { type: String },
+  position: { type: String },
+  dateOfHire: { type: Date },
+  manager: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+  employmentType: { type: String, enum: ['Part-time', 'Full-time', 'Contract', 'Consultant'] },
+  employmentStatus: { type: String, enum: ['Active', 'On leave', 'Terminated'] },
+  terminationDate: { type: Date },
+  workEmail: { type: String },
+  workPhoneNumber: { type: String },
+  totalCompensation: { type: Number },
+
+
+
+Admin can:
+Add a new employee
+Edit an employee
+Delete an employee  
+
+
+
+
+2.Notification Functionality
+Admin can send notifications to all employees or selected employees.
+Employees can view notifications
+
+
+
+
+
+3. Leave Functionality
+Admin can approve or reject leave requests.
+Admin can view all leave requests and their statuses.  
+
+Employees can submit leave requests. 
+Employees can view their leave requests and their statuses.
+ 
+
+
+
+
+
+
+
+Payroll Functionality
+Admin can submit payroll documents for individual employees
+Employees can view their payroll documents.
+
+
+
+
+Settings Functionality
+
+
+
+
+UI Shadcn
+Theme Context

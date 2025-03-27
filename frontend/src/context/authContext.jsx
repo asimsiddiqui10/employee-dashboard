@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const userContext = createContext();
 
-const AuthContext = ({children}) => {
+const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     
@@ -46,11 +46,12 @@ const AuthContext = ({children}) => {
     };
     
     return (
-        <userContext.Provider value={{user, login, logout, loading}}>
+        <userContext.Provider value={{ user, login, logout, loading }}>
             {children}
         </userContext.Provider>
     );
 };
 
 export const useAuth = () => useContext(userContext);
-export default AuthContext; 
+export { AuthProvider };
+export default AuthProvider; 
