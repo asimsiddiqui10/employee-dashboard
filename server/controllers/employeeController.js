@@ -133,10 +133,12 @@ export const deleteEmployee = async (req, res) => {
 // Get all employees
 export const getEmployees = async (req, res) => {
   try {
+    console.log('Fetching employees from database...');
     const employees = await Employee.find();
+    console.log('Employees fetched:', employees);
     return res.status(200).json(employees);
   } catch (error) {
     console.error('Error fetching employees:', error);
-    return res.status(500).json({ message: 'Server error' });
+    return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };

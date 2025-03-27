@@ -1,27 +1,42 @@
 import jwt from 'jsonwebtoken';
 import User from '../models/User.js';
 
-
-const verifyUser = async(req, res, next) => {
-    try{
-        const token = req.headers.authorization.split(' ')[1];
-        if(!token) {
-            return res.status(401).json({success: false, error: 'Token not provided'});
+const authMiddleware = async (req, res, next) => {
+    try {
+        // Check if Authorization header exists
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({ success: false, message: 'No authorization header' });
         }
+
+        // Get token from header
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ success: false, message: 'No token provided' });
+        }
+
+        // Verify token
         const decoded = jwt.verify(token, process.env.JWT_KEY);
-        if(!decoded) {
-            return res.status(404).json({success: false, error: 'Invalid token'});
-        }
-        const user = await User.findById(decoded._id).select('-password')
+        
+        // Find user
+        const user = await User.findById(decoded._id)
+            .select('-password')
+            .populate('employee'); // This will populate the employee data if needed
 
-        if(!user) {
-            return res.status(404).json({success: false, error: 'User not found'});
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'User not found' });
         }
+
+        // Add user to request object
         req.user = user;
         next();
     } catch (error) {
-        res.status(500).json({success: false, error: 'Internal server error'});
+        console.error('Auth Middleware Error:', error);
+        if (error.name === 'JsonWebTokenError') {
+            return res.status(401).json({ success: false, message: 'Invalid token' });
+        }
+        return res.status(500).json({ success: false, message: 'Server error' });
     }
-}
+};
 
-export default verifyUser;
+export default authMiddleware;

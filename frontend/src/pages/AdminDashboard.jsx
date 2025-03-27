@@ -3,6 +3,7 @@ import { useAuth } from '../context/authContext';
 import AdminSidebar from '../components/admin/AdminSidebar';
 import Navbar from '../components/common/Navbar';
 import { Outlet } from 'react-router-dom';
+import EmployeeList from '../components/admin/EmployeeList';
 
 const AdminDashboard = () => {
   const {user} = useAuth();
