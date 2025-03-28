@@ -5,10 +5,12 @@ import AdminDashboard from './pages/AdminDashboard'
 import EmployeeDashboard from './pages/EmployeeDashboard'
 import PrivateRoutes from './utils/PrivateRoutes'
 import RoleBasedRoutes from './utils/RoleBasedRoutes'
-import AdminSummary from './components/admin/AdminSummary'
+import AdminHome from './components/admin/AdminHome'
 import EmployeeManagement from './components/admin/EmployeeManagement'
 import Unauthorized from './pages/Unauthorized'
 import AuthProvider from './context/authContext'
+import EmployeeHome from './components/employee/EmployeeHome'
+import MyDetails from './components/employee/MyDetails'
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -53,7 +55,7 @@ function App() {
                 </RoleBasedRoutes>
               </PrivateRoutes>
               }>
-                <Route index element={<AdminSummary/>}></Route>
+                <Route index element={<AdminHome/>}></Route>
                 <Route path="employees" element={<EmployeeManagement/>}></Route>
             </Route>
 
@@ -64,6 +66,8 @@ function App() {
                 </RoleBasedRoutes>
               </PrivateRoutes>
             }>
+              <Route index element={<EmployeeHome />} />
+              <Route path="my-details" element={<MyDetails />} />
             </Route>
 
             <Route path="/unauthorized" element={<Unauthorized />} />

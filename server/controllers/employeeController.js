@@ -148,3 +148,17 @@ export const getEmployees = async (req, res) => {
     return res.status(500).json({ success: false, error: 'Internal server error' });
   }
 };
+
+// Add this to your existing employeeController.js
+export const getMyDetails = async (req, res) => {
+  try {
+    const employee = await Employee.findOne({ email: req.user.email });
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+    res.json(employee);
+  } catch (error) {
+    console.error('Error fetching employee details:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
