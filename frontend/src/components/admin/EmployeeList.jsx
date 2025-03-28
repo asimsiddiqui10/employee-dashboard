@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import EmployeeModal from './EmployeeModal';
+import { Pencil, Trash2 } from 'lucide-react';
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -97,10 +98,10 @@ const EmployeeList = () => {
                     View Details
                   </button>
                   <button onClick={() => handleEdit(employee)} className="bg-green-500 text-white px-2 py-1 text-xs rounded hover:bg-green-600">
-                    Edit
+                    <Pencil size={16} />
                   </button>
                   <button onClick={() => handleDelete(employee.employeeId)} className="bg-red-500 text-white px-2 py-1 text-xs rounded hover:bg-red-600">
-                    Delete
+                    <Trash2 size={16} />
                   </button>
                 </td>
               </tr>

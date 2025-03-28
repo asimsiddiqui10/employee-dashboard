@@ -37,6 +37,12 @@ export const addEmployee = async (req, res) => {
       return res.status(400).json({ message: 'Employee ID or SSN already exists' });
     }
 
+    // Check if email already exists in User collection
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Email already exists' });
+    }
+
     // 1. Create the Employee record
     const newEmployee = new Employee({
       employeeId,

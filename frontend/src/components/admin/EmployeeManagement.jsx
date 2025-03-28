@@ -68,21 +68,26 @@ const EmployeeManagement = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      console.log('Submitting employee data:', form);
       const token = localStorage.getItem('token');
-      const config = {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      };
-
       if (editing) {
-        await axios.put(`http://localhost:3000/api/employees/${form.employeeId}`, form, config);
+        // Handle editing (exclude password if not changed)
+        const { password, ...dataWithoutPassword } = form;
+        const data = password ? form : dataWithoutPassword;
+        
+        await axios.put(`http://localhost:3000/api/employees/${form.employeeId}`, data, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
       } else {
-        const response = await axios.post('http://localhost:3000/api/employees', form, config);
-        console.log('Server response:', response.data);
+        // For new employees, password is required
+        if (!form.password) {
+          alert('Password is required for new employees');
+          return;
+        }
+        await axios.post('http://localhost:3000/api/employees', form, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
       }
-      fetchEmployees();
+      setShowAddForm(false);
       setForm({
         employeeId: '',
         role: 'employee',
@@ -113,12 +118,10 @@ const EmployeeManagement = () => {
         totalCompensation: '',
         password: '',
       });
-      setEditing(false);
+      fetchEmployees();
     } catch (error) {
-      console.error('Error saving employee:', error.response || error);
-      if (error.response) {
-        console.error('Error details:', error.response.data);
-      }
+      console.error('Error:', error);
+      alert(error.response?.data?.message || 'An error occurred');
     }
   };
 
@@ -156,65 +159,65 @@ const EmployeeManagement = () => {
           </button>
         </div>
         {showAddForm && (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <input className="border p-2 rounded" name="employeeId" value={form.employeeId} onChange={handleInputChange} placeholder="Employee ID" required />
-              <select className="border p-2 rounded" name="role" value={form.role} onChange={handleInputChange}>
-                <option value="employee">Employee</option>
-                <option value="admin">Admin</option>
-              </select>
-              <input className="border p-2 rounded" name="name" value={form.name} onChange={handleInputChange} placeholder="Name" required />
-              <select className="border p-2 rounded" name="gender" value={form.gender} onChange={handleInputChange}>
-                <option value="Male">Male</option>
-                <option value="Female">Female</option>
-                <option value="Other">Other</option>
-              </select>
-              <input className="border p-2 rounded" name="picture" value={form.picture} onChange={handleInputChange} placeholder="Picture URL" />
-              <input className="border p-2 rounded" name="phoneNumber" value={form.phoneNumber} onChange={handleInputChange} placeholder="Phone Number" />
-              <input className="border p-2 rounded" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleInputChange} placeholder="Date of Birth" />
-              <input className="border p-2 rounded" name="email" value={form.email} onChange={handleInputChange} placeholder="Email" required />
-              <input className="border p-2 rounded" name="address" value={form.address} onChange={handleInputChange} placeholder="Address" />
-              <input className="border p-2 rounded" name="ssn" value={form.ssn} onChange={handleInputChange} placeholder="SSN" required />
-              <input className="border p-2 rounded" name="nationality" value={form.nationality} onChange={handleInputChange} placeholder="Nationality" />
-              <input className="border p-2 rounded" name="educationLevel" value={form.educationLevel} onChange={handleInputChange} placeholder="Education Level" />
-              <input className="border p-2 rounded" name="certifications" value={form.certifications} onChange={handleInputChange} placeholder="Certifications" />
-              <input className="border p-2 rounded" name="emergencyContact.name" value={form.emergencyContact.name} onChange={handleInputChange} placeholder="Emergency Contact Name" />
-              <input className="border p-2 rounded" name="emergencyContact.phone" value={form.emergencyContact.phone} onChange={handleInputChange} placeholder="Emergency Contact Phone" />
-              <input className="border p-2 rounded" name="department" value={form.department} onChange={handleInputChange} placeholder="Department" />
-              <input className="border p-2 rounded" name="position" value={form.position} onChange={handleInputChange} placeholder="Position" />
-              <input className="border p-2 rounded" name="dateOfHire" type="date" value={form.dateOfHire} onChange={handleInputChange} placeholder="Date of Hire" />
-              <select
-                className="border p-2 rounded"
-                name="manager"
-                value={form.manager}
-                onChange={handleInputChange}
-              >
-                <option value="">Select Manager</option>
-                {employees.map((employee) => (
-                  <option key={employee._id} value={employee._id}>
-                    {employee.name}
-                  </option>
-                ))}
-              </select>
-              <select className="border p-2 rounded" name="employmentType" value={form.employmentType} onChange={handleInputChange}>
-                <option value="Part-time">Part-time</option>
-                <option value="Full-time">Full-time</option>
-                <option value="Contract">Contract</option>
-                <option value="Consultant">Consultant</option>
-              </select>
-              <select className="border p-2 rounded" name="employmentStatus" value={form.employmentStatus} onChange={handleInputChange}>
-                <option value="Active">Active</option>
-                <option value="On leave">On leave</option>
-                <option value="Terminated">Terminated</option>
-              </select>
-              <input className="border p-2 rounded" name="terminationDate" type="date" value={form.terminationDate} onChange={handleInputChange} placeholder="Termination Date" />
-              <input className="border p-2 rounded" name="workEmail" value={form.workEmail} onChange={handleInputChange} placeholder="Work Email" />
-              <input className="border p-2 rounded" name="workPhoneNumber" value={form.workPhoneNumber} onChange={handleInputChange} placeholder="Work Phone Number" />
-              <input className="border p-2 rounded" name="totalCompensation" type="number" value={form.totalCompensation} onChange={handleInputChange} placeholder="Total Compensation" />
-              <input className="border p-2 rounded" name="password" value={form.password} onChange={handleInputChange} placeholder="Password" required={!editing} />
-            </div>
-            <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{editing ? 'Update' : 'Add'} Employee</button>
-          </form>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input className="border p-2 rounded" name="employeeId" value={form.employeeId} onChange={handleInputChange} placeholder="Employee ID" required />
+                <select className="border p-2 rounded" name="role" value={form.role} onChange={handleInputChange}>
+                  <option value="employee">Employee</option>
+                  <option value="admin">Admin</option>
+                </select>
+                <input className="border p-2 rounded" name="name" value={form.name} onChange={handleInputChange} placeholder="Name" required />
+                <select className="border p-2 rounded" name="gender" value={form.gender} onChange={handleInputChange}>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <input className="border p-2 rounded" name="picture" value={form.picture} onChange={handleInputChange} placeholder="Picture URL" />
+                <input className="border p-2 rounded" name="phoneNumber" value={form.phoneNumber} onChange={handleInputChange} placeholder="Phone Number" />
+                <input className="border p-2 rounded" name="dateOfBirth" type="date" value={form.dateOfBirth} onChange={handleInputChange} placeholder="Date of Birth" />
+                <input className="border p-2 rounded" name="email" value={form.email} onChange={handleInputChange} placeholder="Email" required />
+                <input className="border p-2 rounded" name="address" value={form.address} onChange={handleInputChange} placeholder="Address" />
+                <input className="border p-2 rounded" name="ssn" value={form.ssn} onChange={handleInputChange} placeholder="SSN" required />
+                <input className="border p-2 rounded" name="nationality" value={form.nationality} onChange={handleInputChange} placeholder="Nationality" />
+                <input className="border p-2 rounded" name="educationLevel" value={form.educationLevel} onChange={handleInputChange} placeholder="Education Level" />
+                <input className="border p-2 rounded" name="certifications" value={form.certifications} onChange={handleInputChange} placeholder="Certifications" />
+                <input className="border p-2 rounded" name="emergencyContact.name" value={form.emergencyContact.name} onChange={handleInputChange} placeholder="Emergency Contact Name" />
+                <input className="border p-2 rounded" name="emergencyContact.phone" value={form.emergencyContact.phone} onChange={handleInputChange} placeholder="Emergency Contact Phone" />
+                <input className="border p-2 rounded" name="department" value={form.department} onChange={handleInputChange} placeholder="Department" />
+                <input className="border p-2 rounded" name="position" value={form.position} onChange={handleInputChange} placeholder="Position" />
+                <input className="border p-2 rounded" name="dateOfHire" type="date" value={form.dateOfHire} onChange={handleInputChange} placeholder="Date of Hire" />
+                <select
+                  className="border p-2 rounded"
+                  name="manager"
+                  value={form.manager}
+                  onChange={handleInputChange}
+                >
+                  <option value="">Select Manager</option>
+                  {employees.map((employee) => (
+                    <option key={employee._id} value={employee._id}>
+                      {employee.name}
+                    </option>
+                  ))}
+                </select>
+                <select className="border p-2 rounded" name="employmentType" value={form.employmentType} onChange={handleInputChange}>
+                  <option value="Part-time">Part-time</option>
+                  <option value="Full-time">Full-time</option>
+                  <option value="Contract">Contract</option>
+                  <option value="Consultant">Consultant</option>
+                </select>
+                <select className="border p-2 rounded" name="employmentStatus" value={form.employmentStatus} onChange={handleInputChange}>
+                  <option value="Active">Active</option>
+                  <option value="On leave">On leave</option>
+                  <option value="Terminated">Terminated</option>
+                </select>
+                <input className="border p-2 rounded" name="terminationDate" type="date" value={form.terminationDate} onChange={handleInputChange} placeholder="Termination Date" />
+                <input className="border p-2 rounded" name="workEmail" value={form.workEmail} onChange={handleInputChange} placeholder="Work Email" />
+                <input className="border p-2 rounded" name="workPhoneNumber" value={form.workPhoneNumber} onChange={handleInputChange} placeholder="Work Phone Number" />
+                <input className="border p-2 rounded" name="totalCompensation" type="number" value={form.totalCompensation} onChange={handleInputChange} placeholder="Total Compensation" />
+                <input className="border p-2 rounded" name="password" value={form.password} onChange={handleInputChange} placeholder="Password" required={!editing} />
+              </div>
+              <button type="submit" className="bg-blue-500 text-white p-2 rounded hover:bg-blue-600">{editing ? 'Update' : 'Add'} Employee</button>
+            </form>
         )}
       </div>
     </div>
