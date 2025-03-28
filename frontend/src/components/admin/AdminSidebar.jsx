@@ -3,9 +3,10 @@ import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
   Users, 
-  Building2, 
-  Calendar, 
-  DollarSign, 
+  Bell, 
+  Calendar,
+  FileText,
+  GraduationCap,
   Settings 
 } from 'lucide-react';
 
@@ -43,10 +44,8 @@ const AdminSidebar = () => {
                     <Users size={16} className="flex-shrink-0" />
                     <span className="truncate text-sm md:text-base">Employees</span>
                 </NavLink>
-                {/* Comment out or remove routes that don't exist yet */}
-                {/* 
                 <NavLink 
-                    to="/admin-dashboard/departments" 
+                    to="/admin-dashboard/notifications" 
                     className={({ isActive }) => 
                         `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-md transition-colors ${
                             isActive 
@@ -55,8 +54,8 @@ const AdminSidebar = () => {
                         }`
                     }
                 >
-                    <Building2 size={16} className="flex-shrink-0" />
-                    <span className="truncate text-sm md:text-base">Department</span>
+                    <Bell size={16} className="flex-shrink-0" />
+                    <span className="truncate text-sm md:text-base">Notifications</span>
                 </NavLink>
                 <NavLink 
                     to="/admin-dashboard/leave" 
@@ -72,7 +71,7 @@ const AdminSidebar = () => {
                     <span className="truncate text-sm md:text-base">Leave</span>
                 </NavLink>
                 <NavLink 
-                    to="/admin-dashboard/salary" 
+                    to="/admin-dashboard/reports" 
                     className={({ isActive }) => 
                         `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-md transition-colors ${
                             isActive 
@@ -81,10 +80,35 @@ const AdminSidebar = () => {
                         }`
                     }
                 >
-                    <DollarSign size={16} className="flex-shrink-0" />
-                    <span className="truncate text-sm md:text-base">Salary</span>
+                    <FileText size={16} className="flex-shrink-0" />
+                    <span className="truncate text-sm md:text-base">Reports</span>
                 </NavLink>
-                */}
+                <NavLink 
+                    to="/admin-dashboard/training" 
+                    className={({ isActive }) => 
+                        `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-md transition-colors ${
+                            isActive 
+                                ? 'bg-slate-800 text-slate-50' 
+                                : 'text-slate-400 hover:text-slate-50 hover:bg-slate-800'
+                        }`
+                    }
+                >
+                    <GraduationCap size={16} className="flex-shrink-0" />
+                    <span className="truncate text-sm md:text-base">Training</span>
+                </NavLink>
+                <NavLink 
+                    to="/admin-dashboard/settings" 
+                    className={({ isActive }) => 
+                        `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-md transition-colors ${
+                            isActive 
+                                ? 'bg-slate-800 text-slate-50' 
+                                : 'text-slate-400 hover:text-slate-50 hover:bg-slate-800'
+                        }`
+                    }
+                >
+                    <Settings size={16} className="flex-shrink-0" />
+                    <span className="truncate text-sm md:text-base">Settings</span>
+                </NavLink>
             </div>
         </div>
     );

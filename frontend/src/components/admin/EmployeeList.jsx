@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import EmployeeModal from './EmployeeModal';
-import { Pencil, Trash2 } from 'lucide-react';
+import AddEmployeeModal from './AddEmployeeModal';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -28,6 +32,20 @@ const EmployeeList = () => {
     }
   };
 
+  const handleAddEmployee = async (formData) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post('http://localhost:3000/api/employees', formData, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setShowAddModal(false);
+      fetchEmployees();
+    } catch (error) {
+      console.error('Error:', error);
+      alert(error.response?.data?.message || 'An error occurred');
+    }
+  };
+
   const handleViewDetails = (employee) => {
     setSelectedEmployee(employee);
     setIsEditing(false);
@@ -38,15 +56,19 @@ const EmployeeList = () => {
     setIsEditing(true);
   };
 
-  const handleDelete = async (employeeId) => {
+  const handleDeleteClick = (employee) => {
+    setEmployeeToDelete(employee);
+  };
+
+  const handleDeleteConfirm = async () => {
     try {
-      console.log('Deleting employee:', employeeId);
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3000/api/employees/${employeeId}`, {
+      await axios.delete(`http://localhost:3000/api/employees/${employeeToDelete.employeeId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
+      setEmployeeToDelete(null);
       fetchEmployees();
     } catch (error) {
       console.error('Error deleting employee:', error);
@@ -69,8 +91,18 @@ const EmployeeList = () => {
   };
 
   return (
-    <div className="w-full p-6 bg-white shadow-md rounded-lg">
-      <h1 className="text-2xl font-bold mb-4">Employee List</h1>
+    <div className="p-6 bg-white rounded-lg shadow-md">
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-2xl font-bold">Employee List</h2>
+        <button
+          onClick={() => setShowAddModal(true)}
+          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 flex items-center gap-2"
+        >
+          <Plus size={20} />
+          Add Employee
+        </button>
+      </div>
+
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
           <thead>
@@ -97,10 +129,13 @@ const EmployeeList = () => {
                   <button onClick={() => handleViewDetails(employee)} className="bg-blue-500 text-white px-2 py-1 text-xs rounded hover:bg-blue-600">
                     View Details
                   </button>
-                  <button onClick={() => handleEdit(employee)} className="bg-green-500 text-white px-2 py-1 text-xs rounded hover:bg-green-600">
+                  <button onClick={() => handleEdit(employee)} className="bg-gray-300 text-white px-2 py-1 text-xs rounded hover:bg-gray-600">
                     <Pencil size={16} />
                   </button>
-                  <button onClick={() => handleDelete(employee.employeeId)} className="bg-red-500 text-white px-2 py-1 text-xs rounded hover:bg-red-600">
+                  <button 
+                    onClick={() => handleDeleteClick(employee)} 
+                    className="bg-gray-300 text-white px-2 py-1 text-xs rounded hover:bg-gray-600"
+                  >
                     <Trash2 size={16} />
                   </button>
                 </td>
@@ -116,6 +151,22 @@ const EmployeeList = () => {
           isEditing={isEditing}
           onClose={() => setSelectedEmployee(null)}
           onSave={handleSaveChanges}
+        />
+      )}
+
+      {showAddModal && (
+        <AddEmployeeModal
+          employees={employees}
+          onClose={() => setShowAddModal(false)}
+          onSave={handleAddEmployee}
+        />
+      )}
+
+      {employeeToDelete && (
+        <DeleteConfirmationModal
+          employee={employeeToDelete}
+          onClose={() => setEmployeeToDelete(null)}
+          onConfirm={handleDeleteConfirm}
         />
       )}
     </div>
