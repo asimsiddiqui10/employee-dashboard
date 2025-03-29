@@ -12,6 +12,8 @@ import AuthProvider from './context/authContext'
 import EmployeeHome from './components/employee/EmployeeHome'
 import MyDetails from './components/employee/MyDetails'
 import UnderProgress from './components/common/UnderProgress'
+import AdminNotifications from './components/admin/AdminNotifications'
+import EmployeeNotifications from './components/employee/EmployeeNotifications'
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -58,7 +60,7 @@ function App() {
             }>
               <Route index element={<AdminHome/>}></Route>
               <Route path="employees" element={<EmployeeManagement/>}></Route>
-              <Route path="notifications" element={<UnderProgress/>}></Route>
+              <Route path="notifications" element={<AdminNotifications/>}></Route>
               <Route path="leave" element={<UnderProgress/>}></Route>
               <Route path="reports" element={<UnderProgress/>}></Route>
               <Route path="training" element={<UnderProgress/>}></Route>
@@ -74,6 +76,7 @@ function App() {
             }>
               <Route index element={<EmployeeHome />} />
               <Route path="my-details" element={<MyDetails />} />
+              <Route path="notifications" element={<EmployeeNotifications />} />
             </Route>
 
             <Route path="/unauthorized" element={<Unauthorized />} />

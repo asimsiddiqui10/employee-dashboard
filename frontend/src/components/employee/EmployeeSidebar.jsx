@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, User, LogOut } from 'lucide-react'; // Import icons
+import { Home, User, LogOut, Bell } from 'lucide-react'; // Import icons
 import { useAuth } from '../../context/authContext';
 
 const EmployeeSidebar = () => {
@@ -32,6 +32,14 @@ const EmployeeSidebar = () => {
         >
           <User size={20} />
           <span>My Details</span>
+        </NavLink>
+
+        <NavLink
+          to="/employee-dashboard/notifications"
+          className="flex items-center p-2 hover:bg-gray-700 rounded"
+        >
+          <Bell size={20} className="mr-2" />
+          Notifications
         </NavLink>
 
       </div>

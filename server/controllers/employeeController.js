@@ -43,7 +43,17 @@ export const addEmployee = async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // 1. Create the Employee record
+    // 1. Create the User record first
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      name,
+      email,
+      password: hashedPassword,
+      role
+    });
+    const savedUser = await newUser.save();
+
+    // 2. Now create the Employee record with the user reference
     const newEmployee = new Employee({
       employeeId,
       role,
@@ -51,20 +61,14 @@ export const addEmployee = async (req, res) => {
       email,
       ssn,
       manager: manager || undefined,
+      user: savedUser._id,
       ...rest,
     });
     const savedEmployee = await newEmployee.save();
 
-    // 2. Create the User record for authentication
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      role, 
-      employee: savedEmployee._id,
-    });
-    await newUser.save();
+    // 3. Update the User with the employee reference
+    savedUser.employee = savedEmployee._id;
+    await savedUser.save();
 
     return res.status(201).json({ message: 'Employee created successfully', employee: savedEmployee });
   } catch (error) {
@@ -139,13 +143,15 @@ export const deleteEmployee = async (req, res) => {
 // Get all employees
 export const getEmployees = async (req, res) => {
   try {
-    console.log('Fetching employees from database...');
-    const employees = await Employee.find();
-    console.log('Employees fetched:', employees);
-    return res.status(200).json(employees);
+    const employees = await Employee.find()
+      .populate({
+        path: 'user',
+        select: '_id name email role' // Include all needed fields
+      });
+    res.json(employees);
   } catch (error) {
     console.error('Error fetching employees:', error);
-    return res.status(500).json({ success: false, error: 'Internal server error' });
+    res.status(500).json({ message: 'Server error' });
   }
 };
 

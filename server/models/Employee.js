@@ -30,6 +30,11 @@ const employeeSchema = new mongoose.Schema({
   workEmail: { type: String },
   workPhoneNumber: { type: String },
   totalCompensation: { type: Number },
+  user: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  }
 });
 
 const Employee = mongoose.model('Employee', employeeSchema);

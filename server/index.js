@@ -5,6 +5,7 @@ import authRouter from "./routes/auth.js"
 import employeeRouter from "./routes/employeeRoutes.js"
 import connectToDatabase from "./db/db.js"
 import { config } from 'dotenv';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Load environment variables
 config();
@@ -21,6 +22,7 @@ connectToDatabase()
 // Routes
 app.use('/api/auth', authRouter)
 app.use('/api/employees', employeeRouter)
+app.use('/api/notifications', notificationRoutes)
 
 // Add some debug logging
 app.use((req, res, next) => {
