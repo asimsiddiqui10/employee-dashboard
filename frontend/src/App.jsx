@@ -61,6 +61,7 @@ function App() {
               <Route index element={<AdminHome/>}></Route>
               <Route path="employees" element={<EmployeeManagement/>}></Route>
               <Route path="notifications" element={<AdminNotifications/>}></Route>
+              <Route path="payroll" element={<UnderProgress/>}></Route>
               <Route path="leave" element={<UnderProgress/>}></Route>
               <Route path="reports" element={<UnderProgress/>}></Route>
               <Route path="training" element={<UnderProgress/>}></Route>

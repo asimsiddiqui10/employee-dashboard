@@ -14,7 +14,7 @@ const AdminDashboard = () => {
       <AdminSidebar/>
       <main className='flex-1 p-4 ml-64'> {/* Added ml-64 to match sidebar width */}
         <Navbar/>
-        <Outlet/>
+        <Outlet/>``
       </main>
     </div>
   )
