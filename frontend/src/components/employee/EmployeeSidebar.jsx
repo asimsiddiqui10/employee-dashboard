@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, User, LogOut, Bell } from 'lucide-react'; // Import icons
+import { Home, User, LogOut, Bell, Calendar, DollarSign, GraduationCap, Settings } from 'lucide-react'; // Update imports
 import { useAuth } from '../../context/authContext';
 
 const EmployeeSidebar = () => {
@@ -42,6 +42,53 @@ const EmployeeSidebar = () => {
           Notifications
         </NavLink>
 
+        <NavLink
+          to="/employee-dashboard/leave"
+          className={({ isActive }) =>
+            `flex items-center space-x-2 p-2 rounded-lg ${
+              isActive ? 'bg-gray-900' : 'hover:bg-gray-700'
+            }`
+          }
+        >
+          <Calendar size={20} />
+          <span>Leave</span>
+        </NavLink>
+
+        <NavLink
+          to="/employee-dashboard/payroll"
+          className={({ isActive }) =>
+            `flex items-center space-x-2 p-2 rounded-lg ${
+              isActive ? 'bg-gray-900' : 'hover:bg-gray-700'
+            }`
+          }
+        >
+          <DollarSign size={20} />
+          <span>Payroll</span>
+        </NavLink>
+
+        <NavLink
+          to="/employee-dashboard/training"
+          className={({ isActive }) =>
+            `flex items-center space-x-2 p-2 rounded-lg ${
+              isActive ? 'bg-gray-900' : 'hover:bg-gray-700'
+            }`
+          }
+        >
+          <GraduationCap size={20} />
+          <span>Training</span>
+        </NavLink>
+
+        <NavLink
+          to="/employee-dashboard/settings"
+          className={({ isActive }) =>
+            `flex items-center space-x-2 p-2 rounded-lg ${
+              isActive ? 'bg-gray-900' : 'hover:bg-gray-700'
+            }`
+          }
+        >
+          <Settings size={20} />
+          <span>Settings</span>
+        </NavLink>
       </div>
     </div>
   );

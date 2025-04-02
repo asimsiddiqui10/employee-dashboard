@@ -66,6 +66,7 @@ function App() {
               <Route path="reports" element={<UnderProgress/>}></Route>
               <Route path="training" element={<UnderProgress/>}></Route>
               <Route path="settings" element={<UnderProgress/>}></Route>
+              <Route path="departments" element={<UnderProgress/>}></Route>
             </Route>
 
             <Route path="/employee-dashboard" element={
@@ -78,6 +79,10 @@ function App() {
               <Route index element={<EmployeeHome />} />
               <Route path="my-details" element={<MyDetails />} />
               <Route path="notifications" element={<EmployeeNotifications />} />
+              <Route path="leave" element={<UnderProgress />} />
+              <Route path="payroll" element={<UnderProgress />} />
+              <Route path="training" element={<UnderProgress />} />
+              <Route path="settings" element={<UnderProgress />} />
             </Route>
 
             <Route path="/unauthorized" element={<Unauthorized />} />

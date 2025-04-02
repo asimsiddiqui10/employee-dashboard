@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
+import companyLogo from '../assets/ACT New Logo HD.png';
 
 
 const Login = () => {
@@ -81,7 +82,10 @@ const Login = () => {
               >
                 Login
               </button>
-          </form>
+          </form> 
+          <div className="flex justify-center">
+            <img src={companyLogo} alt="Company Logo" className="w-40 h-12 mx-auto mb-4 pt-4" />
+          </div>
           <div className="mt-6 text-center text-sm text-gray-600">
             <p>American Completion Tools 2025</p>
             <p className="mt-2">For queries, reach out to <a href="mailto:support@americancompletiontools.com" className="text-blue-500 hover:underline">support@americancompletiontools.com</a></p>
