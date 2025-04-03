@@ -104,7 +104,7 @@ const EmployeeList = () => {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full text-sm">
+        <table className="min-w-full text-xs">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-4 py-2">Employee ID</th>
@@ -127,7 +127,7 @@ const EmployeeList = () => {
                 <td className="px-4 py-2">{employee.email}</td>
                 <td className="px-4 py-2">{employee.phoneNumber}</td>
                 <td className="px-4 py-2">
-                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                  <span className={`px-2 py-1 text-[10px] font-semibold rounded-full ${
                     employee.employmentStatus === 'Active' 
                       ? 'bg-green-100 text-green-800'
                       : employee.employmentStatus === 'On leave'
@@ -140,7 +140,7 @@ const EmployeeList = () => {
                 <td className="px-4 py-2 text-center flex gap-1 justify-center">
                   <button 
                     onClick={() => handleViewDetails(employee)} 
-                    className="bg-blue-500 text-white px-2 py-1 text-xs rounded hover:bg-blue-600"
+                    className="bg-blue-500 text-white px-2 py-1 text-[10px] rounded hover:bg-blue-600"
                   >
                     View Details
                   </button>
@@ -148,7 +148,7 @@ const EmployeeList = () => {
                     onClick={() => handleDeleteClick(employee)} 
                     className="bg-gray-300 text-white px-2 py-1 text-xs rounded hover:bg-gray-600"
                   >
-                    <Trash2 size={16} />
+                    <Trash2 size={14} />
                   </button>
                 </td>
               </tr>
