@@ -14,6 +14,7 @@ import MyDetails from './components/employee/MyDetails'
 import UnderProgress from './components/common/UnderProgress'
 import AdminNotifications from './components/admin/AdminNotifications'
 import EmployeeNotifications from './components/employee/EmployeeNotifications'
+import EmployeeDetails from './components/admin/EmployeeDetails'
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -60,6 +61,7 @@ function App() {
             }>
               <Route index element={<AdminHome/>}></Route>
               <Route path="employees" element={<EmployeeManagement/>}></Route>
+              <Route path="employees/:employeeId" element={<EmployeeDetails/>}></Route>
               <Route path="notifications" element={<AdminNotifications/>}></Route>
               <Route path="payroll" element={<UnderProgress/>}></Route>
               <Route path="leave" element={<UnderProgress/>}></Route>

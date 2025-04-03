@@ -29,7 +29,15 @@ const employeeSchema = new mongoose.Schema({
   terminationDate: { type: Date },
   workEmail: { type: String },
   workPhoneNumber: { type: String },
-  totalCompensation: { type: Number },
+  compensationType: { 
+    type: String, 
+    enum: ['Monthly Salary', 'Hourly Rate', 'Total Compensation'],
+    required: true 
+  },
+  compensationValue: { 
+    type: Number,
+    required: true 
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

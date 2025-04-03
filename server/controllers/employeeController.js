@@ -10,7 +10,7 @@ export const addEmployee = async (req, res) => {
     console.log('Request received to add employee:', req.body);
     console.log('User making request:', req.user);
     
-    const { employeeId, role, name, email, password, ssn, manager, ...rest } = req.body;
+    const { employeeId, role, name, email, password, ssn, manager, workPhoneNumber, compensationType, compensationValue, active, ...rest } = req.body;
 
     // Validate required fields
     if (!email || !password || !name || !role) {
@@ -43,6 +43,14 @@ export const addEmployee = async (req, res) => {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
+    // Validate compensation
+    if (!compensationType || !compensationValue) {
+      return res.status(400).json({ 
+        success: false, 
+        error: 'Compensation type and value are required' 
+      });
+    }
+
     // 1. Create the User record first
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
@@ -62,6 +70,10 @@ export const addEmployee = async (req, res) => {
       ssn,
       manager: manager || undefined,
       user: savedUser._id,
+      workPhoneNumber,
+      compensationType,
+      compensationValue,
+      active: active !== undefined ? active : true,
       ...rest,
     });
     const savedEmployee = await newEmployee.save();
@@ -92,12 +104,22 @@ export const addEmployee = async (req, res) => {
 export const editEmployee = async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const { email, role, password, ...rest } = req.body;
+    const { email, role, password, workPhoneNumber, compensationType, compensationValue, active, ...rest } = req.body;
+
+    // Validate compensation if being updated
+    if (compensationType || compensationValue) {
+      if (!(compensationType && compensationValue)) {
+        return res.status(400).json({
+          success: false,
+          error: 'Both compensation type and value must be provided together'
+        });
+      }
+    }
 
     // Update employee fields
     const updatedEmployee = await Employee.findOneAndUpdate(
       { employeeId },
-      { email, role, ...rest },
+      { email, role, workPhoneNumber, compensationType, compensationValue, active, ...rest },
       { new: true }
     );
 
@@ -117,8 +139,8 @@ export const editEmployee = async (req, res) => {
       return res.status(404).json({ message: 'Employee not found' });
     }
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Error updating employee:', error);
+    res.status(500).json({ success: false, error: 'Failed to update employee' });
   }
 };
 
@@ -166,5 +188,21 @@ export const getMyDetails = async (req, res) => {
   } catch (error) {
     console.error('Error fetching employee details:', error);
     res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const getEmployee = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const employee = await Employee.findOne({ employeeId });
+    
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    res.json(employee);
+  } catch (error) {
+    console.error('Error fetching employee:', error);
+    res.status(500).json({ error: 'Failed to fetch employee' });
   }
 };

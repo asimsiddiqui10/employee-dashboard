@@ -28,7 +28,8 @@ const AddEmployeeModal = ({ employees, onClose, onSave }) => {
     terminationDate: '',
     workEmail: '',
     workPhoneNumber: '',
-    totalCompensation: '',
+    compensationType: 'Monthly Salary',
+    compensationValue: '',
     password: '',
   });
 
@@ -107,7 +108,26 @@ const AddEmployeeModal = ({ employees, onClose, onSave }) => {
             <input className="border p-2 rounded" name="terminationDate" type="date" value={form.terminationDate} onChange={handleInputChange} placeholder="Termination Date" />
             <input className="border p-2 rounded" name="workEmail" value={form.workEmail} onChange={handleInputChange} placeholder="Work Email" />
             <input className="border p-2 rounded" name="workPhoneNumber" value={form.workPhoneNumber} onChange={handleInputChange} placeholder="Work Phone Number" />
-            <input className="border p-2 rounded" name="totalCompensation" type="number" value={form.totalCompensation} onChange={handleInputChange} placeholder="Total Compensation" />
+            <select 
+              className="border p-2 rounded" 
+              name="compensationType" 
+              value={form.compensationType} 
+              onChange={handleInputChange}
+              required
+            >
+              <option value="Monthly Salary">Monthly Salary</option>
+              <option value="Hourly Rate">Hourly Rate</option>
+              <option value="Total Compensation">Total Compensation</option>
+            </select>
+            <input 
+              className="border p-2 rounded" 
+              name="compensationValue" 
+              type="number" 
+              value={form.compensationValue} 
+              onChange={handleInputChange} 
+              placeholder={`${form.compensationType} Amount`}
+              required 
+            />
             <input className="border p-2 rounded" name="password" type="password" value={form.password} onChange={handleInputChange} placeholder="Password" required />
           </div>
           <div className="flex justify-end mt-6">

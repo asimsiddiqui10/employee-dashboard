@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import EmployeeModal from './EmployeeModal';
+import { useNavigate } from 'react-router-dom';
+import { Pencil, Trash2, Plus } from 'lucide-react';
 import AddEmployeeModal from './AddEmployeeModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { Pencil, Trash2, Plus } from 'lucide-react';
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -11,6 +11,7 @@ const EmployeeList = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [employeeToDelete, setEmployeeToDelete] = useState(null);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchEmployees();
@@ -47,8 +48,7 @@ const EmployeeList = () => {
   };
 
   const handleViewDetails = (employee) => {
-    setSelectedEmployee(employee);
-    setIsEditing(false);
+    navigate(`/admin-dashboard/employees/${employee.employeeId}`);
   };
 
   const handleEdit = (employee) => {
@@ -105,14 +105,15 @@ const EmployeeList = () => {
 
       <div className="overflow-x-auto">
         <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-gray-100">
-              <th className="px-4 py-2 text-left">ID</th>
-              <th className="px-4 py-2 text-left">Name</th>
-              <th className="px-4 py-2 text-left">Department</th>
-              <th className="px-4 py-2 text-left">Position</th>
-              <th className="px-4 py-2 text-left">Email</th>
-              <th className="px-4 py-2 text-left">Phone</th>
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-4 py-2">Employee ID</th>
+              <th className="px-4 py-2">Name</th>
+              <th className="px-4 py-2">Department</th>
+              <th className="px-4 py-2">Position</th>
+              <th className="px-4 py-2">Email</th>
+              <th className="px-4 py-2">Phone</th>
+              <th className="px-4 py-2">Status</th>
               <th className="px-4 py-2 text-center">Actions</th>
             </tr>
           </thead>
@@ -125,12 +126,23 @@ const EmployeeList = () => {
                 <td className="px-4 py-2">{employee.position}</td>
                 <td className="px-4 py-2">{employee.email}</td>
                 <td className="px-4 py-2">{employee.phoneNumber}</td>
+                <td className="px-4 py-2">
+                  <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                    employee.employmentStatus === 'Active' 
+                      ? 'bg-green-100 text-green-800'
+                      : employee.employmentStatus === 'On leave'
+                      ? 'bg-yellow-100 text-yellow-800'
+                      : 'bg-red-100 text-red-800'
+                  }`}>
+                    {employee.employmentStatus}
+                  </span>
+                </td>
                 <td className="px-4 py-2 text-center flex gap-1 justify-center">
-                  <button onClick={() => handleViewDetails(employee)} className="bg-blue-500 text-white px-2 py-1 text-xs rounded hover:bg-blue-600">
+                  <button 
+                    onClick={() => handleViewDetails(employee)} 
+                    className="bg-blue-500 text-white px-2 py-1 text-xs rounded hover:bg-blue-600"
+                  >
                     View Details
-                  </button>
-                  <button onClick={() => handleEdit(employee)} className="bg-gray-300 text-white px-2 py-1 text-xs rounded hover:bg-gray-600">
-                    <Pencil size={16} />
                   </button>
                   <button 
                     onClick={() => handleDeleteClick(employee)} 
@@ -144,15 +156,6 @@ const EmployeeList = () => {
           </tbody>
         </table>
       </div>
-
-      {selectedEmployee && (
-        <EmployeeModal
-          employee={selectedEmployee}
-          isEditing={isEditing}
-          onClose={() => setSelectedEmployee(null)}
-          onSave={handleSaveChanges}
-        />
-      )}
 
       {showAddModal && (
         <AddEmployeeModal

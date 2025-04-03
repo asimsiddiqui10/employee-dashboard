@@ -1,6 +1,6 @@
 // routes/employeeRoutes.js
 import express from 'express';
-import { addEmployee, editEmployee, deleteEmployee, getEmployees, getMyDetails } from '../controllers/employeeController.js';
+import { addEmployee, editEmployee, deleteEmployee, getEmployees, getMyDetails, getEmployee } from '../controllers/employeeController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 
 const router = express.Router();
@@ -15,5 +15,7 @@ router.get('/', authMiddleware, getEmployees);
 
 // Add this to your existing routes
 router.get('/me', authMiddleware, getMyDetails);
+
+router.get('/:employeeId', getEmployee);
 
 export default router;
