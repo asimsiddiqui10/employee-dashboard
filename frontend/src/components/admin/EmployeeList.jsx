@@ -1,16 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Plus } from 'lucide-react';
 import AddEmployeeModal from './AddEmployeeModal';
-import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [employeeToDelete, setEmployeeToDelete] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -54,40 +52,6 @@ const EmployeeList = () => {
   const handleEdit = (employee) => {
     setSelectedEmployee(employee);
     setIsEditing(true);
-  };
-
-  const handleDeleteClick = (employee) => {
-    setEmployeeToDelete(employee);
-  };
-
-  const handleDeleteConfirm = async () => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3000/api/employees/${employeeToDelete.employeeId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      setEmployeeToDelete(null);
-      fetchEmployees();
-    } catch (error) {
-      console.error('Error deleting employee:', error);
-    }
-  };
-
-  const handleSaveChanges = async (updatedEmployee) => {
-    try {
-      const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:3000/api/employees/${updatedEmployee.employeeId}`, updatedEmployee, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      fetchEmployees();
-      setSelectedEmployee(null);
-    } catch (error) {
-      console.error('Error updating employee:', error);
-    }
   };
 
   return (
@@ -144,12 +108,6 @@ const EmployeeList = () => {
                   >
                     View Details
                   </button>
-                  <button 
-                    onClick={() => handleDeleteClick(employee)} 
-                    className="bg-gray-300 text-white px-2 py-1 text-xs rounded hover:bg-gray-600"
-                  >
-                    <Trash2 size={14} />
-                  </button>
                 </td>
               </tr>
             ))}
@@ -162,14 +120,6 @@ const EmployeeList = () => {
           employees={employees}
           onClose={() => setShowAddModal(false)}
           onSave={handleAddEmployee}
-        />
-      )}
-
-      {employeeToDelete && (
-        <DeleteConfirmationModal
-          employee={employeeToDelete}
-          onClose={() => setEmployeeToDelete(null)}
-          onConfirm={handleDeleteConfirm}
         />
       )}
     </div>

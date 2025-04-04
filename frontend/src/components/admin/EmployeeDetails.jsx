@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import DeleteConfirmationModal from './DeleteConfirmationModal';
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
   const navigate = useNavigate();
   const [form, setForm] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     fetchEmployeeDetails();
@@ -50,6 +52,18 @@ const EmployeeDetails = () => {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`http://localhost:3000/api/employees/${employeeId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      navigate('/admin-dashboard/employees');
+    } catch (error) {
+      console.error('Error deleting employee:', error);
+    }
+  };
+
   if (!form) return <div>Loading...</div>;
 
   return (
@@ -58,12 +72,20 @@ const EmployeeDetails = () => {
         <h2 className="text-2xl font-bold">Employee Details</h2>
         <div className="space-x-2">
           {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-            >
-              Edit
-            </button>
+            <>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => setShowDeleteModal(true)}
+                className="border border-red-500 text-red-500 px-4 py-2 rounded hover:text-red-600 hover:border-red-600"
+              >
+                Delete
+              </button>
+            </>
           ) : (
             <button
               onClick={handleSave}
@@ -158,6 +180,14 @@ const EmployeeDetails = () => {
           />
         </div>
       </div>
+
+      {showDeleteModal && (
+        <DeleteConfirmationModal
+          employee={form}
+          onClose={() => setShowDeleteModal(false)}
+          onConfirm={handleDelete}
+        />
+      )}
     </div>
   );
 };
