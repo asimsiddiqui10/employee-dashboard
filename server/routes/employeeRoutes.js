@@ -1,7 +1,8 @@
 // routes/employeeRoutes.js
 import express from 'express';
-import { addEmployee, editEmployee, deleteEmployee, getEmployees, getMyDetails, getEmployee } from '../controllers/employeeController.js';
+import { addEmployee, editEmployee, deleteEmployee, getEmployees, getMyDetails, getEmployee, uploadProfilePic } from '../controllers/employeeController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import upload from '../middleware/uploadMiddleware.js';
 
 const router = express.Router();
 
@@ -17,5 +18,8 @@ router.get('/', authMiddleware, getEmployees);
 router.get('/me', authMiddleware, getMyDetails);
 
 router.get('/:employeeId', getEmployee);
+
+// Add this new route for profile picture upload
+router.post('/:employeeId/profile-pic', authMiddleware, upload.single('profilePic'), uploadProfilePic);
 
 export default router;

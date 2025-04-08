@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import { Upload } from 'lucide-react';
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
@@ -9,6 +10,7 @@ const EmployeeDetails = () => {
   const [form, setForm] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
 
   useEffect(() => {
     fetchEmployeeDetails();
@@ -64,6 +66,35 @@ const EmployeeDetails = () => {
     }
   };
 
+  const handleFileSelect = (e) => {
+    setSelectedFile(e.target.files[0]);
+  };
+
+  const handleUploadProfilePic = async () => {
+    if (!selectedFile) return;
+
+    const formData = new FormData();
+    formData.append('profilePic', selectedFile);
+
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(
+        `http://localhost:3000/api/employees/${employeeId}/profile-pic`,
+        formData,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+      setForm({ ...form, profilePic: response.data.profilePic });
+      setSelectedFile(null);
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+    }
+  };
+
   if (!form) return <div>Loading...</div>;
 
   return (
@@ -103,8 +134,43 @@ const EmployeeDetails = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
-        {/* Basic Information */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="col-span-full flex flex-col items-center gap-4">
+          <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-200">
+            <img
+              src={form.profilePic ? `http://localhost:3000${form.profilePic}` : '/default-profile.png'}
+              alt="Profile"
+              className="w-full h-full object-cover"
+            />
+          </div>
+          {isEditing && (
+            <div className="flex items-center gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="profile-pic-input"
+              />
+              <label
+                htmlFor="profile-pic-input"
+                className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded flex items-center gap-2"
+              >
+                <Upload size={16} />
+                Choose File
+              </label>
+              {selectedFile && (
+                <button
+                  onClick={handleUploadProfilePic}
+                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                >
+                  Upload
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+
         <div>
           <h3 className="text-lg font-semibold mb-2">Basic Information</h3>
           <input className="border p-2 rounded w-full mb-2" name="employeeId" value={form.employeeId || ''} onChange={handleInputChange} placeholder="Employee ID" disabled />
@@ -123,21 +189,18 @@ const EmployeeDetails = () => {
           <input className="border p-2 rounded w-full mb-2" name="nationality" value={form.nationality || ''} onChange={handleInputChange} placeholder="Nationality" disabled={!isEditing} />
         </div>
 
-        {/* Education & Certifications */}
         <div>
           <h3 className="text-lg font-semibold mb-2">Education & Certifications</h3>
           <input className="border p-2 rounded w-full mb-2" name="educationLevel" value={form.educationLevel || ''} onChange={handleInputChange} placeholder="Education Level" disabled={!isEditing} />
           <input className="border p-2 rounded w-full mb-2" name="certifications" value={form.certifications ? form.certifications.join(', ') : ''} onChange={handleInputChange} placeholder="Certifications (comma-separated)" disabled={!isEditing} />
         </div>
 
-        {/* Emergency Contact */}
         <div>
           <h3 className="text-lg font-semibold mb-2">Emergency Contact</h3>
           <input className="border p-2 rounded w-full mb-2" name="emergencyContact.name" value={form.emergencyContact?.name || ''} onChange={handleInputChange} placeholder="Emergency Contact Name" disabled={!isEditing} />
           <input className="border p-2 rounded w-full mb-2" name="emergencyContact.phone" value={form.emergencyContact?.phone || ''} onChange={handleInputChange} placeholder="Emergency Contact Phone" disabled={!isEditing} />
         </div>
 
-        {/* Employment Information */}
         <div>
           <h3 className="text-lg font-semibold mb-2">Employment Information</h3>
           <input className="border p-2 rounded w-full mb-2" name="department" value={form.department || ''} onChange={handleInputChange} placeholder="Department" disabled={!isEditing} />

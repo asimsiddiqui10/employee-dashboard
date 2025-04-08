@@ -42,7 +42,11 @@ const employeeSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
     required: true
-  }
+  },
+  profilePic: {
+    type: String,
+    default: 'default-profile.png'  // default image path
+  },
 });
 
 const Employee = mongoose.model('Employee', employeeSchema);
