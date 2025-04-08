@@ -1,42 +1,84 @@
 import User from '../models/User.js';
-import bcrypt from 'bcrypt';
+import Employee from '../models/Employee.js';
+import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
-const login = async (req, res) => {
+export const login = async (req, res) => {
     try {
+        console.log('Login attempt:', req.body);
         const { email, password } = req.body;
+
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Please provide both email and password'
+            });
+        }
+
+        // Find user
         const user = await User.findOne({ email });
         if (!user) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Invalid email or password' 
+            });
         }
+
+        // Check password
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Invalid credentials' });
+            return res.status(401).json({ 
+                success: false, 
+                error: 'Invalid email or password' 
+            });
         }
-        
-        const token = jwt.sign({_id: user._id, role: user.role},
-             process.env.JWT_KEY, {expiresIn: "2d"})
-        
-        
-        
-        res.status(200).json({
-            success: true, 
-            message: "Login successful", 
-            token, 
+
+        // Get employee details if they exist
+        const employee = await Employee.findOne({ user: user._id });
+
+        // Create token
+        const token = jwt.sign(
+            { 
+                id: user._id,
+                role: user.role,
+                employeeId: employee?._id 
+            },
+            process.env.JWT_KEY,
+            { expiresIn: '24h' }
+        );
+
+        // Send response
+        res.json({
+            success: true,
             user: {
-                _id: user._id,
+                id: user._id,
                 name: user.name,
-                role: user.role
-            }
-        })
+                email: user.email,
+                role: user.role,
+                employeeId: employee?._id
+            },
+            token
+        });
+
     } catch (error) {
         console.error('Login error:', error);
-        res.status(500).json({ success: false, message: 'Server error' });
+        res.status(500).json({ 
+            success: false, 
+            error: 'Server error during login',
+            message: error.message
+        });
     }
-}
+};
 
-const verify = async (req, res) => {
-    return res.status(200).json({success: true, message: 'User verified', user: req.user})
-}
+export const verify = async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (error) {
+        console.error('Verify error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
 
-export { login, verify };
+// Export both functions
+export default { login, verify };

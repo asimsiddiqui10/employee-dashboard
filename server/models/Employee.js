@@ -47,6 +47,13 @@ const employeeSchema = new mongoose.Schema({
     type: String,
     default: 'default-profile.png'  // default image path
   },
+  leaveSummary: {
+    totalLeaves: { type: Number, default: 20 },
+    leavesTaken: { type: Number, default: 0 },
+    leavesApproved: { type: Number, default: 0 },
+    leavesRejected: { type: Number, default: 0 },
+    leavesRemaining: { type: Number, default: 20 }
+  },
 });
 
 const Employee = mongoose.model('Employee', employeeSchema);

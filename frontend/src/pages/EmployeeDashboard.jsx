@@ -2,6 +2,7 @@ import React from 'react';
 import { Outlet } from 'react-router-dom';
 import EmployeeSidebar from '../components/employee/EmployeeSidebar';
 import Navbar from '../components/common/Navbar';
+import LeaveRequest from '../components/employee/LeaveRequest'; 
 
 const EmployeeDashboard = () => {
   return (

@@ -15,6 +15,8 @@ import UnderProgress from './components/common/UnderProgress'
 import AdminNotifications from './components/admin/AdminNotifications'
 import EmployeeNotifications from './components/employee/EmployeeNotifications'
 import EmployeeDetails from './components/admin/EmployeeDetails'
+import LeaveManagement from './components/admin/LeaveManagement'
+import LeaveRequest from './components/employee/LeaveRequest'
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -64,11 +66,11 @@ function App() {
               <Route path="employees/:employeeId" element={<EmployeeDetails/>}></Route>
               <Route path="notifications" element={<AdminNotifications/>}></Route>
               <Route path="payroll" element={<UnderProgress/>}></Route>
-              <Route path="leave" element={<UnderProgress/>}></Route>
               <Route path="reports" element={<UnderProgress/>}></Route>
               <Route path="training" element={<UnderProgress/>}></Route>
               <Route path="settings" element={<UnderProgress/>}></Route>
               <Route path="departments" element={<UnderProgress/>}></Route>
+              <Route path="leave" element={<LeaveManagement />} />
             </Route>
 
             <Route path="/employee-dashboard" element={
@@ -81,7 +83,7 @@ function App() {
               <Route index element={<EmployeeHome />} />
               <Route path="my-details" element={<MyDetails />} />
               <Route path="notifications" element={<EmployeeNotifications />} />
-              <Route path="leave" element={<UnderProgress />} />
+              <Route path="leave" element={<LeaveRequest />} />
               <Route path="payroll" element={<UnderProgress />} />
               <Route path="training" element={<UnderProgress />} />
               <Route path="settings" element={<UnderProgress />} />

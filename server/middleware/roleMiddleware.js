@@ -1,9 +1,13 @@
-const roleMiddleware = (requiredRole) => (req, res, next) => {
-  if (req.user && req.user.role === requiredRole) {
-    next();
-  } else {
-    res.status(403).json({ message: 'Forbidden: Insufficient permissions' });
-  }
-};
+export const roleMiddleware = (allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user || !req.user.role) {
+            return res.status(403).json({ message: 'Access denied' });
+        }
 
-module.exports = roleMiddleware; 
+        if (allowedRoles.includes(req.user.role)) {
+            next();
+        } else {
+            res.status(403).json({ message: 'Access denied' });
+        }
+    };
+}; 

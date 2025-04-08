@@ -15,8 +15,13 @@ const Login = () => {
     const handleSubmit = async(e) => {
         e.preventDefault();
         try {
-            const response = await axios.post('http://localhost:3000/api/auth/login', { email, password });
-            console.log(response.data);
+            console.log('Attempting login with:', { email });
+            const response = await axios.post('/api/auth/login', { 
+                email, 
+                password 
+            });
+            console.log('Login response:', response.data);
+            
             if (response.data.success) {
                 login(response.data.user);
                 localStorage.setItem('token', response.data.token);
@@ -26,13 +31,21 @@ const Login = () => {
                     navigate('/employee-dashboard');
                 }
             } else {
-                setError(response.data.error)
+                setError(response.data.error);
             }
         } catch (error) {
-            if(error.response && !error.response.data.success) {
-                setError(error.response.data.error)
+            console.error('Login error:', error);
+            if (error.response) {
+                // The request was made and the server responded with a status code
+                // that falls out of the range of 2xx
+                setError(error.response.data.error || 'Login failed');
+                console.error('Error response:', error.response.data);
+            } else if (error.request) {
+                // The request was made but no response was received
+                setError('No response from server');
             } else {
-                setError("Server Error")
+                // Something happened in setting up the request that triggered an Error
+                setError('Error setting up request');
             }
         }
     };

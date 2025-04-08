@@ -19,7 +19,7 @@ const authMiddleware = async (req, res, next) => {
         const decoded = jwt.verify(token, process.env.JWT_KEY);
         
         // Find user
-        const user = await User.findById(decoded._id)
+        const user = await User.findById(decoded.id)
             .select('-password')
             .populate('employee'); // This will populate the employee data if needed
 
