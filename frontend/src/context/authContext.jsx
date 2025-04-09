@@ -1,34 +1,33 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import React, { createContext, useState, useEffect, useContext } from 'react'
+import axios from 'axios'
+
 
 const userContext = createContext();
 
-const AuthProvider = ({ children }) => {
+const AuthContext = ({children}) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
     
     useEffect(() => {
         const verifyUser = async () => {
-            setLoading(true);
             try {
                 const token = localStorage.getItem('token');
                 if (token) {
-                    const response = await axios.get('http://localhost:3000/api/auth/verify', {
+                    const response = await axios.get('http://localhost:5001/api/auth/verify', {
                         headers: {
                             Authorization: `Bearer ${token}`
                         }
                     });
                     if(response.data.success) {
                         setUser(response.data.user);
-                    } else {
-                        setUser(null);
-                    }
+                    }   
                 } else {
                     setUser(null);
                 }
             } catch(error) {
-                console.error("Auth verification error:", error);
-                setUser(null);
+                if (error.response && !error.response.data.success) {
+                    setUser(null);
+                }
             } finally {
                 setLoading(false);
             }
@@ -46,12 +45,11 @@ const AuthProvider = ({ children }) => {
     };
     
     return (
-        <userContext.Provider value={{ user, login, logout, loading }}>
+        <userContext.Provider value={{user, login, logout, loading}}>
             {children}
         </userContext.Provider>
     );
 };
 
 export const useAuth = () => useContext(userContext);
-export { AuthProvider };
-export default AuthProvider; 
+export default AuthContext;

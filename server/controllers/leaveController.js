@@ -1,6 +1,7 @@
 import LeaveRequest from '../models/LeaveRequest.js';
 import Employee from '../models/Employee.js';
 import { calculateBusinessDays } from '../utils/dateUtils.js';
+import mongoose from 'mongoose';
 
 // Request leave
 export const requestLeave = async (req, res) => {
@@ -47,6 +48,12 @@ export const updateLeaveStatus = async (req, res) => {
     const { status } = req.body;
     const { id } = req.params;
 
+    // Validate status
+    if (!['Approved', 'Rejected'].includes(status)) {
+      return res.status(400).json({ message: 'Invalid status' });
+    }
+
+    // Find leave request and populate employee details
     const leaveRequest = await LeaveRequest.findById(id);
     if (!leaveRequest) {
       return res.status(404).json({ message: 'Leave request not found' });
@@ -59,31 +66,79 @@ export const updateLeaveStatus = async (req, res) => {
       });
     }
 
+    // Find employee and ensure they exist
     const employee = await Employee.findById(leaveRequest.employee);
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
 
-    // Update leave request status and employee's leave summary
-    leaveRequest.status = status;
-    
-    if (status === 'Approved') {
-      employee.leaveSummary.leavesApproved += leaveRequest.totalDays;
-      employee.leaveSummary.leavesTaken += leaveRequest.totalDays;
-      employee.leaveSummary.leavesRemaining -= leaveRequest.totalDays;
-    } else if (status === 'Rejected') {
-      employee.leaveSummary.leavesRejected += 1;
+    // Start a session for transaction
+    const session = await mongoose.startSession();
+    session.startTransaction();
+
+    try {
+      // Update leave request status
+      leaveRequest.status = status;
+      
+      // Update employee's leave summary based on status
+      if (status === 'Approved') {
+        // Verify sufficient leave balance again
+        if (employee.leaveSummary.leavesRemaining < leaveRequest.totalDays) {
+          throw new Error('Insufficient leave balance');
+        }
+        
+        // Update only the leave summary fields
+        await Employee.findByIdAndUpdate(
+          employee._id,
+          {
+            $inc: {
+              'leaveSummary.leavesApproved': leaveRequest.totalDays,
+              'leaveSummary.leavesTaken': leaveRequest.totalDays,
+              'leaveSummary.leavesRemaining': -leaveRequest.totalDays
+            }
+          },
+          { session, new: true }
+        );
+      } else if (status === 'Rejected') {
+        await Employee.findByIdAndUpdate(
+          employee._id,
+          {
+            $inc: {
+              'leaveSummary.leavesRejected': 1
+            }
+          },
+          { session, new: true }
+        );
+      }
+
+      // Save the leave request
+      await leaveRequest.save({ session });
+
+      // Commit the transaction
+      await session.commitTransaction();
+      
+      // Send response
+      res.json({ 
+        success: true,
+        leaveRequest,
+        message: `Leave request ${status.toLowerCase()} successfully`
+      });
+
+    } catch (error) {
+      // If anything fails, abort transaction
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      // End session
+      session.endSession();
     }
 
-    await Promise.all([
-      leaveRequest.save(),
-      employee.save()
-    ]);
-
-    res.json({ leaveRequest, leaveSummary: employee.leaveSummary });
   } catch (error) {
     console.error('Error updating leave status:', error);
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ 
+      success: false,
+      message: error.message || 'Error updating leave request' 
+    });
   }
 };
 

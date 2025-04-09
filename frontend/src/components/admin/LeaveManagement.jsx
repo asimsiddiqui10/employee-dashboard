@@ -27,13 +27,27 @@ const LeaveManagement = () => {
   const handleStatusUpdate = async (id, status) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.patch(`http://localhost:3000/api/leaves/${id}/status`, 
+      const response = await axios.patch(
+        `http://localhost:3000/api/leaves/${id}/status`, 
         { status },
         { headers: { 'Authorization': `Bearer ${token}` }}
       );
-      fetchLeaveRequests();
+
+      if (response.data.success) {
+        // Update the local state immediately
+        setLeaveRequests(prevRequests => 
+          prevRequests.map(request => 
+            request._id === id 
+              ? { ...request, status: status }
+              : request
+          )
+        );
+      } else {
+        setError(response.data.message || 'Error updating leave request');
+      }
     } catch (error) {
-      setError('Error updating leave request');
+      console.error('Update error:', error);
+      setError(error.response?.data?.message || 'Error updating leave request');
     }
   };
 
