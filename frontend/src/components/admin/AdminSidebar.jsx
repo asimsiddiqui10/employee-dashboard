@@ -73,6 +73,19 @@ const AdminSidebar = () => {
                     <span className="truncate text-sm md:text-base">Payroll</span>
                 </NavLink>
                 <NavLink 
+                    to="/admin-dashboard/documents" 
+                    className={({ isActive }) => 
+                        `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-md transition-colors ${
+                            isActive 
+                                ? 'bg-slate-800 text-slate-50' 
+                                : 'text-slate-400 hover:text-slate-50 hover:bg-slate-800'
+                        }`
+                    }
+                >
+                    <FileText size={16} className="flex-shrink-0" />
+                    <span className="truncate text-sm md:text-base">Documents</span>
+                </NavLink>
+                <NavLink 
                     to="/admin-dashboard/departments" 
                     className={({ isActive }) => 
                         `flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 rounded-md transition-colors ${

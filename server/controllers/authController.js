@@ -72,11 +72,26 @@ export const login = async (req, res) => {
 
 export const verify = async (req, res) => {
     try {
-        const user = await User.findById(req.user.id).select('-password');
-        res.json(user);
+        // Get user details if they exist
+        const employee = await Employee.findOne({ user: req.user._id });
+
+        // Send response
+        res.json({
+            success: true,
+            user: {
+                id: req.user._id,
+                name: req.user.name,
+                email: req.user.email,
+                role: req.user.role,
+                employeeId: employee?._id
+            }
+        });
     } catch (error) {
-        console.error('Verify error:', error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Verification error:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Server error during verification' 
+        });
     }
 };
 

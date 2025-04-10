@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, User, LogOut, Bell, Calendar, DollarSign, GraduationCap, Settings } from 'lucide-react'; // Update imports
+import { Home, User, LogOut, Bell, Calendar, DollarSign, GraduationCap, Settings, FileText } from 'lucide-react'; // Update imports
 import { useAuth } from '../../context/authContext';
 
 const EmployeeSidebar = () => {
@@ -40,6 +40,18 @@ const EmployeeSidebar = () => {
         >
           <Bell size={20} className="mr-2" />
           Notifications
+        </NavLink>
+
+        <NavLink
+          to="/employee-dashboard/documents"
+          className={({ isActive }) =>
+            `flex items-center space-x-2 p-2 rounded-lg ${
+              isActive ? 'bg-gray-900' : 'hover:bg-gray-700'
+            }`
+          }
+        >
+          <FileText size={20} />
+          <span>Documents</span>
         </NavLink>
 
         <NavLink

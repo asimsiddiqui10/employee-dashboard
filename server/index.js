@@ -10,6 +10,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import leaveRoutes from './routes/leaveRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
 
 // Load environment variables
 config();
@@ -38,6 +39,7 @@ app.use('/api/auth', authRouter)
 app.use('/api/employees', employeeRouter)
 app.use('/api/notifications', notificationRoutes)
 app.use('/api/leaves', leaveRoutes)
+app.use('/api/documents', documentRoutes)
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
