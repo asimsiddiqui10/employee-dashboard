@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { Upload } from 'lucide-react';
+import { Upload, User } from 'lucide-react';
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
@@ -30,27 +30,32 @@ const EmployeeDetails = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes('.')) {
-      const [parent, child] = name.split('.');
-      setForm({
-        ...form,
-        [parent]: { ...form[parent], [child]: value }
-      });
-    } else {
-      setForm({ ...form, [name]: value });
-    }
+    setForm(prevForm => {
+      if (name.includes('.')) {
+        const [parent, child] = name.split('.');
+        return {
+          ...prevForm,
+          [parent]: { ...prevForm[parent], [child]: value }
+        };
+      }
+      return { ...prevForm, [name]: value };
+    });
   };
 
   const handleSave = async () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(`http://localhost:3000/api/employees/${employeeId}`, form, {
-        headers: { 'Authorization': `Bearer ${token}` }
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
       setIsEditing(false);
       fetchEmployeeDetails();
     } catch (error) {
       console.error('Error updating employee:', error);
+      alert('Failed to update employee details');
     }
   };
 
@@ -66,15 +71,12 @@ const EmployeeDetails = () => {
     }
   };
 
-  const handleFileSelect = (e) => {
-    setSelectedFile(e.target.files[0]);
-  };
-
-  const handleUploadProfilePic = async () => {
-    if (!selectedFile) return;
+  const handleFileSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
     const formData = new FormData();
-    formData.append('profilePic', selectedFile);
+    formData.append('profilePic', file);
 
     try {
       const token = localStorage.getItem('token');
@@ -88,159 +90,273 @@ const EmployeeDetails = () => {
           }
         }
       );
-      setForm({ ...form, profilePic: response.data.profilePic });
-      setSelectedFile(null);
+      
+      // Update the form state with the new profile pic URL
+      setForm(prev => ({ ...prev, profilePic: response.data.profilePic }));
     } catch (error) {
       console.error('Error uploading profile picture:', error);
+      alert('Failed to upload profile picture');
     }
   };
 
   if (!form) return <div>Loading...</div>;
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-lg">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Employee Details</h2>
-        <div className="space-x-2">
-          {!isEditing ? (
-            <>
+    <div className="bg-white shadow rounded-lg">
+      {/* Header Section */}
+      <div className="relative h-48 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-lg">
+        <div className="absolute w-full h-full flex justify-between items-center px-8">
+          {/* Left side: Profile Picture and Info */}
+          <div className="flex items-center space-x-6">
+            {/* Profile Picture Container */}
+            <div className="relative group">
+              {form?.profilePic ? (
+                <img
+                  src={`http://localhost:3000${form.profilePic}`}
+                  alt={form.name}
+                  className="w-32 h-32 rounded-full border-4 border-white bg-white object-cover"
+                />
+              ) : (
+                <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 flex items-center justify-center">
+                  <User size={64} className="text-gray-400" />
+                </div>
+              )}
+              
+              {/* Upload Button - Positioned over the image when editing */}
+              {isEditing && (
+                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                  <input
+                    type="file"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="profile-upload"
+                    accept="image/*"
+                  />
+                  <label
+                    htmlFor="profile-upload"
+                    className="bg-black/50 hover:bg-black/70 text-white px-3 py-2 rounded-full text-sm cursor-pointer flex items-center"
+                  >
+                    <Upload size={14} className="mr-1" />
+                    Update
+                  </label>
+                </div>
+              )}
+            </div>
+
+            {/* Name and Job Title */}
+            <div className="text-white">
+              <h1 className="text-3xl font-bold mb-2">{form?.name || 'Employee Name'}</h1>
+              <p className="text-xl opacity-90">
+                {form?.position} - {form?.department}
+              </p>
+            </div>
+          </div>
+
+          {/* Right side: Action Buttons */}
+          <div className="flex space-x-3">
+            {!isEditing ? (
+              <>
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-blue-50"
+                >
+                  Edit
+                </button>
+                <button
+                  onClick={() => setShowDeleteModal(true)}
+                  className="bg-white text-red-600 px-4 py-2 rounded hover:bg-red-50"
+                >
+                  Delete
+                </button>
+              </>
+            ) : (
               <button
-                onClick={() => setIsEditing(true)}
-                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                onClick={handleSave}
+                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
               >
-                Edit
+                Save
               </button>
-              <button
-                onClick={() => setShowDeleteModal(true)}
-                className="border border-red-500 text-red-500 px-4 py-2 rounded hover:text-red-600 hover:border-red-600"
-              >
-                Delete
-              </button>
-            </>
-          ) : (
+            )}
             <button
-              onClick={handleSave}
-              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+              onClick={() => navigate('/admin-dashboard/employees')}
+              className="bg-white text-gray-700 px-4 py-2 rounded hover:bg-gray-50"
             >
-              Save
+              Back to List
             </button>
-          )}
-          <button
-            onClick={() => navigate('/admin-dashboard/employees')}
-            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
-          >
-            Back to List
-          </button>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="col-span-full flex flex-col items-center gap-4">
-          <div className="w-32 h-32 rounded-full overflow-hidden border-2 border-gray-200">
-            <img
-              src={form.profilePic ? `http://localhost:3000${form.profilePic}` : '/default-profile.png'}
-              alt="Profile"
-              className="w-full h-full object-cover"
-            />
+      {/* Main Content */}
+      <div className="p-8">
+        {/* Personal Information */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Personal Information</h2>
+          <div className="grid grid-cols-2 gap-4">
+            {isEditing ? (
+              <>
+                <input
+                  type="text"
+                  name="employeeId"
+                  value={form?.employeeId || ''}
+                  onChange={handleInputChange}
+                  className="p-2 border rounded"
+                  placeholder="Employee ID"
+                />
+                <input
+                  type="email"
+                  name="email"
+                  value={form?.email || ''}
+                  onChange={handleInputChange}
+                  className="p-2 border rounded"
+                  placeholder="Email"
+                />
+                <div>
+                  <p className="text-sm text-gray-600">Phone Number</p>
+                  <input
+                    type="text"
+                    name="phoneNumber"
+                    value={form?.phoneNumber || ''}
+                    onChange={handleInputChange}
+                    className="p-2 border rounded"
+                    placeholder="Phone Number"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Date of Birth</p>
+                  <input
+                    type="date"
+                    name="dateOfBirth"
+                    value={form?.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''}
+                    onChange={handleInputChange}
+                    className="p-2 border rounded"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Gender</p>
+                  <input
+                    type="text"
+                    name="gender"
+                    value={form?.gender || ''}
+                    onChange={handleInputChange}
+                    className="p-2 border rounded"
+                    placeholder="Gender"
+                  />
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Nationality</p>
+                  <input
+                    type="text"
+                    name="nationality"
+                    value={form?.nationality || ''}
+                    onChange={handleInputChange}
+                    className="p-2 border rounded"
+                    placeholder="Nationality"
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div>
+                  <p className="text-sm text-gray-600">Employee ID</p>
+                  <p className="font-medium">{form?.employeeId}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Email</p>
+                  <p className="font-medium">{form?.email}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Phone Number</p>
+                  <p className="font-medium">{form?.phoneNumber || 'Not provided'}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Date of Birth</p>
+                  <p className="font-medium">
+                    {form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Gender</p>
+                  <p className="font-medium">{form?.gender}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-gray-600">Nationality</p>
+                  <p className="font-medium">{form?.nationality || 'Not provided'}</p>
+                </div>
+              </>
+            )}
           </div>
-          {isEditing && (
-            <div className="flex items-center gap-2">
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="profile-pic-input"
-              />
-              <label
-                htmlFor="profile-pic-input"
-                className="cursor-pointer bg-gray-100 hover:bg-gray-200 px-4 py-2 rounded flex items-center gap-2"
-              >
-                <Upload size={16} />
-                Choose File
-              </label>
-              {selectedFile && (
-                <button
-                  onClick={handleUploadProfilePic}
-                  className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                >
-                  Upload
-                </button>
-              )}
+        </div>
+
+        {/* Work Information */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Work Information</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Position</p>
+              <p className="font-medium">{form?.position}</p>
             </div>
-          )}
+            <div>
+              <p className="text-sm text-gray-600">Department</p>
+              <p className="font-medium">{form?.department}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Employment Type</p>
+              <p className="font-medium">{form?.employmentType}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Date of Hire</p>
+              <p className="font-medium">
+                {form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Work Email</p>
+              <p className="font-medium">{form?.workEmail || 'Not provided'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Work Phone</p>
+              <p className="font-medium">{form?.workPhoneNumber || 'Not provided'}</p>
+            </div>
+          </div>
         </div>
 
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Basic Information</h3>
-          <input className="border p-2 rounded w-full mb-2" name="employeeId" value={form.employeeId || ''} onChange={handleInputChange} placeholder="Employee ID" disabled />
-          <input className="border p-2 rounded w-full mb-2" name="name" value={form.name || ''} onChange={handleInputChange} placeholder="Name" disabled={!isEditing} />
-          <select className="border p-2 rounded w-full mb-2" name="gender" value={form.gender || ''} onChange={handleInputChange} disabled={!isEditing}>
-            <option value="">Select Gender</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-            <option value="Other">Other</option>
-          </select>
-          <input className="border p-2 rounded w-full mb-2" name="email" value={form.email || ''} onChange={handleInputChange} placeholder="Email" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="phoneNumber" value={form.phoneNumber || ''} onChange={handleInputChange} placeholder="Phone Number" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="dateOfBirth" type="date" value={form.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''} onChange={handleInputChange} disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="address" value={form.address || ''} onChange={handleInputChange} placeholder="Address" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="ssn" value={form.ssn || ''} onChange={handleInputChange} placeholder="SSN" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="nationality" value={form.nationality || ''} onChange={handleInputChange} placeholder="Nationality" disabled={!isEditing} />
+        {/* Contact Information */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Contact Information</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <p className="text-sm text-gray-600">Address</p>
+              <p className="font-medium">{form?.address || 'Not provided'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">City</p>
+              <p className="font-medium">{form?.city || 'Not provided'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">State</p>
+              <p className="font-medium">{form?.state || 'Not provided'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Zip Code</p>
+              <p className="font-medium">{form?.zipCode || 'Not provided'}</p>
+            </div>
+          </div>
         </div>
 
+        {/* Emergency Contact */}
         <div>
-          <h3 className="text-lg font-semibold mb-2">Education & Certifications</h3>
-          <input className="border p-2 rounded w-full mb-2" name="educationLevel" value={form.educationLevel || ''} onChange={handleInputChange} placeholder="Education Level" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="certifications" value={form.certifications ? form.certifications.join(', ') : ''} onChange={handleInputChange} placeholder="Certifications (comma-separated)" disabled={!isEditing} />
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Emergency Contact</h3>
-          <input className="border p-2 rounded w-full mb-2" name="emergencyContact.name" value={form.emergencyContact?.name || ''} onChange={handleInputChange} placeholder="Emergency Contact Name" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="emergencyContact.phone" value={form.emergencyContact?.phone || ''} onChange={handleInputChange} placeholder="Emergency Contact Phone" disabled={!isEditing} />
-        </div>
-
-        <div>
-          <h3 className="text-lg font-semibold mb-2">Employment Information</h3>
-          <input className="border p-2 rounded w-full mb-2" name="department" value={form.department || ''} onChange={handleInputChange} placeholder="Department" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="position" value={form.position || ''} onChange={handleInputChange} placeholder="Position" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="dateOfHire" type="date" value={form.dateOfHire ? new Date(form.dateOfHire).toISOString().split('T')[0] : ''} onChange={handleInputChange} disabled={!isEditing} />
-          <select className="border p-2 rounded w-full mb-2" name="employmentType" value={form.employmentType || ''} onChange={handleInputChange} disabled={!isEditing}>
-            <option value="">Select Employment Type</option>
-            <option value="Full-time">Full-time</option>
-            <option value="Part-time">Part-time</option>
-            <option value="Contract">Contract</option>
-            <option value="Consultant">Consultant</option>
-          </select>
-          <select className="border p-2 rounded w-full mb-2" name="employmentStatus" value={form.employmentStatus || ''} onChange={handleInputChange} disabled={!isEditing}>
-            <option value="">Select Status</option>
-            <option value="Active">Active</option>
-            <option value="On leave">On leave</option>
-            <option value="Terminated">Terminated</option>
-          </select>
-          <input className="border p-2 rounded w-full mb-2" name="workEmail" value={form.workEmail || ''} onChange={handleInputChange} placeholder="Work Email" disabled={!isEditing} />
-          <input className="border p-2 rounded w-full mb-2" name="workPhoneNumber" value={form.workPhoneNumber || ''} onChange={handleInputChange} placeholder="Work Phone" disabled={!isEditing} />
-          <select 
-            className="border p-2 rounded w-full mb-2" 
-            name="compensationType" 
-            value={form.compensationType || ''} 
-            onChange={handleInputChange} 
-            disabled={!isEditing}
-          >
-            <option value="Monthly Salary">Monthly Salary</option>
-            <option value="Hourly Rate">Hourly Rate</option>
-            <option value="Total Compensation">Total Compensation</option>
-          </select>
-          <input 
-            className="border p-2 rounded w-full mb-2" 
-            name="compensationValue" 
-            type="number" 
-            value={form.compensationValue || ''} 
-            onChange={handleInputChange} 
-            placeholder={`${form.compensationType || 'Compensation'} Amount`}
-            disabled={!isEditing} 
-          />
+          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Emergency Contact</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-gray-600">Name</p>
+              <p className="font-medium">{form?.emergencyContact?.name || 'Not provided'}</p>
+            </div>
+            <div>
+              <p className="text-sm text-gray-600">Phone</p>
+              <p className="font-medium">{form?.emergencyContact?.phone || 'Not provided'}</p>
+            </div>
+          </div>
         </div>
       </div>
 

@@ -2,15 +2,21 @@
 import mongoose from 'mongoose';
 
 const employeeSchema = new mongoose.Schema({
+  // Basic Information
   employeeId: { type: String, required: true, unique: true },
-  role: { type: String, enum: ['admin', 'employee'], default: 'employee', required: true },
   name: { type: String, required: true },
+  role: { type: String, enum: ['admin', 'employee'], default: 'employee', required: true },
   gender: { type: String, enum: ['Male', 'Female', 'Other'], required: true },
-  picture: { type: String },
+  profilePic: { type: String },
   phoneNumber: { type: String },
   dateOfBirth: { type: Date },
   email: { type: String, required: true, unique: true },
+
+  // Personal Information
   address: { type: String },
+  city: { type: String },
+  state: { type: String },
+  zipCode: { type: String },
   ssn: { type: String, required: true, unique: true },
   nationality: { type: String },
   educationLevel: { type: String },
@@ -22,11 +28,14 @@ const employeeSchema = new mongoose.Schema({
   // Work Information
   department: { type: String },
   position: { type: String },
+  jobTitle: { type: String },
+  jobDescription: { type: String }, 
   dateOfHire: { type: Date },
   manager: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
   employmentType: { type: String, enum: ['Part-time', 'Full-time', 'Contract', 'Consultant'] },
   employmentStatus: { type: String, enum: ['Active', 'On leave', 'Terminated'] },
   terminationDate: { type: Date },
+  exportCode: { type: String },
   workEmail: { type: String },
   workPhoneNumber: { type: String },
   compensationType: { 
@@ -43,10 +52,7 @@ const employeeSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  profilePic: {
-    type: String,
-    default: 'default-profile.png'  // default image path
-  },
+
   leaveSummary: {
     totalLeaves: { type: Number, default: 20 },
     leavesTaken: { type: Number, default: 0 },

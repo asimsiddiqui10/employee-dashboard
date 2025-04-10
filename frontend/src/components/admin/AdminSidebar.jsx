@@ -14,7 +14,7 @@ import {
 
 const AdminSidebar = () => {
     return (
-        <div className="fixed top-0 left-0 h-screen w-64 bg-slate-900 text-slate-50 p-4 flex flex-col overflow-y-auto max-w-full md:w-64 sm:w-56 xs:w-48"> 
+        <div className="fixed top-0 left-0 h-screen w-56 bg-slate-900 text-slate-50 p-4 flex flex-col overflow-y-auto"> 
             <div className="mb-6">
                 <h3 className="text-sm md:text-base font-semibold px-4 py-2 truncate">Admin Dashboard</h3>
             </div>

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Plus } from 'lucide-react';
+import { Pencil, Plus, User } from 'lucide-react';
 import AddEmployeeModal from './AddEmployeeModal';
 
 const EmployeeList = () => {
@@ -55,58 +55,99 @@ const EmployeeList = () => {
   };
 
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <div className="container mx-auto px-4">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold">Employee List</h2>
+        <h1 className="text-2xl font-bold">Employees</h1>
         <button
           onClick={() => setShowAddModal(true)}
-          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 flex items-center gap-2"
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
         >
-          <Plus size={20} />
+          <Plus size={20} className="mr-2" />
           Add Employee
         </button>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="min-w-full text-xs">
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-2">Employee ID</th>
-              <th className="px-4 py-2">Name</th>
-              <th className="px-4 py-2">Department</th>
-              <th className="px-4 py-2">Position</th>
-              <th className="px-4 py-2">Email</th>
-              <th className="px-4 py-2">Phone</th>
-              <th className="px-4 py-2">Status</th>
-              <th className="px-4 py-2 text-center">Actions</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Employee
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Contact
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Position
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Department
+              </th>
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-white divide-y divide-gray-200">
             {employees.map((employee) => (
-              <tr key={employee.employeeId} className="border-b hover:bg-gray-50">
-                <td className="px-4 py-2">{employee.employeeId}</td>
-                <td className="px-4 py-2">{employee.name}</td>
-                <td className="px-4 py-2">{employee.department}</td>
-                <td className="px-4 py-2">{employee.position}</td>
-                <td className="px-4 py-2">{employee.email}</td>
-                <td className="px-4 py-2">{employee.phoneNumber}</td>
-                <td className="px-4 py-2">
-                  <span className={`px-2 py-1 text-[10px] font-semibold rounded-full ${
-                    employee.employmentStatus === 'Active' 
-                      ? 'bg-green-100 text-green-800'
-                      : employee.employmentStatus === 'On leave'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-red-100 text-red-800'
-                  }`}>
-                    {employee.employmentStatus}
-                  </span>
+              <tr 
+                key={employee._id}
+                className="hover:bg-gray-50 cursor-pointer"
+                onClick={() => handleViewDetails(employee)}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="flex-shrink-0 h-10 w-10">
+                      {employee.profilePic ? (
+                        <img
+                          src={`http://localhost:3000${employee.profilePic}`}
+                          alt={employee.name}
+                          className="h-10 w-10 rounded-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
+                          <User size={20} className="text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {employee.name}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {employee.employeeId}
+                      </div>
+                    </div>
+                  </div>
                 </td>
-                <td className="px-4 py-2 text-center flex gap-1 justify-center">
-                  <button 
-                    onClick={() => handleViewDetails(employee)} 
-                    className="bg-blue-500 text-white px-2 py-1 text-[10px] rounded hover:bg-blue-600"
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">{employee.email}</div>
+                  <div className="text-sm text-gray-500">{employee.phone}</div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {employee.position}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {employee.department}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewDetails(employee);
+                    }}
+                    className="text-blue-600 hover:text-blue-900 mr-4"
                   >
-                    View Details
+                    View
+                  </button>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleEdit(employee);
+                    }}
+                    className="text-indigo-600 hover:text-indigo-900"
+                  >
+                    <Pencil size={16} />
                   </button>
                 </td>
               </tr>
@@ -117,9 +158,8 @@ const EmployeeList = () => {
 
       {showAddModal && (
         <AddEmployeeModal
-          employees={employees}
           onClose={() => setShowAddModal(false)}
-          onSave={handleAddEmployee}
+          onSubmit={handleAddEmployee}
         />
       )}
     </div>
