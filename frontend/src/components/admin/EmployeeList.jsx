@@ -71,19 +71,22 @@ const EmployeeList = () => {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Employee
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Contact
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Position
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Department
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Contact
+              </th>
+              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Employment Type
+              </th>
+              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -95,7 +98,7 @@ const EmployeeList = () => {
                 className="hover:bg-gray-50 cursor-pointer"
                 onClick={() => handleViewDetails(employee)}
               >
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-4 py-2 whitespace-nowrap">
                   <div className="flex items-center">
                     <div className="flex-shrink-0 h-10 w-10">
                       {employee.profilePic ? (
@@ -110,33 +113,44 @@ const EmployeeList = () => {
                         </div>
                       )}
                     </div>
-                    <div className="ml-4">
+                    <div className="ml-3">
                       <div className="text-sm font-medium text-gray-900">
                         {employee.name}
                       </div>
                       <div className="text-sm text-gray-500">
-                        {employee.employeeId}
+                        ID: {employee.employeeId}
                       </div>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm text-gray-900">{employee.email}</div>
-                  <div className="text-sm text-gray-500">{employee.phone}</div>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                   {employee.position}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                   {employee.department}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <div>
+                    <div className="text-sm text-gray-900">{employee.email}</div>
+                    <div className="text-sm text-gray-500">{employee.phone}</div>
+                  </div>
+                </td>
+                <td className="px-4 py-2 whitespace-nowrap">
+                  <span className={`px-2 inline-flex text-sm leading-5 font-semibold rounded-full 
+                    ${employee.employmentType === 'Full-time' ? 'bg-blue-100 text-blue-800' : 
+                      employee.employmentType === 'Part-time' ? 'bg-yellow-100 text-yellow-800' : 
+                      employee.employmentType === 'Contract' ? 'bg-purple-100 text-purple-800' :
+                      'bg-gray-100 text-gray-800'}`}>
+                    {employee.employmentType || 'Not Set'}
+                  </span>
+                </td>
+                <td className="px-4 py-2 whitespace-nowrap text-right text-sm font-medium">
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       handleViewDetails(employee);
                     }}
-                    className="text-blue-600 hover:text-blue-900 mr-4"
+                    className="text-blue-600 hover:text-blue-900 mr-3"
                   >
                     View
                   </button>
