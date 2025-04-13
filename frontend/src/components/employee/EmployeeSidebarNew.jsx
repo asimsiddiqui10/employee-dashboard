@@ -84,7 +84,7 @@ export function EmployeeSidebarNew({ ...props }) {
                     to={item.path}
                     end={item.path === '/employee-dashboard'}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 ${
+                      `flex items-center gap-2 pr-3 ${
                         isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
                       }`
                     }
@@ -104,7 +104,7 @@ export function EmployeeSidebarNew({ ...props }) {
           <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={logout}
-              className="flex w-full items-center gap-2 text-muted-foreground hover:text-foreground"
+              className="flex w-full items-center gap-2 pr-3 text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-4 w-4" />
               <span>Logout</span>

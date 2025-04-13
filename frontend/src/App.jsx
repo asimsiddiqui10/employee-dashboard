@@ -18,6 +18,7 @@ import LeaveManagement from './components/admin/LeaveManagement'
 import LeaveRequest from './components/employee/LeaveRequest'
 import DocumentUpload from './components/admin/DocumentUpload';
 import Documents from './components/employee/Documents';
+import { ThemeProvider } from './context/themeContext';
 
 
 // Error Boundary Component
@@ -49,53 +50,58 @@ class ErrorBoundary extends React.Component {
 
 function App() {
   return (
-    <ErrorBoundary>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/login" />}></Route>
-          <Route path="/login" element={<Login />}></Route>
-          
-          <Route path="/admin-dashboard" element={
-            <PrivateRoutes>
-              <RoleBasedRoutes requiredRole={['admin']}>
-                <AdminDashboard />
-              </RoleBasedRoutes>
-            </PrivateRoutes>
-          }>
-            <Route index element={<AdminHome/>}></Route>
-            <Route path="employees" element={<EmployeeManagement/>}></Route>
-            <Route path="employees/:employeeId" element={<EmployeeDetails/>}></Route>
-            <Route path="notifications" element={<AdminNotifications/>}></Route>
-            <Route path="payroll" element={<UnderProgress/>}></Route>
-            <Route path="reports" element={<UnderProgress/>}></Route>
-            <Route path="training" element={<UnderProgress/>}></Route>
-            <Route path="documents" element={<DocumentUpload />} />
-            <Route path="settings" element={<UnderProgress/>}></Route>
-            <Route path="departments" element={<UnderProgress/>}></Route>
-            <Route path="leave" element={<LeaveManagement />} />
-          </Route>
+    <ThemeProvider>
+      <ErrorBoundary>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/login" />}></Route>
+            <Route path="/login" element={<Login />}></Route>
+            
+            <Route path="/admin-dashboard" element={
+              <PrivateRoutes>
+                <RoleBasedRoutes requiredRole={['admin']}>
+                  <AdminDashboard />
+                </RoleBasedRoutes>
+              </PrivateRoutes>
+            }>
+              <Route index element={<AdminHome/>}></Route>
+              <Route path="employees" element={<EmployeeManagement/>}></Route>
+              <Route path="employees/:employeeId" element={<EmployeeDetails/>}></Route>
+              <Route path="notifications" element={<AdminNotifications/>}></Route>
+              <Route path="analytics" element={<UnderProgress/>}></Route>
+              <Route path="projects" element={<UnderProgress/>}></Route>
+              <Route path="payroll" element={<UnderProgress/>}></Route>
+              <Route path="reports" element={<UnderProgress/>}></Route>
+              <Route path="training" element={<UnderProgress/>}></Route>
+              <Route path="documents" element={<DocumentUpload />} />
+              <Route path="settings" element={<UnderProgress/>}></Route>
+              <Route path="departments" element={<UnderProgress/>}></Route>
+              <Route path="leave" element={<LeaveManagement />} />
+              <Route path="help" element={<UnderProgress/>}></Route>
+            </Route>
 
-          <Route path="/employee-dashboard" element={
-            <PrivateRoutes>
-              <RoleBasedRoutes requiredRole={['employee']}>
-                <EmployeeDashboard />
-              </RoleBasedRoutes>
-            </PrivateRoutes>
-          }>
-            <Route index element={<EmployeeHome />} />
-            <Route path="my-details" element={<MyDetails />} />
-            <Route path="notifications" element={<EmployeeNotifications />} />
-            <Route path="leave" element={<LeaveRequest />} />
-            <Route path="payroll" element={<UnderProgress />} />
-            <Route path="training" element={<UnderProgress />} />
-            <Route path="settings" element={<UnderProgress />} />
-            <Route path="documents" element={<Documents />} />
-          </Route>
+            <Route path="/employee-dashboard" element={
+              <PrivateRoutes>
+                <RoleBasedRoutes requiredRole={['employee']}>
+                  <EmployeeDashboard />
+                </RoleBasedRoutes>
+              </PrivateRoutes>
+            }>
+              <Route index element={<EmployeeHome />} />
+              <Route path="my-details" element={<MyDetails />} />
+              <Route path="notifications" element={<EmployeeNotifications />} />
+              <Route path="leave" element={<LeaveRequest />} />
+              <Route path="payroll" element={<UnderProgress />} />
+              <Route path="training" element={<UnderProgress />} />
+              <Route path="settings" element={<UnderProgress />} />
+              <Route path="documents" element={<Documents />} />
+            </Route>
 
-          <Route path="/unauthorized" element={<Unauthorized />} />
-        </Routes>
-      </BrowserRouter>
-    </ErrorBoundary>
+            <Route path="/unauthorized" element={<Unauthorized />} />
+          </Routes>
+        </BrowserRouter>
+      </ErrorBoundary>
+    </ThemeProvider>
   )
 }
 

@@ -1,17 +1,18 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  LayoutDashboard, 
+  Home, 
   Users, 
   Bell, 
-  Calendar,
   FileText,
-  GraduationCap,
+  Building2,
+  Calendar,
+  BarChart2,
+  FolderKanban,
   Settings,
-  DollarSign,
-  Building,
-  Menu,
-  LogOut
+  HelpCircle,
+  LogOut,
+  Menu
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 
@@ -27,65 +28,78 @@ import {
   SidebarRail,
 } from "../ui/sidebar";
 
-const sidebarData = [
-  {
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/admin-dashboard"
-  },
-  {
-    title: "Employees",
-    icon: Users,
-    path: "/admin-dashboard/employees"
-  },
-  {
-    title: "Notifications",
-    icon: Bell,
-    path: "/admin-dashboard/notifications"
-  },
-  {
-    title: "Payroll",
-    icon: DollarSign,
-    path: "/admin-dashboard/payroll"
-  },
-  {
-    title: "Leave Management",
-    icon: Calendar,
-    path: "/admin-dashboard/leave"
-  },
-  {
-    title: "Documents",
-    icon: FileText,
-    path: "/admin-dashboard/documents"
-  },
-  {
-    title: "Departments",
-    icon: Building,
-    path: "/admin-dashboard/departments"
-  },
-  {
-    title: "Training",
-    icon: GraduationCap,
-    path: "/admin-dashboard/training"
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    path: "/admin-dashboard/settings"
-  }
-];
-
-export function AdminSidebarNew({ ...props }) {
+export function AdminSidebarNew() {
   const { logout } = useAuth();
 
+  const mainMenuItems = [
+    {
+      title: "Dashboard",
+      icon: Home,
+      path: "/admin-dashboard"
+    },
+    {
+      title: "Analytics",
+      icon: BarChart2,
+      path: "/admin-dashboard/analytics"
+    },
+    {
+      title: "Projects",
+      icon: FolderKanban,
+      path: "/admin-dashboard/projects"
+    },
+    {
+      title: "Employees",
+      icon: Users,
+      path: "/admin-dashboard/employees"
+    },
+    {
+      title: "Departments",
+      icon: Building2,
+      path: "/admin-dashboard/departments"
+    },
+    {
+      title: "Leave",
+      icon: Calendar,
+      path: "/admin-dashboard/leave"
+    },
+    {
+      title: "Documents",
+      icon: FileText,
+      path: "/admin-dashboard/documents"
+    },
+    {
+      title: "Notifications",
+      icon: Bell,
+      path: "/admin-dashboard/notifications"
+    }
+  ];
+
+  const bottomMenuItems = [
+    {
+      title: "Settings",
+      icon: Settings,
+      path: "/admin-dashboard/settings"
+    },
+    {
+      title: "Get Help",
+      icon: HelpCircle,
+      path: "/admin-dashboard/help"
+    },
+    {
+      title: "Logout",
+      icon: LogOut,
+      onClick: logout
+    }
+  ];
+
   return (
-    <Sidebar {...props}>
+    <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <div className="flex items-center gap-2">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
                   <Menu className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
@@ -97,18 +111,20 @@ export function AdminSidebarNew({ ...props }) {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarHeader>
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {sidebarData.map((item) => (
+            {mainMenuItems.map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild>
-                  <NavLink 
+                  <NavLink
                     to={item.path}
-                    end={item.path === '/admin-dashboard'}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 ${
-                        isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
+                      `flex w-full items-center gap-2 pr-3 ${
+                        isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
                       }`
                     }
                   >
@@ -121,17 +137,38 @@ export function AdminSidebarNew({ ...props }) {
           </SidebarMenu>
         </SidebarGroup>
       </SidebarContent>
+
       <SidebarFooter>
         <SidebarMenu>
-          <SidebarMenuItem>
-            <SidebarMenuButton 
-              onClick={logout}
-              className="flex w-full items-center gap-2 text-muted-foreground hover:text-foreground"
-            >
-              <LogOut className="h-4 w-4" />
-              <span>Logout</span>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
+          {bottomMenuItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              {item.onClick ? (
+                <SidebarMenuButton 
+                  onClick={item.onClick}
+                  className="flex w-full items-center gap-2 pr-3 text-muted-foreground hover:text-foreground"
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </SidebarMenuButton>
+              ) : (
+                <SidebarMenuButton asChild>
+                  <NavLink
+                    to={item.path}
+                    className={({ isActive }) =>
+                      `flex w-full items-center gap-2 pr-3 ${
+                        isActive
+                          ? "text-foreground"
+                          : "text-muted-foreground hover:text-foreground"
+                      }`
+                    }
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              )}
+            </SidebarMenuItem>
+          ))}
         </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />

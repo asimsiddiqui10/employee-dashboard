@@ -20,10 +20,10 @@ export function RevenueBarChart() {
         <CardDescription>January - June 2024</CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[300px] w-full">
+        <div className="h-[250px] w-full">
           <BarChart
             width={500}
-            height={300}
+            height={250}
             data={chartData}
             margin={{
               top: 20,

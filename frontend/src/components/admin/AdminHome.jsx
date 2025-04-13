@@ -1,10 +1,37 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building, Bell } from "lucide-react";
 import { DonutChartComponent } from '../charts/DonutChart';
 import { RevenueBarChart } from '../charts/BarChart';
 import { VisitorsAreaChart } from '../charts/AreaChart';
+import { ScrollArea } from "../ui/scroll-area";
+
+// Add this notification data
+const notifications = [
+  {
+    id: 1,
+    title: "New Employee Onboarding",
+    description: "Sarah Johnson has completed onboarding process",
+    time: "2 hours ago",
+    type: "info"
+  },
+  {
+    id: 2,
+    title: "System Update",
+    description: "Critical security update scheduled for tonight",
+    time: "5 hours ago",
+    type: "warning"
+  },
+  {
+    id: 3,
+    title: "Meeting Reminder",
+    description: "Monthly review meeting in 30 minutes",
+    time: "30 minutes ago",
+    type: "alert"
+  },
+  // Add more notifications as needed
+];
 
 const AdminHome = () => {
   // Sample data for charts
@@ -28,88 +55,140 @@ const AdminHome = () => {
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Stats Cards */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <Badge variant="outline" className="bg-green-50 text-green-700">
-              <ArrowUpIcon className="mr-1 h-3 w-3" />
-              +12.5%
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">$1,250.00</div>
-            <p className="text-xs text-muted-foreground">
-              Trending up this month
-            </p>
-          </CardContent>
-        </Card>
+    <div className="flex flex-col-reverse gap-4 lg:flex-row">
+      {/* Main Content */}
+      <div className="flex w-full flex-col gap-4 lg:w-3/4">
+        {/* Stats Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
+              <Badge variant="outline" className="bg-green-50 text-green-700">
+                <ArrowUpIcon className="mr-1 h-3 w-3" />
+                +12.5%
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">$1,250.00</div>
+              <p className="text-xs text-muted-foreground">
+                Trending up this month
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">New Customers</CardTitle>
-            <Badge variant="outline" className="bg-red-50 text-red-700">
-              <ArrowDownIcon className="mr-1 h-3 w-3" />
-              -20%
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">1,234</div>
-            <p className="text-xs text-muted-foreground">
-              Down 20% this period
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">New Customers</CardTitle>
+              <Badge variant="outline" className="bg-red-50 text-red-700">
+                <ArrowDownIcon className="mr-1 h-3 w-3" />
+                -20%
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1,234</div>
+              <p className="text-xs text-muted-foreground">
+                Down 20% this period
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
-            <Badge variant="outline" className="bg-green-50 text-green-700">
-              <ArrowUpIcon className="mr-1 h-3 w-3" />
-              +12.5%
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">45,678</div>
-            <p className="text-xs text-muted-foreground">
-              Strong user retention
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
+              <Badge variant="outline" className="bg-green-50 text-green-700">
+                <ArrowUpIcon className="mr-1 h-3 w-3" />
+                +12.5%
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">45,678</div>
+              <p className="text-xs text-muted-foreground">
+                Strong user retention
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-            <Badge variant="outline" className="bg-green-50 text-green-700">
-              <ArrowUpIcon className="mr-1 h-3 w-3" />
-              +4.5%
-            </Badge>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">4.5%</div>
-            <p className="text-xs text-muted-foreground">
-              Steady performance
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <div className="col-span-full lg:col-span-4">
-          <VisitorsAreaChart />
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
+              <Badge variant="outline" className="bg-green-50 text-green-700">
+                <ArrowUpIcon className="mr-1 h-3 w-3" />
+                +4.5%
+              </Badge>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">4.5%</div>
+              <p className="text-xs text-muted-foreground">
+                Steady performance
+              </p>
+            </CardContent>
+          </Card>
         </div>
-        <div className="col-span-full md:col-span-1 lg:col-span-3">
-          <DonutChartComponent />
+
+        {/* Charts Section */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+          <div className="col-span-full lg:col-span-4">
+            <RevenueBarChart />
+          </div>
+          <div className="col-span-full md:col-span-1 lg:col-span-3">
+            <DonutChartComponent />
+          </div>
+        </div>
+
+        {/* Visitors Area Chart */}
+        <div className="grid gap-4">
+          <div className="w-full">
+            <VisitorsAreaChart />
+          </div>
         </div>
       </div>
 
-      {/* Revenue Bar Chart */}
-      <div className="grid gap-4">
-        <RevenueBarChart />
-      </div>
+      {/* Notifications Card */}
+      <Card className="w-full lg:w-1/4">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-semibold">Notifications</CardTitle>
+            <Badge variant="secondary" className="font-normal">
+              {notifications.length} New
+            </Badge>
+          </div>
+          <CardDescription>Recent updates and alerts</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ScrollArea className="h-[calc(100vh-13rem)] pr-4">
+            <div className="flex flex-col gap-4">
+              {notifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="flex flex-col gap-2 rounded-lg border p-4 shadow-sm"
+                >
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium">{notification.title}</h4>
+                    <Badge 
+                      variant={
+                        notification.type === "warning" 
+                          ? "destructive" 
+                          : notification.type === "alert" 
+                          ? "secondary" 
+                          : "outline"
+                      }
+                      className="text-xs"
+                    >
+                      {notification.type}
+                    </Badge>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    {notification.description}
+                  </p>
+                  <span className="text-xs text-muted-foreground">
+                    {notification.time}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </CardContent>
+      </Card>
     </div>
   );
 };

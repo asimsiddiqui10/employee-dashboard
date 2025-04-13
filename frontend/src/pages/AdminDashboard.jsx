@@ -9,6 +9,7 @@ import {
   SidebarTrigger,
 } from "../components/ui/sidebar";
 import { Separator } from "../components/ui/separator";
+import { ThemeToggle } from "../components/ui/theme-toggle";
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -28,6 +29,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="flex items-center gap-4 px-4">
+            <ThemeToggle />
             <button className="text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
             </button>
