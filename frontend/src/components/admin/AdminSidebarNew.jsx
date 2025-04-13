@@ -12,7 +12,9 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  Menu
+  Menu,
+  DollarSign,
+  GraduationCap
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 
@@ -38,29 +40,14 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard"
     },
     {
-      title: "Analytics",
-      icon: BarChart2,
-      path: "/admin-dashboard/analytics"
-    },
-    {
-      title: "Projects",
-      icon: FolderKanban,
-      path: "/admin-dashboard/projects"
-    },
-    {
       title: "Employees",
       icon: Users,
       path: "/admin-dashboard/employees"
     },
     {
-      title: "Departments",
-      icon: Building2,
-      path: "/admin-dashboard/departments"
-    },
-    {
-      title: "Leave",
-      icon: Calendar,
-      path: "/admin-dashboard/leave"
+      title: "Notifications",
+      icon: Bell,
+      path: "/admin-dashboard/notifications"
     },
     {
       title: "Documents",
@@ -68,9 +55,34 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/documents"
     },
     {
-      title: "Notifications",
-      icon: Bell,
-      path: "/admin-dashboard/notifications"
+      title: "Leave",
+      icon: Calendar,
+      path: "/admin-dashboard/leave"
+    },
+    {
+      title: "Payroll",
+      icon: DollarSign,
+      path: "/admin-dashboard/payroll"
+    },
+    {
+      title: "Training",
+      icon: GraduationCap,
+      path: "/admin-dashboard/training"
+    },
+    {
+      title: "Departments",
+      icon: Building2,
+      path: "/admin-dashboard/departments"
+    },
+    {
+      title: "Projects",
+      icon: FolderKanban,
+      path: "/admin-dashboard/projects"
+    },
+    {
+      title: "Analytics",
+      icon: BarChart2,
+      path: "/admin-dashboard/analytics"
     }
   ];
 

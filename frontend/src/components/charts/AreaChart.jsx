@@ -29,10 +29,9 @@ export function VisitorsAreaChart() {
 
   return (
     <Card>
-      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-5 sm:flex-row">
+      <CardHeader className="flex items-center gap-2 space-y-0 border-b py-3 sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
           <CardTitle>Visitors & Revenue Trend</CardTitle>
-          <CardDescription>Monthly analysis for 2024</CardDescription>
         </div>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[160px] rounded-lg sm:ml-auto">
@@ -45,11 +44,11 @@ export function VisitorsAreaChart() {
           </SelectContent>
         </Select>
       </CardHeader>
-      <CardContent className="pt-6">
-        <div className="h-[300px] w-full">
+      <CardContent className="pt-4">
+        <div className="h-[200px] w-full">
           <AreaChart
             width={800}
-            height={300}
+            height={200}
             data={chartData}
             margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
             style={{ width: '100%', height: '100%' }}
@@ -64,7 +63,7 @@ export function VisitorsAreaChart() {
                 <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+            <CartesianGrid strokeOpacity={0.4} vertical={false} />
             <XAxis
               dataKey="date"
               tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short' })}

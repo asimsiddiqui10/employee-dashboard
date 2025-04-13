@@ -30,7 +30,13 @@ const notifications = [
     time: "30 minutes ago",
     type: "alert"
   },
-  // Add more notifications as needed
+  {
+    id: 4,
+    title: "New Employee Onboarding",
+    description: "Sarah Johnson has completed onboarding process",
+    time: "2 hours ago",
+    type: "info"
+  },
 ];
 
 const AdminHome = () => {
@@ -52,6 +58,7 @@ const AdminHome = () => {
     { name: "Active", value: 456 },
     { name: "Inactive", value: 120 },
     { name: "On Leave", value: 89 },
+    { name: "Terminated", value: 10 },
   ];
 
   return (
@@ -59,68 +66,56 @@ const AdminHome = () => {
       {/* Main Content */}
       <div className="flex w-full flex-col gap-4 lg:w-3/4">
         {/* Stats Section */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card>
+        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-700">
-                <ArrowUpIcon className="mr-1 h-3 w-3" />
+              <CardTitle className="text-xs font-medium text-muted-foreground">Total Revenue</CardTitle>
+              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] px-2 py-0.5">
+                <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
                 +12.5%
               </Badge>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">$1,250.00</div>
-              <p className="text-xs text-muted-foreground">
-                Trending up this month
-              </p>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold tracking-tight">$1,250.00</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">New Customers</CardTitle>
-              <Badge variant="outline" className="bg-red-50 text-red-700">
-                <ArrowDownIcon className="mr-1 h-3 w-3" />
+              <CardTitle className="text-xs font-medium text-muted-foreground">New Customers</CardTitle>
+              <Badge variant="outline" className="bg-red-50 text-red-700 text-[10px] px-2 py-0.5">
+                <ArrowDownIcon className="mr-1 h-2.5 w-2.5" />
                 -20%
               </Badge>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foreground">
-                Down 20% this period
-              </p>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold tracking-tight">1,234</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Accounts</CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-700">
-                <ArrowUpIcon className="mr-1 h-3 w-3" />
+              <CardTitle className="text-xs font-medium text-muted-foreground">Accounts</CardTitle>
+              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] px-2 py-0.5">
+                <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
                 +12.5%
               </Badge>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">45,678</div>
-              <p className="text-xs text-muted-foreground">
-                Strong user retention
-              </p>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold tracking-tight">45,678</div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Growth Rate</CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-700">
-                <ArrowUpIcon className="mr-1 h-3 w-3" />
+              <CardTitle className="text-xs font-medium text-muted-foreground">Growth Rate</CardTitle>
+              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] px-2 py-0.5">
+                <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
                 +4.5%
               </Badge>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">4.5%</div>
-              <p className="text-xs text-muted-foreground">
-                Steady performance
-              </p>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold tracking-tight">4.5%</div>
             </CardContent>
           </Card>
         </div>

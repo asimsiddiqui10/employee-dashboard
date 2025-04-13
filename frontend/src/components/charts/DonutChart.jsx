@@ -1,13 +1,36 @@
-import React from 'react';
-import { PieChart, Pie, Label } from 'recharts';
-import { TrendingUp } from 'lucide-react';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card";
+import * as React from "react"
+import { TrendingUp } from "lucide-react"
+import { Label, Pie, PieChart } from "recharts"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
 
 const chartData = [
-  { name: "Active", value: 456, fill: "hsl(var(--chart-1))" },
-  { name: "Inactive", value: 120, fill: "hsl(var(--chart-2))" },
-  { name: "On Leave", value: 89, fill: "hsl(var(--chart-3))" }
+  { department: "Active", value: 250, fill: "hsl(var(--chart-1))" },
+  { department: "Inactive", value: 120, fill: "hsl(var(--chart-2))" },
+  { department: "On Leave", value: 89, fill: "hsl(var(--chart-3))" },
+  { department: "Terminated", value: 60, fill: "hsl(var(--chart-4))" }
 ];
+
+const chartConfig = {
+  value: {
+    label: "Employees",
+  },
+  active: {
+    label: "Active",
+    color: "hsl(var(--chart-1))",
+  },
+  inactive: {
+    label: "Inactive",
+    color: "hsl(var(--chart-2))",
+  },
+  onLeave: {
+    label: "On Leave",
+    color: "hsl(var(--chart-3))",
+  },
+  terminated: {
+    label: "Terminated",
+    color: "hsl(var(--chart-4))",
+  }
+};
 
 export function DonutChartComponent() {
   const totalEmployees = React.useMemo(() => {
@@ -17,19 +40,20 @@ export function DonutChartComponent() {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Employee Status Distribution</CardTitle>
+        <CardTitle>Employee Distribution</CardTitle>
         <CardDescription>Current Month</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
-        <div className="mx-auto aspect-square max-h-[250px]">
-          <PieChart width={250} height={250}>
+        <div className="mx-auto aspect-square max-h-[180px]">
+          <PieChart width={180} height={180}>
             <Pie
               data={chartData}
               dataKey="value"
-              nameKey="name"
-              innerRadius={60}
-              outerRadius={80}
-              paddingAngle={5}
+              nameKey="department"
+              innerRadius={40}
+              outerRadius={65}
+              paddingAngle={0}
+              strokeWidth={0}
             >
               <Label
                 content={({ viewBox }) => {
