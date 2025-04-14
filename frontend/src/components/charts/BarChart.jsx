@@ -28,7 +28,6 @@ export function RevenueBarChart() {
     <Card>
       <CardHeader>
         <CardTitle>Monthly Revenue & Profit</CardTitle>
-        <CardDescription>January - June 2024</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="h-[160px] w-full">
@@ -49,7 +48,6 @@ export function RevenueBarChart() {
                 tickMargin={10}
                 axisLine={false}
                 tickFormatter={(value) => value.slice(0, 3)}
-                stroke="hsl(var(--foreground) / 0.4)"
               />
               <Tooltip
                 cursor={false}
@@ -73,7 +71,7 @@ export function RevenueBarChart() {
         </div>
       </CardContent>
       <CardFooter className="flex-col items-start gap-2 text-sm">
-        <div className="flex gap-2 font-medium leading-none">
+        <div className="flex items-center justify-center w-full gap-2 font-medium leading-none">
           Revenue up by 15.2% <TrendingUp className="h-4 w-4" />
         </div>
       </CardFooter>

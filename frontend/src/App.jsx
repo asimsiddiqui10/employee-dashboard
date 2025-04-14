@@ -91,10 +91,15 @@ function App() {
               <Route path="my-details" element={<MyDetails />} />
               <Route path="notifications" element={<EmployeeNotifications />} />
               <Route path="leave" element={<LeaveRequest />} />
-              <Route path="payroll" element={<UnderProgress />} />
-              <Route path="training" element={<UnderProgress />} />
-              <Route path="settings" element={<UnderProgress />} />
               <Route path="documents" element={<Documents />} />
+              
+              {/* Document section routes */}
+              <Route path="documents/payroll" element={<UnderProgress />} />
+              <Route path="documents/personal" element={<UnderProgress />} />
+              <Route path="documents/company" element={<UnderProgress />} />
+              <Route path="documents/onboarding" element={<UnderProgress />} />
+              <Route path="documents/benefits" element={<UnderProgress />} />
+              <Route path="documents/training" element={<UnderProgress />} />
             </Route>
 
             <Route path="/unauthorized" element={<Unauthorized />} />

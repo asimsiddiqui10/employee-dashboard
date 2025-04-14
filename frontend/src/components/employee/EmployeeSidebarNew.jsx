@@ -7,7 +7,12 @@ import {
   Calendar,
   FileText,
   LogOut,
-  Menu
+  Menu,
+  DollarSign,
+  Users,
+  Building,
+  GraduationCap,
+  Heart
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 
@@ -21,6 +26,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
+  SidebarGroupLabel,
 } from "../ui/sidebar";
 
 const sidebarData = [
@@ -43,11 +49,39 @@ const sidebarData = [
     title: "Leave Management",
     icon: Calendar,
     path: "/employee-dashboard/leave"
+  }
+];
+
+const documentLinks = [
+  {
+    title: "Payroll",
+    icon: DollarSign,
+    path: "/employee-dashboard/documents/payroll"
   },
   {
-    title: "Documents",
-    icon: FileText,
-    path: "/employee-dashboard/documents"
+    title: "Personal",
+    icon: User,
+    path: "/employee-dashboard/documents/personal"
+  },
+  {
+    title: "Company",
+    icon: Building,
+    path: "/employee-dashboard/documents/company"
+  },
+  {
+    title: "Onboarding",
+    icon: GraduationCap,
+    path: "/employee-dashboard/documents/onboarding"
+  },
+  {
+    title: "Benefits",
+    icon: Heart,
+    path: "/employee-dashboard/documents/benefits"
+  },
+  {
+    title: "Training",
+    icon: GraduationCap,
+    path: "/employee-dashboard/documents/training"
   }
 ];
 
@@ -83,6 +117,29 @@ export function EmployeeSidebarNew({ ...props }) {
                   <NavLink 
                     to={item.path}
                     end={item.path === '/employee-dashboard'}
+                    className={({ isActive }) =>
+                      `flex items-center gap-2 pr-3 ${
+                        isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
+                      }`
+                    }
+                  >
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
+                  </NavLink>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarGroup>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Documents</SidebarGroupLabel>
+          <SidebarMenu>
+            {documentLinks.map((item) => (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton asChild>
+                  <NavLink 
+                    to={item.path}
                     className={({ isActive }) =>
                       `flex items-center gap-2 pr-3 ${
                         isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
