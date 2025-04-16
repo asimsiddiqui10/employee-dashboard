@@ -19,6 +19,12 @@ import LeaveRequest from './components/employee/LeaveRequest'
 import DocumentUpload from './components/admin/DocumentUpload';
 import Documents from './components/employee/Documents';
 import { ThemeProvider } from './context/themeContext';
+import { PayrollDocuments } from './components/employee/documents/PayrollDocuments';
+import { PersonalDocuments } from './components/employee/documents/PersonalDocuments';
+import { CompanyDocuments } from './components/employee/documents/CompanyDocuments';
+import { OnboardingDocuments } from './components/employee/documents/OnboardingDocuments';
+import { BenefitsDocuments } from './components/employee/documents/BenefitsDocuments';
+import { TrainingDocuments } from './components/employee/documents/TrainingDocuments';
 
 
 // Error Boundary Component
@@ -94,12 +100,12 @@ function App() {
               <Route path="documents" element={<Documents />} />
               
               {/* Document section routes */}
-              <Route path="documents/payroll" element={<UnderProgress />} />
-              <Route path="documents/personal" element={<UnderProgress />} />
-              <Route path="documents/company" element={<UnderProgress />} />
-              <Route path="documents/onboarding" element={<UnderProgress />} />
-              <Route path="documents/benefits" element={<UnderProgress />} />
-              <Route path="documents/training" element={<UnderProgress />} />
+              <Route path="documents/payroll" element={<PayrollDocuments />} />
+              <Route path="documents/personal" element={<PersonalDocuments />} />
+              <Route path="documents/company" element={<CompanyDocuments />} />
+              <Route path="documents/onboarding" element={<OnboardingDocuments />} />
+              <Route path="documents/benefits" element={<BenefitsDocuments />} />
+              <Route path="documents/training" element={<TrainingDocuments />} />
             </Route>
 
             <Route path="/unauthorized" element={<Unauthorized />} />

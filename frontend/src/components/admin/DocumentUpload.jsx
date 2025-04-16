@@ -1,7 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 
-const DocumentUpload = () => {
+const DOCUMENT_TYPES = {
+  PAYROLL: 'payroll',
+  PERSONAL: 'personal',
+  COMPANY: 'company',
+  ONBOARDING: 'onboarding',
+  BENEFITS: 'benefits',
+  TRAINING: 'training'
+};
+
+export default function DocumentUpload() {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -9,6 +18,7 @@ const DocumentUpload = () => {
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [documentType, setDocumentType] = useState('');
 
   useEffect(() => {
     fetchEmployees();
@@ -32,21 +42,27 @@ const DocumentUpload = () => {
     setError('');
     setSuccess('');
 
-    if (!selectedEmployee) {
-      setError('Please select an employee');
-      return;
-    }
-
     if (!file) {
       setError('Please select a file');
       return;
     }
 
+    if (!documentType) {
+      setError('Please select a document type');
+      return;
+    }
+
+    if (!selectedEmployee) {
+      setError('Please select an employee');
+      return;
+    }
+
     const formData = new FormData();
-    formData.append('document', file);
+    formData.append('file', file);
     formData.append('title', title);
     formData.append('description', description);
     formData.append('employeeId', selectedEmployee);
+    formData.append('documentType', documentType.toLowerCase());
 
     try {
       const token = localStorage.getItem('token');
@@ -56,19 +72,20 @@ const DocumentUpload = () => {
           'Content-Type': 'multipart/form-data'
         }
       });
-      
+
       // Reset form
       setFile(null);
       setTitle('');
       setDescription('');
       setSelectedEmployee('');
+      setDocumentType('');
       setSuccess('Document uploaded successfully');
       
       // Reset file input
       const fileInput = document.querySelector('input[type="file"]');
       if (fileInput) fileInput.value = '';
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error('Upload error:', error.response?.data || error);
       setError(error.response?.data?.message || 'Error uploading document');
     }
   };
@@ -93,7 +110,7 @@ const DocumentUpload = () => {
           >
             <option value="">Select an employee</option>
             {employees.map((employee) => (
-              <option key={employee._id} value={employee._id}>
+              <option key={employee._id} value={employee.user._id}>
                 {employee.name} ({employee.employeeId})
               </option>
             ))}
@@ -127,6 +144,26 @@ const DocumentUpload = () => {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
+            Document Type
+          </label>
+          <select
+            value={documentType}
+            onChange={(e) => setDocumentType(e.target.value)}
+            className="w-full p-2 border rounded focus:ring-indigo-500 focus:border-indigo-500"
+            required
+          >
+            <option value="">Select Document Type</option>
+            <option value={DOCUMENT_TYPES.PAYROLL}>Payroll</option>
+            <option value={DOCUMENT_TYPES.PERSONAL}>Personal</option>
+            <option value={DOCUMENT_TYPES.COMPANY}>Company</option>
+            <option value={DOCUMENT_TYPES.ONBOARDING}>Onboarding</option>
+            <option value={DOCUMENT_TYPES.BENEFITS}>Benefits</option>
+            <option value={DOCUMENT_TYPES.TRAINING}>Training</option>
+          </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
             Upload File
           </label>
           <input
@@ -146,6 +183,4 @@ const DocumentUpload = () => {
       </form>
     </div>
   );
-};
-
-export default DocumentUpload; 
+}

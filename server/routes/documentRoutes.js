@@ -1,12 +1,47 @@
 import express from 'express';
-import { uploadDocument, getEmployeeDocuments, downloadDocument } from '../controllers/documentController.js';
+import { 
+  uploadDocument, 
+  getDocumentsByType,
+  downloadDocument,
+  deleteDocument,
+  getAllDocuments 
+} from '../controllers/documentController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import { roleMiddleware } from '../middleware/roleMiddleware.js';
 import upload from '../middleware/documentUpload.js';
 
 const router = express.Router();
 
-router.post('/upload', authMiddleware, upload.single('document'), uploadDocument);
-router.get('/employee-documents', authMiddleware, getEmployeeDocuments);
-router.get('/download/:id', authMiddleware, downloadDocument);
+// Admin routes
+router.post('/upload', 
+  authMiddleware, 
+  roleMiddleware(['admin']), 
+  upload.single('file'), 
+  uploadDocument
+);
+
+// Get documents by type
+router.get('/type/:documentType', 
+  authMiddleware, 
+  getDocumentsByType
+);
+
+// Get all documents (admin only)
+router.get('/all', 
+  authMiddleware, 
+  roleMiddleware(['admin']), 
+  getAllDocuments
+);
+
+router.get('/download/:id', 
+  authMiddleware, 
+  downloadDocument
+);
+
+router.delete('/:id', 
+  authMiddleware, 
+  roleMiddleware(['admin']), 
+  deleteDocument
+);
 
 export default router; 

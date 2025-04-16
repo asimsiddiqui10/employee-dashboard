@@ -1,6 +1,3 @@
-import mongoose from 'mongoose';
-const Schema = mongoose.Schema;
-
 const documentSchema = new Schema({
   title: { type: String, required: true },
   description: String,
@@ -29,16 +26,4 @@ const documentSchema = new Schema({
 });
 
 documentSchema.index({ documentType: 1 });
-documentSchema.index({ employeeId: 1, documentType: 1 });
-
-// Only try to delete if the model exists
-try {
-  if (mongoose.models.Document) {
-    mongoose.deleteModel('Document');
-  }
-} catch (error) {
-  console.error('Error while cleaning up Document model:', error);
-}
-
-const Document = mongoose.model('Document', documentSchema);
-export default Document; 
+documentSchema.index({ employeeId: 1, documentType: 1 }); 
