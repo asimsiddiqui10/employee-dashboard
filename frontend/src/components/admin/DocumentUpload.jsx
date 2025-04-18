@@ -1,5 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Upload } from "lucide-react";
 
 const DOCUMENT_TYPES = {
   PAYROLL: 'payroll',
@@ -91,96 +110,100 @@ export default function DocumentUpload() {
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-6">Upload Document</h2>
-      
-      <form onSubmit={handleUpload} className="space-y-4 max-w-lg bg-white p-6 rounded-lg shadow">
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-        {success && <div className="text-green-500 text-sm">{success}</div>}
-        
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Select Employee
-          </label>
-          <select
-            value={selectedEmployee}
-            onChange={(e) => setSelectedEmployee(e.target.value)}
-            className="w-full p-2 border rounded focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          >
-            <option value="">Select an employee</option>
-            {employees.map((employee) => (
-              <option key={employee._id} value={employee.user._id}>
-                {employee.name} ({employee.employeeId})
-              </option>
-            ))}
-          </select>
-        </div>
+    <Card className="max-w-2xl mx-auto">
+      <CardHeader>
+        <CardTitle>Upload Document</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleUpload} className="space-y-6">
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          {success && (
+            <Alert className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-200 dark:border-green-800">
+              <AlertDescription>{success}</AlertDescription>
+            </Alert>
+          )}
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Document Title
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-2 border rounded focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="employee">Select Employee</Label>
+            <Select
+              value={selectedEmployee}
+              onValueChange={setSelectedEmployee}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select an employee" />
+              </SelectTrigger>
+              <SelectContent>
+                {employees.map((employee) => (
+                  <SelectItem key={employee._id} value={employee.user._id}>
+                    {employee.name} ({employee.employeeId})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Description
-          </label>
-          <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-2 border rounded focus:ring-indigo-500 focus:border-indigo-500"
-            rows="3"
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="title">Document Title</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Enter document title"
+              required
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Document Type
-          </label>
-          <select
-            value={documentType}
-            onChange={(e) => setDocumentType(e.target.value)}
-            className="w-full p-2 border rounded focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          >
-            <option value="">Select Document Type</option>
-            <option value={DOCUMENT_TYPES.PAYROLL}>Payroll</option>
-            <option value={DOCUMENT_TYPES.PERSONAL}>Personal</option>
-            <option value={DOCUMENT_TYPES.COMPANY}>Company</option>
-            <option value={DOCUMENT_TYPES.ONBOARDING}>Onboarding</option>
-            <option value={DOCUMENT_TYPES.BENEFITS}>Benefits</option>
-            <option value={DOCUMENT_TYPES.TRAINING}>Training</option>
-          </select>
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Description</Label>
+            <Textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Enter document description"
+              className="min-h-[100px]"
+            />
+          </div>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Upload File
-          </label>
-          <input
-            type="file"
-            onChange={(e) => setFile(e.target.files[0])}
-            className="w-full p-2 border rounded focus:ring-indigo-500 focus:border-indigo-500"
-            required
-          />
-        </div>
+          <div className="space-y-2">
+            <Label htmlFor="documentType">Document Type</Label>
+            <Select
+              value={documentType}
+              onValueChange={setDocumentType}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select document type" />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
+                  <SelectItem key={key} value={value}>
+                    {key.charAt(0) + key.slice(1).toLowerCase()}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-        <button
-          type="submit"
-          className="w-full bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-        >
-          Upload Document
-        </button>
-      </form>
-    </div>
+          <div className="space-y-2">
+            <Label htmlFor="file">Upload File</Label>
+            <Input
+              id="file"
+              type="file"
+              onChange={(e) => setFile(e.target.files[0])}
+              className="cursor-pointer"
+              required
+            />
+          </div>
+
+          <Button type="submit" className="w-full">
+            <Upload className="w-4 h-4 mr-2" />
+            Upload Document
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 }

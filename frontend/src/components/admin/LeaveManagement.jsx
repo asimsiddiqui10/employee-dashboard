@@ -1,5 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, CheckCircle, XCircle, Calendar } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 const LeaveManagement = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -34,7 +60,6 @@ const LeaveManagement = () => {
       );
 
       if (response.data.success) {
-        // Update the local state immediately
         setLeaveRequests(prevRequests => 
           prevRequests.map(request => 
             request._id === id 
@@ -51,70 +76,140 @@ const LeaveManagement = () => {
     }
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  const getStatusBadgeVariant = (status) => {
+    switch (status) {
+      case 'Approved':
+        return 'success';
+      case 'Rejected':
+        return 'destructive';
+      default:
+        return 'info';
+    }
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[calc(100vh-4rem)]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-6">Leave Management</h2>
-      
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Employee</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Reason</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {leaveRequests.map((request) => (
-              <tr key={request._id}>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {request.employee.name} ({request.employee.employeeId})
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">{request.leaveType}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">{request.totalDays}</td>
-                <td className="px-6 py-4 whitespace-nowrap">{request.reason}</td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                    ${request.status === 'Approved' ? 'bg-green-100 text-green-800' : 
-                      request.status === 'Rejected' ? 'bg-red-100 text-red-800' : 
-                      'bg-yellow-100 text-yellow-800'}`}>
-                    {request.status}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  {request.status === 'Pending' && (
-                    <div className="space-x-2">
-                      <button
-                        onClick={() => handleStatusUpdate(request._id, 'Approved')}
-                        className="bg-green-500 text-white px-3 py-1 rounded-md text-sm hover:bg-green-600"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        onClick={() => handleStatusUpdate(request._id, 'Rejected')}
-                        className="bg-red-500 text-white px-3 py-1 rounded-md text-sm hover:bg-red-600"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
+    <Card className="mx-auto max-w-7xl">
+      <CardHeader>
+        <CardTitle>Leave Management</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        <ScrollArea className="rounded-md border">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="min-w-[150px]">Employee</TableHead>
+                <TableHead className="min-w-[80px]">Type</TableHead>
+                <TableHead className="min-w-[90px]">Dates</TableHead>
+                <TableHead className="min-w-[50px]">Days</TableHead>
+                <TableHead className="hidden md:table-cell min-w-[120px]">Reason</TableHead>
+                <TableHead className="min-w-[80px]">Status</TableHead>
+                <TableHead className="min-w-[120px]">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {leaveRequests.map((request) => (
+                <TableRow key={request._id}>
+                  <TableCell className="font-medium min-w-[150px]">
+                    {request.employee.name}
+                    <br />
+                    <span className="text-sm text-muted-foreground">
+                      {request.employee.employeeId}
+                    </span>
+                  </TableCell>
+                  <TableCell className="min-w-[80px]">{request.leaveType}</TableCell>
+                  <TableCell className="min-w-[90px]">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="flex items-center gap-1 cursor-pointer">
+                            <Calendar className="h-4 w-4" />
+                            <span>{formatDate(request.startDate)}</span>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>From: {new Date(request.startDate).toLocaleDateString()}</p>
+                          <p>To: {new Date(request.endDate).toLocaleDateString()}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell className="min-w-[50px]">{request.totalDays}</TableCell>
+                  <TableCell className="hidden md:table-cell min-w-[120px] max-w-[120px] truncate">
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger className="cursor-pointer">
+                          <span className="truncate">{request.reason}</span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p className="max-w-xs">{request.reason}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </TableCell>
+                  <TableCell className="min-w-[80px]">
+                    <Badge 
+                      variant={getStatusBadgeVariant(request.status)}
+                      className={cn(
+                        request.status === 'Approved' && "bg-green-500 hover:bg-green-600",
+                        request.status === 'Rejected' && "bg-red-500 hover:bg-red-600",
+                        request.status === 'Pending' && "bg-blue-500 hover:bg-blue-600"
+                      )}
+                    >
+                      {request.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="min-w-[120px]">
+                    {request.status === 'Pending' && (
+                      <div className="flex space-x-2">
+                        <Button
+                          size="icon"
+                          className="bg-green-500 hover:bg-green-600 md:w-auto md:px-3"
+                          onClick={() => handleStatusUpdate(request._id, 'Approved')}
+                        >
+                          <CheckCircle className="h-4 w-4" />
+                          <span className="hidden md:inline md:ml-1">Approve</span>
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant="destructive"
+                          className="md:w-auto md:px-3"
+                          onClick={() => handleStatusUpdate(request._id, 'Rejected')}
+                        >
+                          <XCircle className="h-4 w-4" />
+                          <span className="hidden md:inline md:ml-1">Reject</span>
+                        </Button>
+                      </div>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      </CardContent>
+    </Card>
   );
 };
 

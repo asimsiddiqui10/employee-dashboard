@@ -1,6 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Send, Tag, Link as LinkIcon, AlertCircle, CheckCircle } from 'lucide-react';
+import { Send, Tag, Link as LinkIcon, X, Check, ChevronDown } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+} from "@/components/ui/command";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 
 const AdminNotifications = () => {
   const [employees, setEmployees] = useState([]);
@@ -35,8 +63,8 @@ const AdminNotifications = () => {
     setForm({ ...form, [name]: value });
   };
 
-  const handleEmployeeSelect = (e) => {
-    setSelectedEmployees(Array.from(e.target.selectedOptions, option => option.value));
+  const handleEmployeeSelect = (values) => {
+    setSelectedEmployees(Array.isArray(values) ? values : [values]);
   };
 
   const addTag = () => {
@@ -86,85 +114,185 @@ const AdminNotifications = () => {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-3 bg-white rounded-lg shadow-sm">
-      <h2 className="text-lg font-semibold mb-3 text-gray-800">Send Notifications</h2>
-      
-      {status.message && (
-        <div className={`p-2 mb-3 rounded flex items-center gap-2 text-sm ${
-          status.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-          {status.type === 'success' ? <CheckCircle size={16} /> : <AlertCircle size={16} />}
-          {status.message}
-        </div>
-      )}
-      
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div>
-          <label className="text-sm font-medium text-gray-700">Title*</label>
-          <input type="text" name="title" value={form.title} onChange={handleInputChange}
-            className="mt-1 w-full p-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400" required />
-        </div>
+    <Card className="max-w-3xl mx-auto">
+      <CardHeader>
+        <CardTitle>Send Notifications</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {status.message && (
+          <Alert variant={status.type === 'success' ? 'default' : 'destructive'} className="mb-6">
+            <AlertDescription className="flex items-center gap-2">
+              {status.type === 'success' ? <Check className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+              {status.message}
+            </AlertDescription>
+          </Alert>
+        )}
         
-        <div>
-          <label className="text-sm font-medium text-gray-700">Message*</label>
-          <textarea name="message" value={form.message} onChange={handleInputChange}
-            className="mt-1 w-full p-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 h-20" required />
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium text-gray-700">Recipients*</label>
-          <select multiple value={selectedEmployees} onChange={handleEmployeeSelect}
-            className="mt-1 w-full p-2 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400 h-28" required>
-            {isLoading ? <option disabled>Loading...</option> :
-              employees.map(employee => (
-                <option key={employee._id} value={employee._id}>{employee.name} ({employee.email})</option>
-              ))}
-          </select>
-          <p className="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple</p>
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium text-gray-700">Tags</label>
-          <div className="flex mt-1">
-            <input type="text" value={currentTag} onChange={(e) => setCurrentTag(e.target.value)}
-              className="flex-1 p-2 text-sm border border-gray-200 rounded-l focus:ring-1 focus:ring-blue-400"
-              placeholder="Add a tag" onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())} />
-            <button type="button" onClick={addTag}
-              className="px-3 py-2 bg-gray-50 hover:bg-gray-100 border border-l-0 border-gray-200 rounded-r">
-              <Tag size={16} className="text-gray-600" />
-            </button>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title*</Label>
+            <Input
+              id="title"
+              name="title"
+              value={form.title}
+              onChange={handleInputChange}
+              required
+            />
           </div>
           
-          {form.tags.length > 0 && (
-            <div className="flex flex-wrap gap-2 mt-2">
-              {form.tags.map(tag => (
-                <span key={tag} className="bg-blue-50 px-2 py-1 rounded-full text-xs flex items-center">
-                  {tag}
-                  <button type="button" onClick={() => removeTag(tag)}
-                    className="ml-1 text-blue-500 hover:text-blue-700">×</button>
-                </span>
-              ))}
-            </div>
-          )}
-        </div>
-        
-        <div>
-          <label className="text-sm font-medium text-gray-700">Link</label>
-          <div className="flex items-center relative mt-1">
-            <LinkIcon size={16} className="absolute left-2 text-gray-400" />
-            <input type="url" name="link" value={form.link} onChange={handleInputChange}
-              className="w-full p-2 pl-8 text-sm border border-gray-200 rounded focus:ring-1 focus:ring-blue-400"
-              placeholder="https://example.com" />
+          <div className="space-y-2">
+            <Label htmlFor="message">Message*</Label>
+            <Textarea
+              id="message"
+              name="message"
+              value={form.message}
+              onChange={handleInputChange}
+              className="min-h-[100px]"
+              required
+            />
           </div>
-        </div>
-        
-        <button type="submit" disabled={isLoading}
-          className={`w-full p-2 bg-blue-500 text-white rounded flex items-center justify-center gap-2 hover:bg-blue-600 
-            ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-          <Send size={16} />
-          {isLoading ? 'Sending...' : 'Send'}
-        </button>
-      </form>
-    </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="recipients">Recipients*</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  className="w-full justify-between"
+                >
+                  {selectedEmployees.length > 0
+                    ? `${selectedEmployees.length} recipient${selectedEmployees.length === 1 ? '' : 's'} selected`
+                    : "Select recipients"}
+                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-full p-0">
+                <Command>
+                  <CommandInput placeholder="Search employees..." />
+                  <CommandEmpty>No employee found.</CommandEmpty>
+                  <CommandGroup>
+                    {isLoading ? (
+                      <CommandItem disabled>Loading...</CommandItem>
+                    ) : (
+                      employees.map((employee) => (
+                        <CommandItem
+                          key={employee._id}
+                          onSelect={() => {
+                            const isSelected = selectedEmployees.includes(employee._id);
+                            const newSelected = isSelected
+                              ? selectedEmployees.filter((id) => id !== employee._id)
+                              : [...selectedEmployees, employee._id];
+                            setSelectedEmployees(newSelected);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              selectedEmployees.includes(employee._id) ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {employee.name} ({employee.email})
+                        </CommandItem>
+                      ))
+                    )}
+                  </CommandGroup>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            <div className="flex flex-wrap gap-2 mt-2">
+              {selectedEmployees.map((empId) => {
+                const employee = employees.find((emp) => emp._id === empId);
+                return (
+                  <Badge
+                    key={empId}
+                    variant="secondary"
+                    className="flex items-center gap-1"
+                  >
+                    {employee?.name}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto p-0 px-1 hover:bg-transparent"
+                      onClick={() => {
+                        setSelectedEmployees(selectedEmployees.filter((id) => id !== empId));
+                      }}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                );
+              })}
+            </div>
+            <p className="text-sm text-muted-foreground">Select one or more recipients</p>
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Tags</Label>
+            <div className="flex gap-2">
+              <Input
+                value={currentTag}
+                onChange={(e) => setCurrentTag(e.target.value)}
+                placeholder="Add a tag"
+                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={addTag}
+              >
+                <Tag className="h-4 w-4" />
+              </Button>
+            </div>
+            
+            {form.tags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {form.tags.map(tag => (
+                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                    {tag}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-4 w-4 p-0 hover:bg-transparent"
+                      onClick={() => removeTag(tag)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="link">Link</Label>
+            <div className="relative">
+              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                id="link"
+                name="link"
+                type="url"
+                value={form.link}
+                onChange={handleInputChange}
+                className="pl-9"
+                placeholder="https://example.com"
+              />
+            </div>
+          </div>
+          
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={isLoading}
+          >
+            <Send className="mr-2 h-4 w-4" />
+            {isLoading ? 'Sending...' : 'Send'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
   );
 };
 
