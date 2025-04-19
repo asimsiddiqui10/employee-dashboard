@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { Pencil, Plus, User } from 'lucide-react';
+import { 
+  ChevronDown, 
+  MoreHorizontal,
+  Plus,
+  Search,
+  UserPlus,
+  Mail,
+  Phone
+} from 'lucide-react';
 import AddEmployeeModal from './AddEmployeeModal';
 import {
   Table,
@@ -19,13 +27,41 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
+  const [globalFilter, setGlobalFilter] = useState('');
+  const [sorting, setSorting] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchEmployees();
+  }, []);
+
+  const fetchEmployees = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get('http://localhost:3000/api/employees', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setEmployees(response.data);
+    } catch (error) {
+      console.error('Error fetching employees:', error);
+    }
+  };
 
   const handleViewDetails = (employee) => {
     navigate(`/admin-dashboard/employees/${employee.employeeId}`);
@@ -38,102 +74,58 @@ const EmployeeList = () => {
 
   const columns = [
     {
-      accessorKey: "employee",
-      header: "Employee",
-      cell: ({ row }) => {
-        const employee = row.original;
-        return (
-          <div className="flex items-center">
-            <div className="flex-shrink-0 h-10 w-10">
-              {employee.profilePic ? (
-                <img
-                  src={`http://localhost:3000${employee.profilePic}`}
-                  alt={employee.name}
-                  className="h-10 w-10 rounded-full object-cover"
-                />
-              ) : (
-                <div className="h-10 w-10 rounded-full bg-gray-100 flex items-center justify-center">
-                  <User size={20} className="text-gray-400" />
-                </div>
-              )}
-            </div>
-            <div className="ml-3">
-              <div className="text-sm font-medium text-gray-900">
-                {employee.name}
-              </div>
-              <div className="text-sm text-gray-500">
-                ID: {employee.employeeId}
-              </div>
-            </div>
-          </div>
-        );
-      },
+      accessorKey: "name",
+      header: "Name",
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("name")}</div>
+      ),
+    },
+    {
+      accessorKey: "email",
+      header: ({ column }) => (
+        <div className="flex items-center">
+          <Mail className="mr-2 h-4 w-4" />
+          Email
+        </div>
+      ),
+    },
+    {
+      accessorKey: "phone",
+      header: ({ column }) => (
+        <div className="flex items-center">
+          <Phone className="mr-2 h-4 w-4" />
+          Phone
+        </div>
+      ),
     },
     {
       accessorKey: "position",
       header: "Position",
     },
     {
-      accessorKey: "department",
-      header: "Department",
+      accessorKey: "status",
+      header: "Status",
+      cell: ({ row }) => (
+        <Badge 
+          variant={row.getValue("status") === "Active" ? "success" : "secondary"}
+          className={
+            row.getValue("status") === "Active" 
+              ? "bg-green-100 text-green-800" 
+              : "bg-blue-100 text-blue-800"
+          }
+        >
+          {row.getValue("status")}
+        </Badge>
+      ),
     },
     {
-      accessorKey: "contact",
-      header: "Contact",
-      cell: ({ row }) => {
-        const employee = row.original;
-        return (
-          <div>
-            <div className="text-sm text-gray-900">{employee.email}</div>
-            <div className="text-sm text-gray-500">{employee.phone}</div>
-          </div>
-        );
-      },
-    },
-    {
-      accessorKey: "employmentType",
-      header: "Employment Type",
-      cell: ({ row }) => {
-        const type = row.getValue("employmentType");
-        return (
-          <span className={`px-2 inline-flex text-sm leading-5 font-semibold rounded-full 
-            ${type === 'Full-time' ? 'bg-blue-100 text-blue-800' : 
-              type === 'Part-time' ? 'bg-yellow-100 text-yellow-800' : 
-              type === 'Contract' ? 'bg-purple-100 text-purple-800' :
-              'bg-gray-100 text-gray-800'}`}>
-            {type || 'Not Set'}
-          </span>
-        );
-      },
-    },
-    {
-      id: "actions",
-      header: () => <div className="text-right">Actions</div>,
-      cell: ({ row }) => {
-        const employee = row.original;
-        return (
-          <div className="text-right">
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleViewDetails(employee);
-              }}
-              className="text-blue-600 hover:text-blue-900 mr-3"
-            >
-              View
-            </button>
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                handleEdit(employee);
-              }}
-              className="text-indigo-600 hover:text-indigo-900"
-            >
-              <Pencil size={16} />
-            </button>
-          </div>
-        );
-      },
+      accessorKey: "role",
+      header: "Role",
+      cell: ({ row }) => (
+        <Badge variant="outline" className="font-medium">
+          {row.getValue("role")}
+        </Badge>
+      ),
     },
   ];
 
@@ -144,107 +136,146 @@ const EmployeeList = () => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    state: {
+      sorting,
+      globalFilter,
+    },
+    onSortingChange: setSorting,
+    onGlobalFilterChange: setGlobalFilter,
   });
-
-  useEffect(() => {
-    fetchEmployees();
-  }, []);
-
-  const fetchEmployees = async () => {
-    try {
-      console.log('Fetching employees from API...');
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/employees', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      console.log('API response:', response.data);
-      setEmployees(response.data);
-    } catch (error) {
-      console.error('Error fetching employees:', error);
-    }
-  };
 
   const handleAddEmployee = async (formData) => {
     try {
       const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/employees', formData, {
-        headers: { 'Authorization': `Bearer ${token}` }
+      console.log('Sending employee data:', formData);
+
+      // Use the existing endpoint
+      const response = await axios.post('http://localhost:3000/api/employees', formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
       });
+
+      console.log('Employee created successfully:', response.data);
       setShowAddModal(false);
       fetchEmployees();
+
+      // Show success message with login credentials
+      alert(`Employee created successfully!\nLogin credentials:\nEmail: ${formData.email}\nPassword: ${formData.password}`);
     } catch (error) {
-      console.error('Error:', error);
-      alert(error.response?.data?.message || 'An error occurred');
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status
+      });
+      alert(error.response?.data?.message || 'Failed to add employee. Please check all required fields.');
     }
   };
 
   return (
-    <div className="container mx-auto px-4">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Employees</h1>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center"
-        >
-          <Plus size={20} className="mr-2" />
-          Add Employee
-        </button>
-      </div>
-
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <Table>
-          <TableHeader>
-            {table.getHeaderGroups().map((headerGroup) => (
-              <TableRow key={headerGroup.id}>
-                {headerGroup.headers.map((header) => (
-                  <TableHead key={header.id}>
-                    {header.isPlaceholder
-                      ? null
-                      : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext()
-                        )}
-                  </TableHead>
-                ))}
-              </TableRow>
-            ))}
-          </TableHeader>
-          <TableBody>
-            {table.getRowModel().rows?.length ? (
-              table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
-                  className="hover:bg-gray-50 cursor-pointer"
-                  onClick={() => handleViewDetails(row.original)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle>Employee List</CardTitle>
+            <CardDescription>Manage your employees and their roles here.</CardDescription>
+          </div>
+          <Button onClick={() => setShowAddModal(true)} className="ml-auto">
+            <UserPlus className="mr-2 h-4 w-4" />
+            Add Employee
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="flex items-center gap-4 py-4">
+          <div className="flex-1">
+            <Input
+              placeholder="Search employees..."
+              value={globalFilter ?? ""}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className="max-w-sm"
+            />
+          </div>
+        </div>
+        <div className="rounded-md border">
+          <Table>
+            <TableHeader>
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow key={headerGroup.id}>
+                  {headerGroup.headers.map((header) => (
+                    <TableHead 
+                      key={header.id}
+                      onClick={header.column.getToggleSortingHandler()}
+                      className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
+                    >
+                      {header.isPlaceholder
+                        ? null
+                        : flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                      {{
+                        asc: " 🔼",
+                        desc: " 🔽",
+                      }[header.column.getIsSorted()] ?? null}
+                    </TableHead>
                   ))}
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
-                  No results.
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows?.length ? (
+                table.getRowModel().rows.map((row) => (
+                  <TableRow
+                    key={row.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => handleViewDetails(row.original)}
+                  >
+                    {row.getVisibleCells().map((cell) => (
+                      <TableCell key={cell.id}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={columns.length} className="h-24 text-center">
+                    No results.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+        <div className="flex items-center justify-end space-x-2 py-4">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.previousPage()}
+            disabled={!table.getCanPreviousPage()}
+          >
+            Previous
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => table.nextPage()}
+            disabled={!table.getCanNextPage()}
+          >
+            Next
+          </Button>
+        </div>
 
-      {showAddModal && (
-        <AddEmployeeModal
-          onClose={() => setShowAddModal(false)}
-          onSubmit={handleAddEmployee}
-        />
-      )}
-    </div>
+        {showAddModal && (
+          <AddEmployeeModal
+            onClose={() => setShowAddModal(false)}
+            onSubmit={handleAddEmployee}
+          />
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
