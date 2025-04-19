@@ -8,9 +8,10 @@ import {
   Search,
   UserPlus,
   Mail,
-  Phone
+  Phone,
+  ArrowLeft
 } from 'lucide-react';
-import AddEmployeeModal from './AddEmployeeModal';
+import AddEmployeeForm from './AddEmployeeForm';
 import {
   Table,
   TableBody,
@@ -44,7 +45,7 @@ const EmployeeList = () => {
   const [sorting, setSorting] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -81,6 +82,13 @@ const EmployeeList = () => {
       ),
     },
     {
+      accessorKey: "employeeId",
+      header: "Employee ID",
+      cell: ({ row }) => (
+        <div className="font-medium">{row.getValue("employeeId")}</div>
+      ),
+    },
+    {
       accessorKey: "email",
       header: ({ column }) => (
         <div className="flex items-center">
@@ -90,7 +98,7 @@ const EmployeeList = () => {
       ),
     },
     {
-      accessorKey: "phone",
+      accessorKey: "phoneNumber",
       header: ({ column }) => (
         <div className="flex items-center">
           <Phone className="mr-2 h-4 w-4" />
@@ -103,28 +111,26 @@ const EmployeeList = () => {
       header: "Position",
     },
     {
-      accessorKey: "status",
+      accessorKey: "employmentStatus",
       header: "Status",
       cell: ({ row }) => (
         <Badge 
-          variant={row.getValue("status") === "Active" ? "success" : "secondary"}
+          variant={row.getValue("employmentStatus") === "Active" ? "success" : "secondary"}
           className={
-            row.getValue("status") === "Active" 
+            row.getValue("employmentStatus") === "Active" 
               ? "bg-green-100 text-green-800" 
               : "bg-blue-100 text-blue-800"
           }
         >
-          {row.getValue("status")}
+          {row.getValue("employmentStatus")}
         </Badge>
       ),
     },
     {
-      accessorKey: "role",
-      header: "Role",
+      accessorKey: "department",
+      header: "Department",
       cell: ({ row }) => (
-        <Badge variant="outline" className="font-medium">
-          {row.getValue("role")}
-        </Badge>
+        <div className="font-medium">{row.getValue("department")}</div>
       ),
     },
   ];
@@ -149,7 +155,6 @@ const EmployeeList = () => {
       const token = localStorage.getItem('token');
       console.log('Sending employee data:', formData);
 
-      // Use the existing endpoint
       const response = await axios.post('http://localhost:3000/api/employees', formData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -158,10 +163,9 @@ const EmployeeList = () => {
       });
 
       console.log('Employee created successfully:', response.data);
-      setShowAddModal(false);
+      setShowAddForm(false);
       fetchEmployees();
 
-      // Show success message with login credentials
       alert(`Employee created successfully!\nLogin credentials:\nEmail: ${formData.email}\nPassword: ${formData.password}`);
     } catch (error) {
       console.error('Error details:', {
@@ -173,15 +177,44 @@ const EmployeeList = () => {
     }
   };
 
+  if (showAddForm) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Add New Employee</CardTitle>
+              <CardDescription>Enter employee details below.</CardDescription>
+            </div>
+            <Button 
+              variant="outline"
+              onClick={() => setShowAddForm(false)} 
+              className="ml-auto"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to List
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <AddEmployeeForm
+            onClose={() => setShowAddForm(false)}
+            onSubmit={handleAddEmployee}
+          />
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Employee List</CardTitle>
-            <CardDescription>Manage your employees and their roles here.</CardDescription>
+            <CardDescription className="pt-1">Manage your employees and their roles here.</CardDescription>
           </div>
-          <Button onClick={() => setShowAddModal(true)} className="ml-auto">
+          <Button onClick={() => setShowAddForm(true)} className="ml-auto">
             <UserPlus className="mr-2 h-4 w-4" />
             Add Employee
           </Button>
@@ -267,13 +300,6 @@ const EmployeeList = () => {
             Next
           </Button>
         </div>
-
-        {showAddModal && (
-          <AddEmployeeModal
-            onClose={() => setShowAddModal(false)}
-            onSubmit={handleAddEmployee}
-          />
-        )}
       </CardContent>
     </Card>
   );
