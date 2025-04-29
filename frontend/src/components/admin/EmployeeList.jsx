@@ -9,7 +9,8 @@ import {
   UserPlus,
   Mail,
   Phone,
-  ArrowLeft
+  ArrowLeft,
+  ArrowUpDown
 } from 'lucide-react';
 import AddEmployeeForm from './AddEmployeeForm';
 import {
@@ -38,6 +39,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -115,12 +117,12 @@ const EmployeeList = () => {
       header: "Status",
       cell: ({ row }) => (
         <Badge 
-          variant={row.getValue("employmentStatus") === "Active" ? "success" : "secondary"}
-          className={
-            row.getValue("employmentStatus") === "Active" 
-              ? "bg-green-100 text-green-800" 
-              : "bg-blue-100 text-blue-800"
+          variant={
+            row.getValue("employmentStatus") === "Active" ? "success" :
+            row.getValue("employmentStatus") === "Inactive" || row.getValue("employmentStatus") === "On Leave" ? "default" : 
+            "destructive"
           }
+          className="font-medium"
         >
           {row.getValue("employmentStatus")}
         </Badge>
@@ -214,7 +216,13 @@ const EmployeeList = () => {
             <CardTitle>Employee List</CardTitle>
             <CardDescription className="pt-1">Manage your employees and their roles here.</CardDescription>
           </div>
-          <Button onClick={() => setShowAddForm(true)} className="ml-auto">
+          <Button 
+            onClick={() => setShowAddForm(true)} 
+            className={cn(
+              "ml-auto bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
+              "transition-colors font-medium"
+            )}
+          >
             <UserPlus className="mr-2 h-4 w-4" />
             Add Employee
           </Button>
@@ -242,16 +250,17 @@ const EmployeeList = () => {
                       onClick={header.column.getToggleSortingHandler()}
                       className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
                     >
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                      {{
-                        asc: " 🔼",
-                        desc: " 🔽",
-                      }[header.column.getIsSorted()] ?? null}
+                      <div className="flex items-center gap-2">
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                        {header.column.getCanSort() && (
+                          <ArrowUpDown className="h-4 w-4" />
+                        )}
+                      </div>
                     </TableHead>
                   ))}
                 </TableRow>

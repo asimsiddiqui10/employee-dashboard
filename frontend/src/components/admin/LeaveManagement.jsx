@@ -171,9 +171,10 @@ const LeaveManagement = () => {
                     <Badge 
                       variant={getStatusBadgeVariant(request.status)}
                       className={cn(
-                        request.status === 'Approved' && "bg-green-500 hover:bg-green-600",
-                        request.status === 'Rejected' && "bg-red-500 hover:bg-red-600",
-                        request.status === 'Pending' && "bg-blue-500 hover:bg-blue-600"
+                        "font-medium transition-colors",
+                        request.status === 'Approved' && "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30",
+                        request.status === 'Rejected' && "bg-red-500/10 text-red-500 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30",
+                        request.status === 'Pending' && "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
                       )}
                     >
                       {request.status}

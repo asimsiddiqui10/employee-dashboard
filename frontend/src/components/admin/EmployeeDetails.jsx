@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { Upload, User } from 'lucide-react';
+import { Upload, User, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { cn } from "@/lib/utils";
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
@@ -102,27 +110,28 @@ const EmployeeDetails = () => {
   if (!form) return <div>Loading...</div>;
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      {/* Header Section */}
-      <div className="relative h-48 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-lg">
-        <div className="absolute w-full h-full flex justify-between items-center px-8">
-          {/* Left side: Profile Picture and Info */}
-          <div className="flex items-center space-x-6">
-            {/* Profile Picture Container */}
+    <Card className="w-full">
+      <CardHeader className={cn(
+        "pb-8 border-b",
+        "bg-[hsl(var(--sidebar-background))] dark:bg-[hsl(var(--sidebar-background))]"
+      )}>
+        <div className="flex justify-between items-start">
+          <div className="flex items-center gap-6">
+            {/* Profile Picture */}
             <div className="relative group">
               {form?.profilePic ? (
-                <img
-                  src={`http://localhost:3000${form.profilePic}`}
-                  alt={form.name}
-                  className="w-32 h-32 rounded-full border-4 border-white bg-white object-cover"
-                />
+                <Avatar className="h-24 w-24">
+                  <AvatarImage src={`http://localhost:3000${form.profilePic}`} alt={form.name} />
+                  <AvatarFallback>{form.name.charAt(0)}</AvatarFallback>
+                </Avatar>
               ) : (
-                <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 flex items-center justify-center">
-                  <User size={64} className="text-gray-400" />
-                </div>
+                <Avatar className="h-24 w-24">
+                  <AvatarFallback>
+                    <User className="h-12 w-12" />
+                  </AvatarFallback>
+                </Avatar>
               )}
               
-              {/* Upload Button - Positioned over the image when editing */}
               {isEditing && (
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <input
@@ -143,222 +152,198 @@ const EmployeeDetails = () => {
               )}
             </div>
 
-            {/* Name and Job Title */}
-            <div className="text-white">
-              <h1 className="text-3xl font-bold mb-2">{form?.name || 'Employee Name'}</h1>
-              <p className="text-xl opacity-90">
-                {form?.position} - {form?.department}
-              </p>
+            {/* Name and Title */}
+            <div>
+              <h2 className="text-3xl font-bold text-foreground">{form?.name}</h2>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-lg text-muted-foreground">{form?.position}</span>
+                {form?.department && (
+                  <Badge variant="secondary">
+                    {form.department}
+                  </Badge>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* Right side: Action Buttons */}
-          <div className="flex space-x-3">
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-2">
             {!isEditing ? (
               <>
-                <button
+                <Button
+                  variant="outline"
                   onClick={() => setIsEditing(true)}
-                  className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-blue-50"
+                  className={cn(
+                    "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
+                    "transition-colors font-medium w-full sm:w-auto"
+                  )}
                 >
-                  Edit
-                </button>
-                <button
+                  <Pencil className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Edit</span>
+                </Button>
+                <Button
+                  variant="outline"
                   onClick={() => setShowDeleteModal(true)}
-                  className="bg-white text-red-600 px-4 py-2 rounded hover:bg-red-50"
+                  className={cn(
+                    "bg-red-500/10 text-red-500 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30",
+                    "transition-colors font-medium w-full sm:w-auto"
+                  )}
                 >
-                  Delete
-                </button>
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  <span className="hidden sm:inline">Delete</span>
+                </Button>
               </>
             ) : (
-              <button
+              <Button
+                variant="default"
                 onClick={handleSave}
-                className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
+                className={cn(
+                  "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30",
+                  "transition-colors font-medium w-full sm:w-auto"
+                )}
               >
-                Save
-              </button>
+                Save Changes
+              </Button>
             )}
-            <button
+            <Button
+              variant="outline"
               onClick={() => navigate('/admin-dashboard/employees')}
-              className="bg-white text-gray-700 px-4 py-2 rounded hover:bg-gray-50"
+              className={cn(
+                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30",
+                "transition-colors font-medium w-full sm:w-auto"
+              )}
             >
-              Back to List
-            </button>
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Back</span>
+            </Button>
           </div>
         </div>
-      </div>
+      </CardHeader>
 
-      {/* Main Content */}
-      <div className="p-8">
+      <CardContent className="pt-8 px-6">
         {/* Personal Information */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Personal Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            {isEditing ? (
-              <>
-                <input
-                  type="text"
-                  name="employeeId"
-                  value={form?.employeeId || ''}
-                  onChange={handleInputChange}
-                  className="p-2 border rounded"
-                  placeholder="Employee ID"
-                />
-                <input
-                  type="email"
-                  name="email"
-                  value={form?.email || ''}
-                  onChange={handleInputChange}
-                  className="p-2 border rounded"
-                  placeholder="Email"
-                />
-                <div>
-                  <p className="text-sm text-gray-600">Phone Number</p>
-                  <input
-                    type="text"
-                    name="phoneNumber"
-                    value={form?.phoneNumber || ''}
-                    onChange={handleInputChange}
-                    className="p-2 border rounded"
-                    placeholder="Phone Number"
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
+            <Separator className="my-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {isEditing ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="employeeId">Employee ID</Label>
+                    <Input
+                      id="employeeId"
+                      name="employeeId"
+                      value={form?.employeeId || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={form?.email || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      value={form?.phoneNumber || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      name="dateOfBirth"
+                      type="date"
+                      value={form?.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Input
+                      id="gender"
+                      name="gender"
+                      value={form?.gender || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nationality">Nationality</Label>
+                    <Input
+                      id="nationality"
+                      name="nationality"
+                      value={form?.nationality || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <InfoField label="Employee ID" value={form?.employeeId} />
+                  <InfoField label="Email" value={form?.email} />
+                  <InfoField label="Phone Number" value={form?.phoneNumber} />
+                  <InfoField 
+                    label="Date of Birth" 
+                    value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} 
                   />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Date of Birth</p>
-                  <input
-                    type="date"
-                    name="dateOfBirth"
-                    value={form?.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''}
-                    onChange={handleInputChange}
-                    className="p-2 border rounded"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Gender</p>
-                  <input
-                    type="text"
-                    name="gender"
-                    value={form?.gender || ''}
-                    onChange={handleInputChange}
-                    className="p-2 border rounded"
-                    placeholder="Gender"
-                  />
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Nationality</p>
-                  <input
-                    type="text"
-                    name="nationality"
-                    value={form?.nationality || ''}
-                    onChange={handleInputChange}
-                    className="p-2 border rounded"
-                    placeholder="Nationality"
-                  />
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <p className="text-sm text-gray-600">Employee ID</p>
-                  <p className="font-medium">{form?.employeeId}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Email</p>
-                  <p className="font-medium">{form?.email}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Phone Number</p>
-                  <p className="font-medium">{form?.phoneNumber || 'Not provided'}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Date of Birth</p>
-                  <p className="font-medium">
-                    {form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Gender</p>
-                  <p className="font-medium">{form?.gender}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Nationality</p>
-                  <p className="font-medium">{form?.nationality || 'Not provided'}</p>
-                </div>
-              </>
-            )}
+                  <InfoField label="Gender" value={form?.gender} />
+                  <InfoField label="Nationality" value={form?.nationality} />
+                </>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Work Information */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Work Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Position</p>
-              <p className="font-medium">{form?.position}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Department</p>
-              <p className="font-medium">{form?.department}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Employment Type</p>
-              <p className="font-medium">{form?.employmentType}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Date of Hire</p>
-              <p className="font-medium">
-                {form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Work Email</p>
-              <p className="font-medium">{form?.workEmail || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Work Phone</p>
-              <p className="font-medium">{form?.workPhoneNumber || 'Not provided'}</p>
+          {/* Work Information */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Work Information</h3>
+            <Separator className="my-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoField label="Position" value={form?.position} />
+              <InfoField label="Department" value={form?.department} />
+              <InfoField label="Employment Type" value={form?.employmentType} />
+              <InfoField 
+                label="Date of Hire" 
+                value={form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'} 
+              />
+              <InfoField label="Work Email" value={form?.workEmail} />
+              <InfoField label="Work Phone" value={form?.workPhoneNumber} />
             </div>
           </div>
-        </div>
 
-        {/* Contact Information */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Contact Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <p className="text-sm text-gray-600">Address</p>
-              <p className="font-medium">{form?.address || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">City</p>
-              <p className="font-medium">{form?.city || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">State</p>
-              <p className="font-medium">{form?.state || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Zip Code</p>
-              <p className="font-medium">{form?.zipCode || 'Not provided'}</p>
+          {/* Contact Information */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
+            <Separator className="my-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="col-span-2">
+                <InfoField label="Address" value={form?.address} />
+              </div>
+              <InfoField label="City" value={form?.city} />
+              <InfoField label="State" value={form?.state} />
+              <InfoField label="Zip Code" value={form?.zipCode} />
             </div>
           </div>
-        </div>
 
-        {/* Emergency Contact */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Emergency Contact</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Name</p>
-              <p className="font-medium">{form?.emergencyContact?.name || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Phone</p>
-              <p className="font-medium">{form?.emergencyContact?.phone || 'Not provided'}</p>
+          {/* Emergency Contact */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
+            <Separator className="my-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoField label="Name" value={form?.emergencyContact?.name} />
+              <InfoField label="Phone" value={form?.emergencyContact?.phone} />
             </div>
           </div>
         </div>
-      </div>
+      </CardContent>
 
       {showDeleteModal && (
         <DeleteConfirmationModal
@@ -367,8 +352,16 @@ const EmployeeDetails = () => {
           onConfirm={handleDelete}
         />
       )}
-    </div>
+    </Card>
   );
 };
+
+// Helper component for displaying information fields
+const InfoField = ({ label, value }) => (
+  <div className="space-y-1">
+    <Label className="text-sm text-muted-foreground">{label}</Label>
+    <p className="font-medium">{value || 'Not provided'}</p>
+  </div>
+);
 
 export default EmployeeDetails; 

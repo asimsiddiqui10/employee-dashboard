@@ -6,6 +6,7 @@ import { DonutChartComponent } from '../charts/DonutChart';
 import { RevenueBarChart } from '../charts/BarChart';
 import { VisitorsAreaChart } from '../charts/AreaChart';
 import { ScrollArea } from "../ui/scroll-area";
+import { cn } from "@/lib/utils";
 
 // Add this notification data
 const notifications = [
@@ -70,7 +71,10 @@ const AdminHome = () => {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">Total Revenue</CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] px-2 py-0.5">
+              <Badge className={cn(
+                "font-medium transition-colors text-[10px] px-2 py-0.5",
+                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
+              )}>
                 <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
                 +12.5%
               </Badge>
@@ -83,7 +87,10 @@ const AdminHome = () => {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">New Customers</CardTitle>
-              <Badge variant="outline" className="bg-red-50 text-red-700 text-[10px] px-2 py-0.5">
+              <Badge className={cn(
+                "font-medium transition-colors text-[10px] px-2 py-0.5",
+                "bg-red-500/10 text-red-500 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-400"
+              )}>
                 <ArrowDownIcon className="mr-1 h-2.5 w-2.5" />
                 -20%
               </Badge>
@@ -96,7 +103,10 @@ const AdminHome = () => {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">Accounts</CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] px-2 py-0.5">
+              <Badge className={cn(
+                "font-medium transition-colors text-[10px] px-2 py-0.5",
+                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
+              )}>
                 <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
                 +12.5%
               </Badge>
@@ -109,7 +119,10 @@ const AdminHome = () => {
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">Growth Rate</CardTitle>
-              <Badge variant="outline" className="bg-green-50 text-green-700 text-[10px] px-2 py-0.5">
+              <Badge className={cn(
+                "font-medium transition-colors text-[10px] px-2 py-0.5",
+                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
+              )}>
                 <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
                 +4.5%
               </Badge>
