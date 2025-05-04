@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
+import { toast } from '@/hooks/use-toast';
 import { handleApiError } from '@/utils/errorHandler';
-import { toast } from '@/components/ui/use-toast';
 
 const LeaveRequest = () => {
   const [form, setForm] = useState({

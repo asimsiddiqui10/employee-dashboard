@@ -27,7 +27,7 @@ import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
-import { toast } from "@/components/ui/use-toast";
+import { toast } from "@/hooks/use-toast";
 
 const LeaveManagement = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);

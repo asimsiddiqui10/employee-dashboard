@@ -2,14 +2,6 @@
   "rewrites": [
     { "source": "/(.*)", "destination": "/index.html" }
   ],
-  "env": {
-    "VITE_API_URL": "https://act-vj78.onrender.com/api"
-  },
-  "build": {
-    "env": {
-      "VITE_API_URL": "https://act-vj78.onrender.com/api"
-    }
-  },
   "headers": [
     {
       "source": "/(.*)",
