@@ -1,16 +1,12 @@
 import express from "express"
 import cors from "cors"
 import mongoose from "mongoose"
-import authRouter from "./routes/auth.js"
-import employeeRouter from "./routes/employeeRoutes.js"
-import connectToDatabase from "./db/db.js"
 import { config } from 'dotenv';
-import notificationRoutes from './routes/notificationRoutes.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
-import leaveRoutes from './routes/leaveRoutes.js';
-import documentRoutes from './routes/documentRoutes.js';
+
+// Import routes
 import routes from './routes/index.js';
 
 // Load environment variables based on NODE_ENV
@@ -18,13 +14,13 @@ config({
   path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env'
 });
 
-const app = express()
+const app = express();
 
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',  // Local development
   'http://localhost:3000',  // Local production build
-  'https://your-app-name.onrender.com', // Render backend URL
+  'https://act-vj78.onrender.com', // Render backend URL
   'https://employee-dashboard-pied.vercel.app',  // Vercel frontend URL
 ];
 
@@ -43,7 +39,7 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
-app.use(express.json())
+app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 const __filename = fileURLToPath(import.meta.url);
@@ -55,13 +51,8 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Routes
+// Routes - use only the combined routes
 app.use('/api', routes);
-app.use('/api/auth', authRouter);
-app.use('/api/employees', employeeRouter);
-app.use('/api/notifications', notificationRoutes);
-app.use('/api/leaves', leaveRoutes);
-app.use('/api/documents', documentRoutes);
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
