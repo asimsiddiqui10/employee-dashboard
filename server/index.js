@@ -21,7 +21,9 @@ const allowedOrigins = [
   'http://localhost:5173',  // Local development
   'http://localhost:3000',  // Local production build
   'https://act-vj78.onrender.com', // Render backend URL
-  'https://employee-dashboard-pied.vercel.app',  // Vercel frontend URL
+  'https://employee-dashboard-sable.vercel.app',  // Main Vercel deployment
+  'https://employee-dashboard-git-vibecoding-asims-projects-56557ef2.vercel.app', // Preview deployment
+  'https://employee-dashboard-4b3h9az5u-asims-projects-56557ef2.vercel.app', // Preview deployment
 ];
 
 app.use(cors({
