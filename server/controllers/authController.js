@@ -72,25 +72,28 @@ export const login = async (req, res) => {
 
 export const verify = async (req, res) => {
     try {
-        // Get user details if they exist
-        const employee = await Employee.findOne({ user: req.user._id });
-
-        // Send response
+        // The user is already attached to req by the authMiddleware
+        const user = req.user;
+        
+        // Get employee details if they exist
+        const employee = await Employee.findOne({ user: user._id });
+        
         res.json({
             success: true,
             user: {
-                id: req.user._id,
-                name: req.user.name,
-                email: req.user.email,
-                role: req.user.role,
+                id: user._id,
+                name: user.name,
+                email: user.email,
+                role: user.role,
                 employeeId: employee?._id
             }
         });
     } catch (error) {
-        console.error('Verification error:', error);
-        res.status(500).json({ 
-            success: false, 
-            error: 'Server error during verification' 
+        console.error('Verify error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Server error during verification',
+            message: error.message
         });
     }
 };
