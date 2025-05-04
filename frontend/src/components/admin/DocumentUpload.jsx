@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
 import {
   Card,
   CardContent,
@@ -45,34 +46,18 @@ export default function DocumentUpload() {
 
   const fetchEmployees = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/employees', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get('/employees');
       setEmployees(response.data);
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      setError('Failed to load employees');
+      const { message } = handleApiError(error);
+      setError(message);
     }
   };
 
-  const handleUpload = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    if (!file) {
-      setError('Please select a file');
-      return;
-    }
-
-    if (!documentType) {
-      setError('Please select a document type');
-      return;
-    }
-
-    if (!selectedEmployee) {
-      setError('Please select an employee');
+    if (!file || !title || !documentType || !selectedEmployee) {
+      setError('Please fill in all required fields');
       return;
     }
 
@@ -80,32 +65,25 @@ export default function DocumentUpload() {
     formData.append('file', file);
     formData.append('title', title);
     formData.append('description', description);
+    formData.append('documentType', documentType);
     formData.append('employeeId', selectedEmployee);
-    formData.append('documentType', documentType.toLowerCase());
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/documents/upload', formData, {
+      await api.post('/documents/upload', formData, {
         headers: {
-          'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'
         }
       });
-
+      setSuccess('Document uploaded successfully');
       // Reset form
       setFile(null);
       setTitle('');
       setDescription('');
       setSelectedEmployee('');
       setDocumentType('');
-      setSuccess('Document uploaded successfully');
-      
-      // Reset file input
-      const fileInput = document.querySelector('input[type="file"]');
-      if (fileInput) fileInput.value = '';
     } catch (error) {
-      console.error('Upload error:', error.response?.data || error);
-      setError(error.response?.data?.message || 'Error uploading document');
+      const { message } = handleApiError(error);
+      setError(message);
     }
   };
 
@@ -115,7 +93,7 @@ export default function DocumentUpload() {
         <CardTitle>Upload Document</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleUpload} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>

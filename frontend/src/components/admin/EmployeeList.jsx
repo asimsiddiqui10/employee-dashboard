@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   ChevronDown, 
@@ -40,6 +40,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { handleApiError } from '@/utils/errorHandler';
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -56,13 +57,11 @@ const EmployeeList = () => {
 
   const fetchEmployees = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/employees', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get('/employees');
       setEmployees(response.data);
     } catch (error) {
-      console.error('Error fetching employees:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
@@ -154,28 +153,14 @@ const EmployeeList = () => {
 
   const handleAddEmployee = async (formData) => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Sending employee data:', formData);
-
-      const response = await axios.post('http://localhost:3000/api/employees', formData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
+      const response = await api.post('/employees', formData);
       console.log('Employee created successfully:', response.data);
       setShowAddForm(false);
       fetchEmployees();
-
       alert(`Employee created successfully!\nLogin credentials:\nEmail: ${formData.email}\nPassword: ${formData.password}`);
     } catch (error) {
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status
-      });
-      alert(error.response?.data?.message || 'Failed to add employee. Please check all required fields.');
+      const { message } = handleApiError(error);
+      alert(message);
     }
   };
 

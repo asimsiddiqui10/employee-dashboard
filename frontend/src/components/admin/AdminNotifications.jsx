@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
 import { Send, Tag, Link as LinkIcon, X, Check, ChevronDown } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -43,18 +44,11 @@ const AdminNotifications = () => {
 
   const fetchEmployees = async () => {
     try {
-      setIsLoading(true);
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/employees', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      setEmployeeUsers(response.data.map(emp => ({ ...emp, userId: emp.user })));
+      const response = await api.get('/employees');
       setEmployees(response.data);
     } catch (error) {
-      console.error('Error fetching employees:', error);
-      setStatus({ type: 'error', message: 'Failed to fetch employees' });
-    } finally {
-      setIsLoading(false);
+      const { message } = handleApiError(error);
+      setStatus({ type: 'error', message });
     }
   };
 
@@ -87,7 +81,6 @@ const AdminNotifications = () => {
 
     try {
       setIsLoading(true);
-      const token = localStorage.getItem('token');
       const userIds = selectedEmployees.map(empId => {
         const employee = employees.find(emp => emp._id === empId);
         return employee?.user?._id;
@@ -98,16 +91,16 @@ const AdminNotifications = () => {
         return;
       }
 
-      await axios.post('http://localhost:3000/api/notifications', {
+      await api.post('/notifications', {
         ...form, recipients: userIds
-      }, { headers: { 'Authorization': `Bearer ${token}` } });
+      });
 
       setStatus({ type: 'success', message: 'Notification sent successfully' });
       setForm({ title: '', message: '', tags: [], link: '' });
       setSelectedEmployees([]);
     } catch (error) {
-      console.error('Error sending notification:', error);
-      setStatus({ type: 'error', message: error.response?.data?.error || 'Failed to send notification' });
+      const { message } = handleApiError(error);
+      setStatus({ type: 'error', message });
     } finally {
       setIsLoading(false);
     }

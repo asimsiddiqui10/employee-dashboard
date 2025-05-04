@@ -5,6 +5,7 @@ import bcrypt from 'bcryptjs';
 import mongoose from 'mongoose';
 import path from 'path';
 import fs from 'fs';
+import { uploadFile } from '../config/supabase.js';
 
 // Add a new employee
 export const addEmployee = async (req, res) => {
@@ -222,22 +223,29 @@ export const uploadProfilePic = async (req, res) => {
     }
 
     const { employeeId } = req.params;
-    const profilePicPath = `/uploads/profile-pics/${req.file.filename}`;
+    
+    // Create unique filename
+    const timestamp = Date.now();
+    const filename = `${employeeId}/${timestamp}-${req.file.originalname}`;
 
-    console.log('Attempting to update employee with path:', profilePicPath);
+    // Upload to Supabase
+    const { publicUrl } = await uploadFile(
+      'profile-pics',
+      filename,
+      req.file.buffer,
+      {
+        contentType: req.file.mimetype
+      }
+    );
 
     const updatedEmployee = await Employee.findOneAndUpdate(
       { employeeId },
-      { profilePic: profilePicPath },
+      { profilePic: publicUrl },
       { new: true }
     );
 
     if (!updatedEmployee) {
       console.log('Employee not found:', employeeId);
-      if (req.file) {
-        const filePath = path.join(__dirname, '..', 'uploads', 'profile-pics', req.file.filename);
-        fs.unlinkSync(filePath);
-      }
       return res.status(404).json({ message: 'Employee not found' });
     }
 
@@ -245,25 +253,10 @@ export const uploadProfilePic = async (req, res) => {
 
     res.json({ 
       message: 'Profile picture uploaded successfully',
-      profilePic: profilePicPath
+      profilePic: publicUrl
     });
   } catch (error) {
-    console.error('Detailed upload error:', {
-      message: error.message,
-      stack: error.stack,
-      file: req.file
-    });
-
-    // Clean up uploaded file if there's an error
-    if (req.file) {
-      try {
-        const filePath = path.join(__dirname, '..', 'uploads', 'profile-pics', req.file.filename);
-        fs.unlinkSync(filePath);
-        console.log('Cleaned up file:', filePath);
-      } catch (unlinkError) {
-        console.error('Error deleting file:', unlinkError);
-      }
-    }
+    console.error('Error in uploadProfilePic:', error);
     res.status(500).json({ 
       message: 'Error uploading profile picture',
       error: error.message 

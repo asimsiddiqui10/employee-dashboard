@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
+import api from '@/lib/axios';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/authContext';
 import companyLogo from '../assets/ACT New Logo HD.png';
@@ -8,6 +8,7 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Label } from "../components/ui/label";
+import { handleApiError } from '@/utils/errorHandler';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -16,17 +17,30 @@ const Login = () => {
     const {login} = useAuth();
     const navigate = useNavigate();
 
+    // Debug: Log API URL when component mounts
+    useEffect(() => {
+        console.log('API URL:', import.meta.env.VITE_API_URL);
+        console.log('API Base URL:', api.defaults.baseURL);
+    }, []);
+
     const handleSubmit = async(e) => {
         e.preventDefault();
+        setError('');
         try {
-            console.log('Attempting login with:', { email });
-            const response = await axios.post('/api/auth/login', { 
+            console.log('API Config:', {
+                baseURL: api.defaults.baseURL,
+                url: '/auth/login',
+                fullURL: `${api.defaults.baseURL}/auth/login`
+            });
+            
+            const response = await api.post('/auth/login', { 
                 email, 
                 password 
             });
+            
             console.log('Login response:', response.data);
             
-            if (response.data.success) {
+            if (response.data.token) {
                 login(response.data.user);
                 localStorage.setItem('token', response.data.token);
                 if(response.data.user.role === 'admin') {
@@ -35,22 +49,17 @@ const Login = () => {
                     navigate('/employee-dashboard');
                 }
             } else {
-                setError(response.data.error);
+                const { message } = handleApiError(response.data);
+                setError(message);
             }
         } catch (error) {
-            console.error('Login error:', error);
-            if (error.response) {
-                // The request was made and the server responded with a status code
-                // that falls out of the range of 2xx
-                setError(error.response.data.error || 'Login failed');
-                console.error('Error response:', error.response.data);
-            } else if (error.request) {
-                // The request was made but no response was received
-                setError('No response from server');
-            } else {
-                // Something happened in setting up the request that triggered an Error
-                setError('Error setting up request');
-            }
+            console.error('Login error details:', {
+                error: error,
+                response: error.response,
+                config: error.config
+            });
+            const { message } = handleApiError(error);
+            setError(message);
         }
     };
     

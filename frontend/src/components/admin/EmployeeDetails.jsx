@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { Upload, User, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -26,13 +27,11 @@ const EmployeeDetails = () => {
 
   const fetchEmployeeDetails = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3000/api/employees/${employeeId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get(`/employees/${employeeId}`);
       setForm(response.data);
     } catch (error) {
-      console.error('Error fetching employee details:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
@@ -52,30 +51,21 @@ const EmployeeDetails = () => {
 
   const handleSave = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.put(`http://localhost:3000/api/employees/${employeeId}`, form, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+      await api.put(`/employees/${employeeId}`, form);
       setIsEditing(false);
-      fetchEmployeeDetails();
     } catch (error) {
-      console.error('Error updating employee:', error);
-      alert('Failed to update employee details');
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
   const handleDelete = async () => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:3000/api/employees/${employeeId}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await api.delete(`/employees/${employeeId}`);
       navigate('/admin-dashboard/employees');
     } catch (error) {
-      console.error('Error deleting employee:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
@@ -87,22 +77,17 @@ const EmployeeDetails = () => {
     formData.append('profilePic', file);
 
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.post(
-        `http://localhost:3000/api/employees/${employeeId}/profile-pic`,
-        formData,
-        {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'multipart/form-data'
-          }
+      const response = await api.post(`/employees/${employeeId}/profile-pic`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
         }
-      );
+      });
       
       // Update the form state with the new profile pic URL
       setForm(prev => ({ ...prev, profilePic: response.data.profilePic }));
     } catch (error) {
-      console.error('Error uploading profile picture:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
       alert('Failed to upload profile picture');
     }
   };

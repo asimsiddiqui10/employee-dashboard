@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
 
 // Create and export the context
 export const AuthContext = createContext(null);
@@ -16,20 +17,21 @@ export const AuthProvider = ({ children }) => {
             if (token) {
                 try {
                     // Add token to default axios headers
-                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
                     
                     // Verify token with backend
-                    const response = await axios.get('http://localhost:3000/api/auth/verify');
-                    if (response.data.success) {
+                    const response = await api.get('/auth/verify');
+                    if (response.data.user) {
                         setUser(response.data.user);
                     } else {
                         localStorage.removeItem('token');
-                        delete axios.defaults.headers.common['Authorization'];
+                        delete api.defaults.headers.common['Authorization'];
                     }
                 } catch (error) {
-                    console.error('Token verification failed:', error);
+                    const { message } = handleApiError(error);
+                    console.error(message);
                     localStorage.removeItem('token');
-                    delete axios.defaults.headers.common['Authorization'];
+                    delete api.defaults.headers.common['Authorization'];
                 }
             }
             setLoading(false);
@@ -42,14 +44,14 @@ export const AuthProvider = ({ children }) => {
         // Set token in axios defaults when logging in
         const token = localStorage.getItem('token');
         if (token) {
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         }
     };
 
     const logout = () => {
         setUser(null);
         localStorage.removeItem('token');
-        delete axios.defaults.headers.common['Authorization'];
+        delete api.defaults.headers.common['Authorization'];
     };
     
     // Provide a value object with all the context data

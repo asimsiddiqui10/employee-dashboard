@@ -1,22 +1,7 @@
 import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Create base documents directory if it doesn't exist
-    const baseDir = 'uploads/documents/temp';
-    if (!fs.existsSync(baseDir)) {
-      fs.mkdirSync(baseDir, { recursive: true });
-    }
-    cb(null, baseDir);
-  },
-  filename: function (req, file, cb) {
-    // Create unique filename with timestamp
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, uniqueSuffix + path.extname(file.originalname));
-  }
-});
+// Use memory storage instead of disk storage since we'll upload to Supabase
+const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
   // Allow common document types

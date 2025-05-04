@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
 import { Download } from 'lucide-react';
 
 const Documents = () => {
   const [documents, setDocuments] = useState([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchDocuments();
@@ -11,85 +14,33 @@ const Documents = () => {
 
   const fetchDocuments = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/documents/employee-documents', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get('/documents/employee-documents');
       setDocuments(response.data);
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      const { message } = handleApiError(error);
+      setError(message);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleDownload = async (doc) => {
-    console.log('Starting download for document:', {
-      id: doc._id,
-      title: doc.title,
-      type: doc.fileType,
-      url: doc.fileUrl
-    });
-
+  const handleDownload = async (documentId) => {
     try {
-      const token = localStorage.getItem('token');
-      
-      const response = await axios.get(
-        `http://localhost:3000/api/documents/download/${doc._id}`,
-        {
-          headers: { 
-            'Authorization': `Bearer ${token}`
-          },
-          responseType: 'blob',
-          timeout: 30000
-        }
-      );
-
-      // Check if the response is actually a blob
-      if (!(response.data instanceof Blob)) {
-        throw new Error('Response is not a blob');
-      }
-
-      // Create blob with the correct type
-      const blob = new Blob([response.data], { type: doc.fileType });
-      
-      if (blob.size === 0) {
-        throw new Error('Downloaded file is empty');
-      }
-
-      const url = window.URL.createObjectURL(blob);
-      const link = window.document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', doc.fileName);
-      
-      window.document.body.appendChild(link);
-      link.click();
-      
-      // Cleanup
-      window.URL.revokeObjectURL(url);
-      link.remove();
-
-    } catch (error) {
-      console.error('Download error details:', {
-        message: error.message,
-        response: error.response,
-        data: error.response?.data,
-        status: error.response?.status,
-        headers: error.response?.headers
+      const response = await api.get(`/documents/download/${documentId}`, {
+        responseType: 'blob'
       });
       
-      let errorMessage = 'Failed to download document. ';
-      if (error.response?.data instanceof Blob) {
-        const text = await error.response.data.text();
-        try {
-          const errorData = JSON.parse(text);
-          errorMessage += errorData.message;
-        } catch (e) {
-          errorMessage += 'Unknown error occurred.';
-        }
-      } else {
-        errorMessage += error.response?.data?.message || 'Please try again later.';
-      }
-      
-      alert(errorMessage);
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `document-${documentId}.pdf`); // or use the actual filename from response
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      const { message } = handleApiError(error);
+      setError(message);
     }
   };
 
@@ -107,7 +58,7 @@ const Documents = () => {
               </p>
             </div>
             <button
-              onClick={() => handleDownload(doc)}
+              onClick={() => handleDownload(doc._id)}
               className="flex items-center text-blue-600 hover:text-blue-800"
             >
               <Download size={16} className="mr-1" />

@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
+import { toast } from '@/components/ui/use-toast';
 
 const LeaveRequest = () => {
   const [form, setForm] = useState({
@@ -12,6 +14,7 @@ const LeaveRequest = () => {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [leaveSummary, setLeaveSummary] = useState(null);
+  const [employeeDetails, setEmployeeDetails] = useState(null);
 
   useEffect(() => {
     fetchLeaveRequests();
@@ -20,25 +23,22 @@ const LeaveRequest = () => {
 
   const fetchEmployeeDetails = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/employees/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get('/employees/me');
+      setEmployeeDetails(response.data);
       setLeaveSummary(response.data.leaveSummary);
     } catch (error) {
-      console.error('Error fetching employee details:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
   const fetchLeaveRequests = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/leaves/my-requests', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get('/leaves/my-requests');
       setLeaveRequests(response.data);
     } catch (error) {
-      console.error('Error fetching leave requests:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
@@ -48,16 +48,23 @@ const LeaveRequest = () => {
     setSuccess('');
 
     try {
-      const token = localStorage.getItem('token');
-      await axios.post('http://localhost:3000/api/leaves/request', form, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await api.post('/leaves/request', form);
       setSuccess('Leave request submitted successfully');
       setForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
       fetchLeaveRequests();
       fetchEmployeeDetails();
+      toast({
+        title: "Success",
+        description: "Leave request submitted successfully",
+      });
     } catch (error) {
-      setError(error.response?.data?.message || 'Error submitting leave request');
+      const { message } = handleApiError(error);
+      setError(message);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 

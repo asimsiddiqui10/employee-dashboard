@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import {
   Card,
   CardContent,
@@ -26,6 +25,9 @@ import {
 } from "@/components/ui/tooltip";
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
+import { toast } from "@/components/ui/use-toast";
 
 const LeaveManagement = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -38,13 +40,12 @@ const LeaveManagement = () => {
 
   const fetchLeaveRequests = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get('http://localhost:3000/api/leaves/all', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get('/leaves/all');
       setLeaveRequests(response.data);
       setLoading(false);
     } catch (error) {
+      const { message } = handleApiError(error);
+      console.error(message);
       setError('Error fetching leave requests');
       setLoading(false);
     }
@@ -52,27 +53,21 @@ const LeaveManagement = () => {
 
   const handleStatusUpdate = async (id, status) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.patch(
-        `http://localhost:3000/api/leaves/${id}/status`, 
-        { status },
-        { headers: { 'Authorization': `Bearer ${token}` }}
-      );
-
-      if (response.data.success) {
-        setLeaveRequests(prevRequests => 
-          prevRequests.map(request => 
-            request._id === id 
-              ? { ...request, status: status }
-              : request
-          )
-        );
-      } else {
-        setError(response.data.message || 'Error updating leave request');
+      const response = await api.patch(`/leaves/${id}/status`, { status });
+      if (response.data) {
+        fetchLeaveRequests();
+        toast({
+          title: "Success",
+          description: `Leave request ${status.toLowerCase()} successfully`,
+        });
       }
     } catch (error) {
-      console.error('Update error:', error);
-      setError(error.response?.data?.message || 'Error updating leave request');
+      const { message } = handleApiError(error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 

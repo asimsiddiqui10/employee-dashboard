@@ -1,10 +1,5 @@
 import Document from '../models/Document.js';
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { uploadFile, deleteFile } from '../config/supabase.js';
 
 export const uploadDocument = async (req, res) => {
   try {
@@ -22,24 +17,26 @@ export const uploadDocument = async (req, res) => {
       return res.status(400).json({ message: 'Employee ID is required' });
     }
 
-    // Create directory for document type if it doesn't exist
-    const targetDir = path.join(__dirname, '..', 'uploads', 'documents', documentType);
-    await fs.mkdir(targetDir, { recursive: true });
+    // Create unique filename
+    const timestamp = Date.now();
+    const filename = `${documentType}/${employeeId}/${timestamp}-${req.file.originalname}`;
 
-    // Move file from temp to final location
-    const tempPath = req.file.path;
-    const targetPath = path.join(targetDir, req.file.filename);
-    await fs.rename(tempPath, targetPath);
-
-    // Create relative path for file URL (stored in DB)
-    const fileUrl = path.join('documents', documentType, req.file.filename);
+    // Upload to Supabase
+    const { publicUrl } = await uploadFile(
+      'documents',
+      filename,
+      req.file.buffer,
+      {
+        contentType: req.file.mimetype
+      }
+    );
 
     const document = new Document({
       title,
       description,
       fileName: req.file.originalname,
       fileType: req.file.mimetype,
-      fileUrl,
+      fileUrl: publicUrl,
       documentType,
       uploadedBy: req.user._id,
       employeeId
@@ -48,25 +45,11 @@ export const uploadDocument = async (req, res) => {
     await document.save();
     res.status(201).json(document);
   } catch (error) {
-    console.error('Document upload error:', error);
-    
-    // If there was an error, try to clean up the uploaded file
-    if (req.file) {
-      try {
-        await fs.unlink(req.file.path);
-      } catch (unlinkError) {
-        console.error('Error cleaning up file:', unlinkError);
-      }
-    }
-    
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({ 
-        message: 'Validation error', 
-        errors: Object.values(error.errors).map(err => err.message) 
-      });
-    }
-    
-    res.status(500).json({ message: 'Error uploading document' });
+    console.error('Error in uploadDocument:', error);
+    res.status(500).json({ 
+      message: 'Error uploading document',
+      error: error.message 
+    });
   }
 };
 
@@ -106,11 +89,11 @@ export const downloadDocument = async (req, res) => {
     }
 
     // Construct absolute file path
-    const filePath = path.join(__dirname, '..', 'uploads', document.fileUrl);
+    const filePath = new URL(document.fileUrl).pathname.split('/').slice(-3).join('/');
 
     // Check if file exists
     try {
-      await fs.access(filePath);
+      await deleteFile('documents', filePath);
     } catch (error) {
       return res.status(404).json({ message: 'File not found' });
     }
@@ -130,21 +113,23 @@ export const deleteDocument = async (req, res) => {
       return res.status(404).json({ message: 'Document not found' });
     }
 
-    // Delete file from filesystem
-    const filePath = path.join(__dirname, '..', 'uploads', document.fileUrl);
-    try {
-      await fs.unlink(filePath);
-    } catch (error) {
-      console.error('File deletion error:', error);
-    }
+    // Extract filename from URL
+    const fileUrl = new URL(document.fileUrl);
+    const filePath = fileUrl.pathname.split('/').slice(-3).join('/');
 
-    // Delete document from database
+    // Delete from Supabase
+    await deleteFile('documents', filePath);
+
+    // Delete from database
     await Document.findByIdAndDelete(req.params.id);
-    
+
     res.json({ message: 'Document deleted successfully' });
   } catch (error) {
-    console.error('Delete error:', error);
-    res.status(500).json({ message: 'Error deleting document' });
+    console.error('Error in deleteDocument:', error);
+    res.status(500).json({ 
+      message: 'Error deleting document',
+      error: error.message 
+    });
   }
 };
 

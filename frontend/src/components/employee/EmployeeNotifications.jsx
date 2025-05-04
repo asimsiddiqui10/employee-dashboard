@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { Bell, ExternalLink } from 'lucide-react';
+import { handleApiError } from '@/utils/errorHandler';
 
 const EmployeeNotifications = () => {
   const [notifications, setNotifications] = useState([]);
@@ -11,37 +12,21 @@ const EmployeeNotifications = () => {
 
   const fetchNotifications = async () => {
     try {
-      const token = localStorage.getItem('token');
-      console.log('Fetching notifications...'); // Debug log
-      
-      const response = await axios.get('http://localhost:3000/api/notifications/me', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      console.log('Received notifications:', response.data); // Debug log
+      const response = await api.get('/notifications/me');
       setNotifications(response.data);
     } catch (error) {
-      console.error('Error fetching notifications:', error);
-      // Add user feedback
-      if (error.response?.status === 404) {
-        setNotifications([]);
-      }
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
   const markAsRead = async (id) => {
     try {
-      const token = localStorage.getItem('token');
-      await axios.patch(`http://localhost:3000/api/notifications/${id}/read`, {}, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      // Update local state
-      setNotifications(notifications.map(notification => 
-        notification._id === id ? { ...notification, isRead: true } : notification
-      ));
+      await api.patch(`/notifications/${id}/read`);
+      fetchNotifications();
     } catch (error) {
-      console.error('Error marking notification as read:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 

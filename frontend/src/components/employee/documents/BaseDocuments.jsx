@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
 import { Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "../../ui/card";
 
@@ -15,55 +16,33 @@ export default function BaseDocuments({ documentType, title }) {
 
   const fetchDocuments = async () => {
     try {
-      const token = localStorage.getItem('token');
-      
-      // More detailed debugging
-      console.log('Fetching documents...');
-      console.log('Token:', token);
-      console.log('Document type:', documentType);
-
-      const response = await axios.get(`http://localhost:3000/api/documents/type/${documentType}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      
-      console.log('Documents response:', response.data);
+      const response = await api.get(`/documents/type/${documentType}`);
       setDocuments(response.data);
     } catch (error) {
-      console.error('Document fetch error:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        documentType,
-        error: error
-      });
-      setError(error.response?.data?.message || 'Error fetching documents');
+      const { message } = handleApiError(error);
+      setError(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleDownload = async (doc) => {
+  const handleDownload = async (documentId) => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(
-        `http://localhost:3000/api/documents/download/${doc._id}`,
-        {
-          headers: { 'Authorization': `Bearer ${token}` },
-          responseType: 'blob'
-        }
-      );
-
-      const blob = new Blob([response.data], { type: doc.fileType });
-      const url = window.URL.createObjectURL(blob);
+      const response = await api.get(`/documents/download/${documentId}`, {
+        responseType: 'blob'
+      });
+      
+      // Create blob link to download
+      const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', doc.fileName);
+      link.setAttribute('download', `document-${documentId}.pdf`);
       document.body.appendChild(link);
       link.click();
       link.remove();
-      window.URL.revokeObjectURL(url);
     } catch (error) {
-      console.error('Error downloading document:', error);
+      const { message } = handleApiError(error);
+      setError(message);
     }
   };
 
@@ -91,7 +70,7 @@ export default function BaseDocuments({ documentType, title }) {
                   </p>
                 </div>
                 <button
-                  onClick={() => handleDownload(doc)}
+                  onClick={() => handleDownload(doc._id)}
                   className="p-2 hover:bg-gray-100 rounded-full dark:hover:bg-gray-800"
                   title="Download document"
                 >

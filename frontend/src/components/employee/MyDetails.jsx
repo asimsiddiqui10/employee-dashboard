@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '@/lib/axios';
 import { useAuth } from '../../context/authContext';
 import { User } from 'lucide-react';
+import { handleApiError } from '@/utils/errorHandler';
 
 const MyDetails = () => {
   const [employeeDetails, setEmployeeDetails] = useState(null);
@@ -13,13 +14,11 @@ const MyDetails = () => {
 
   const fetchEmployeeDetails = async () => {
     try {
-      const token = localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:3000/api/employees/${user.employee}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const response = await api.get(`/employees/${user.employee}`);
       setEmployeeDetails(response.data);
     } catch (error) {
-      console.error('Error fetching employee details:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
     }
   };
 
