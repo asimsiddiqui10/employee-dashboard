@@ -24,7 +24,7 @@ const EmployeeDashboard = () => {
           </div>
           
           <div className="text-center flex-1">
-            <h1 className="text-xl font-semibold">American Completion Tools</h1>
+            <h1 className="text-base sm:text-lg md:text-xl font-semibold truncate">American Completion Tools</h1>
           </div>
 
           <div className="flex items-center gap-4 px-4">

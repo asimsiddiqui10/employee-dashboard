@@ -11,7 +11,7 @@ const Navbar = () => {
         <div className="flex-1" />
         
         <div className="text-center flex-1">
-          <h1 className="text-xl font-semibold text-gray-900">American Completion Tools</h1>
+          <h1 className="text-base sm:text-lg md:text-xl font-semibold text-gray-900 truncate">American Completion Tools</h1>
         </div>
         
         <div className="flex items-center gap-4 flex-1 justify-end">
