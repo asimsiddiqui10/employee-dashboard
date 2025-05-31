@@ -27,10 +27,12 @@ const Login = () => {
         e.preventDefault();
         setError('');
         try {
-            console.log('API Config:', {
-                baseURL: api.defaults.baseURL,
-                url: '/auth/login',
-                fullURL: `${api.defaults.baseURL}/auth/login`
+            // Add detailed logging of the request
+            console.log('Login attempt with:', {
+                email,
+                apiUrl: api.defaults.baseURL,
+                environment: import.meta.env.MODE,
+                headers: api.defaults.headers
             });
             
             const response = await api.post('/auth/login', { 
@@ -53,10 +55,19 @@ const Login = () => {
                 setError(message);
             }
         } catch (error) {
+            // Enhanced error logging
             console.error('Login error details:', {
-                error: error,
-                response: error.response,
-                config: error.config
+                message: error.message,
+                status: error.response?.status,
+                statusText: error.response?.statusText,
+                data: error.response?.data,
+                headers: error.response?.headers,
+                config: {
+                    url: error.config?.url,
+                    method: error.config?.method,
+                    baseURL: error.config?.baseURL,
+                    headers: error.config?.headers
+                }
             });
             const { message } = handleApiError(error);
             setError(message);
