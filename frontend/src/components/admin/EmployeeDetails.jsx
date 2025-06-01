@@ -3,15 +3,15 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { Upload, User, ArrowLeft, Pencil, Trash2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Upload, User, ArrowLeft, Pencil, Trash2, Download } from 'lucide-react';
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
@@ -20,9 +20,18 @@ const EmployeeDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [documents, setDocuments] = useState({
+    personal: [],
+    payroll: [],
+    company: [],
+    onboarding: [],
+    benefits: [],
+    training: []
+  });
 
   useEffect(() => {
     fetchEmployeeDetails();
+    fetchAllDocuments();
   }, [employeeId]);
 
   const fetchEmployeeDetails = async () => {
@@ -35,24 +44,60 @@ const EmployeeDetails = () => {
     }
   };
 
+  const fetchAllDocuments = async () => {
+    try {
+      const documentTypes = ['personal', 'payroll', 'company', 'onboarding', 'benefits', 'training'];
+      console.log('Fetching documents for employee:', employeeId);
+      
+      const fetchPromises = documentTypes.map(type => 
+        api.get(`/documents/employee/${employeeId}/type/${type}`)
+          .then(response => ({
+            type,
+            documents: response.data
+          }))
+          .catch(error => ({
+            type,
+            documents: []
+          }))
+      );
+      
+      const results = await Promise.all(fetchPromises);
+      const grouped = results.reduce((acc, { type, documents }) => {
+        acc[type] = documents;
+        return acc;
+      }, {
+        personal: [],
+        payroll: [],
+        company: [],
+        onboarding: [],
+        benefits: [],
+        training: []
+      });
+      
+      setDocuments(grouped);
+    } catch (error) {
+      console.error('Error fetching documents:', error);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setForm(prevForm => {
-      if (name.includes('.')) {
-        const [parent, child] = name.split('.');
-        return {
-          ...prevForm,
-          [parent]: { ...prevForm[parent], [child]: value }
-        };
-      }
-      return { ...prevForm, [name]: value };
-    });
+    if (name.includes('.')) {
+      const [parent, child] = name.split('.');
+      setForm(prev => ({
+        ...prev,
+        [parent]: { ...prev[parent], [child]: value }
+      }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSave = async () => {
     try {
       await api.put(`/employees/${employeeId}`, form);
       setIsEditing(false);
+      fetchEmployeeDetails(); // Refresh the data
     } catch (error) {
       const { message } = handleApiError(error);
       console.error(message);
@@ -83,7 +128,6 @@ const EmployeeDetails = () => {
         }
       });
       
-      // Update the form state with the new profile pic URL
       setForm(prev => ({ ...prev, profilePic: response.data.profilePic }));
     } catch (error) {
       const { message } = handleApiError(error);
@@ -92,243 +136,490 @@ const EmployeeDetails = () => {
     }
   };
 
+  const handleDownload = async (documentId) => {
+    try {
+      const response = await api.get(`/documents/download/${documentId}`);
+      window.open(response.data.downloadUrl, '_blank');
+    } catch (error) {
+      const { message } = handleApiError(error);
+      console.error(message);
+    }
+  };
+
+  const DocumentList = ({ documents }) => (
+    <div className="space-y-4">
+      {documents.map((doc) => (
+        <div key={doc._id} className="flex justify-between items-center p-4 border rounded-lg">
+          <div>
+            <h3 className="font-medium">{doc.title}</h3>
+            <p className="text-sm text-gray-500">{doc.description}</p>
+            <p className="text-xs text-gray-400">
+              Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleDownload(doc._id)}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Download
+          </Button>
+        </div>
+      ))}
+      {documents.length === 0 && (
+        <p className="text-gray-500 text-center py-4">No documents found</p>
+      )}
+    </div>
+  );
+
   if (!form) return <div>Loading...</div>;
 
   return (
-    <Card className="w-full">
-      <CardHeader className={cn(
-        "pb-8 border-b",
-        "bg-[hsl(var(--sidebar-background))] dark:bg-[hsl(var(--sidebar-background))]"
-      )}>
-        <div className="flex justify-between items-start">
-          <div className="flex items-center gap-6">
-            {/* Profile Picture */}
-            <div className="relative group">
-              {form?.profilePic ? (
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={`http://localhost:3000${form.profilePic}`} alt={form.name} />
-                  <AvatarFallback>{form.name.charAt(0)}</AvatarFallback>
-                </Avatar>
-              ) : (
-                <Avatar className="h-24 w-24">
-                  <AvatarFallback>
-                    <User className="h-12 w-12" />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              
-              {isEditing && (
-                <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                  <input
-                    type="file"
-                    onChange={handleFileSelect}
-                    className="hidden"
-                    id="profile-upload"
-                    accept="image/*"
+    <div className="container mx-auto -mt-2">
+      <div className="flex items-center h-14 mb-6">
+        <Button
+          variant="ghost"
+          onClick={() => navigate(-1)}
+          className="text-muted-foreground hover:text-foreground px-2"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Employees
+        </Button>
+      </div>
+
+      <Card className="overflow-hidden">
+        <div className="bg-gray-100 dark:bg-gray-800 p-6">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-6">
+              <div className="relative group">
+                {form?.profilePic ? (
+                  <img
+                    src={form.profilePic}
+                    alt={form.name}
+                    className="w-24 h-24 rounded-lg object-cover border-2 border-white"
                   />
-                  <label
-                    htmlFor="profile-upload"
-                    className="bg-black/50 hover:bg-black/70 text-white px-3 py-2 rounded-full text-sm cursor-pointer flex items-center"
-                  >
-                    <Upload size={14} className="mr-1" />
-                    Update
-                  </label>
+                ) : (
+                  <div className="w-24 h-24 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-2 border-white">
+                    <User className="h-12 w-12 text-gray-400" />
+                  </div>
+                )}
+                
+                {isEditing && (
+                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                    <input
+                      type="file"
+                      onChange={handleFileSelect}
+                      className="hidden"
+                      id="profile-upload"
+                      accept="image/*"
+                    />
+                    <label
+                      htmlFor="profile-upload"
+                      className="bg-black/50 hover:bg-black/70 text-white px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center"
+                    >
+                      <Upload size={14} className="mr-1" />
+                      Update
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-3xl font-bold">{form?.name}</h2>
+                <div className="flex items-center gap-2 mt-1 text-muted-foreground">
+                  <span>{form?.position}</span>
+                  {form?.department && (
+                    <>
+                      <span>•</span>
+                      <span>{form.department}</span>
+                    </>
+                  )}
                 </div>
-              )}
-            </div>
-
-            {/* Name and Title */}
-            <div>
-              <h2 className="text-3xl font-bold text-foreground">{form?.name}</h2>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-lg text-muted-foreground">{form?.position}</span>
-                {form?.department && (
-                  <Badge variant="secondary">
-                    {form.department}
-                  </Badge>
-                )}
               </div>
             </div>
-          </div>
 
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-2">
-            {!isEditing ? (
-              <>
-                <Button
-                  variant="outline"
-                  onClick={() => setIsEditing(true)}
-                  className={cn(
-                    "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
-                    "transition-colors font-medium w-full sm:w-auto"
-                  )}
-                >
-                  <Pencil className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Edit</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => setShowDeleteModal(true)}
-                  className={cn(
-                    "bg-red-500/10 text-red-500 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-400 dark:hover:bg-red-500/30",
-                    "transition-colors font-medium w-full sm:w-auto"
-                  )}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  <span className="hidden sm:inline">Delete</span>
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="default"
-                onClick={handleSave}
-                className={cn(
-                  "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30",
-                  "transition-colors font-medium w-full sm:w-auto"
-                )}
-              >
-                Save Changes
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={() => navigate('/admin-dashboard/employees')}
-              className={cn(
-                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400 dark:hover:bg-emerald-500/30",
-                "transition-colors font-medium w-full sm:w-auto"
-              )}
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Back</span>
-            </Button>
-          </div>
-        </div>
-      </CardHeader>
-
-      <CardContent className="pt-8 px-6">
-        {/* Personal Information */}
-        <div className="space-y-6">
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Personal Information</h3>
-            <Separator className="my-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {isEditing ? (
+            <div className="flex gap-2">
+              {!isEditing ? (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="employeeId">Employee ID</Label>
-                    <Input
-                      id="employeeId"
-                      name="employeeId"
-                      value={form?.employeeId || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      value={form?.email || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="phoneNumber">Phone Number</Label>
-                    <Input
-                      id="phoneNumber"
-                      name="phoneNumber"
-                      value={form?.phoneNumber || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                    <Input
-                      id="dateOfBirth"
-                      name="dateOfBirth"
-                      type="date"
-                      value={form?.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="gender">Gender</Label>
-                    <Input
-                      id="gender"
-                      name="gender"
-                      value={form?.gender || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="nationality">Nationality</Label>
-                    <Input
-                      id="nationality"
-                      name="nationality"
-                      value={form?.nationality || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsEditing(true)}
+                    className="bg-white hover:bg-gray-50"
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="bg-white hover:bg-gray-50 text-red-600 hover:text-red-700"
+                  >
+                    Delete
+                  </Button>
                 </>
               ) : (
-                <>
-                  <InfoField label="Employee ID" value={form?.employeeId} />
-                  <InfoField label="Email" value={form?.email} />
-                  <InfoField label="Phone Number" value={form?.phoneNumber} />
-                  <InfoField 
-                    label="Date of Birth" 
-                    value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} 
-                  />
-                  <InfoField label="Gender" value={form?.gender} />
-                  <InfoField label="Nationality" value={form?.nationality} />
-                </>
+                <Button
+                  variant="default"
+                  onClick={handleSave}
+                >
+                  Save Changes
+                </Button>
               )}
             </div>
           </div>
 
-          {/* Work Information */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Work Information</h3>
-            <Separator className="my-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoField label="Position" value={form?.position} />
-              <InfoField label="Department" value={form?.department} />
-              <InfoField label="Employment Type" value={form?.employmentType} />
-              <InfoField 
-                label="Date of Hire" 
-                value={form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'} 
-              />
-              <InfoField label="Work Email" value={form?.workEmail} />
-              <InfoField label="Work Phone" value={form?.workPhoneNumber} />
-            </div>
-          </div>
+          <Tabs defaultValue="personal" className="mt-6">
+            <TabsList className="bg-white dark:bg-gray-700 p-1 gap-1">
+              <TabsTrigger 
+                value="personal"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
+              >
+                Personal
+              </TabsTrigger>
+              <TabsTrigger 
+                value="work"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
+              >
+                Work
+              </TabsTrigger>
+              <TabsTrigger 
+                value="leave"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
+              >
+                Leave
+              </TabsTrigger>
+              <TabsTrigger 
+                value="documents"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
+              >
+                Documents
+              </TabsTrigger>
+              <TabsTrigger 
+                value="benefits"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
+              >
+                Benefits
+              </TabsTrigger>
+              <TabsTrigger 
+                value="performance"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
+              >
+                Performance
+              </TabsTrigger>
+              <TabsTrigger 
+                value="training"
+                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
+              >
+                Training
+              </TabsTrigger>
+            </TabsList>
 
-          {/* Contact Information */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Contact Information</h3>
-            <Separator className="my-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="col-span-2">
-                <InfoField label="Address" value={form?.address} />
-              </div>
-              <InfoField label="City" value={form?.city} />
-              <InfoField label="State" value={form?.state} />
-              <InfoField label="Zip Code" value={form?.zipCode} />
-            </div>
-          </div>
+            <div className="p-6">
+              <TabsContent value="personal">
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold">Personal Information</h3>
+                  <Separator className="my-4" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {isEditing ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                          <Input
+                            id="dateOfBirth"
+                            name="dateOfBirth"
+                            type="date"
+                            value={form?.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="ssn">SSN</Label>
+                          <Input
+                            id="ssn"
+                            name="ssn"
+                            value={form?.ssn || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="nationality">Nationality</Label>
+                          <Input
+                            id="nationality"
+                            name="nationality"
+                            value={form?.nationality || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="phoneNumber">Phone Number</Label>
+                          <Input
+                            id="phoneNumber"
+                            name="phoneNumber"
+                            value={form?.phoneNumber || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="address">Address</Label>
+                          <Input
+                            id="address"
+                            name="address"
+                            value={form?.address || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="city">City</Label>
+                          <Input
+                            id="city"
+                            name="city"
+                            value={form?.city || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="state">State</Label>
+                          <Input
+                            id="state"
+                            name="state"
+                            value={form?.state || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="zipCode">ZIP Code</Label>
+                          <Input
+                            id="zipCode"
+                            name="zipCode"
+                            value={form?.zipCode || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="educationLevel">Education Level</Label>
+                          <Input
+                            id="educationLevel"
+                            name="educationLevel"
+                            value={form?.educationLevel || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-2">
+                          <Label htmlFor="certifications">Certifications (comma-separated)</Label>
+                          <Input
+                            id="certifications"
+                            name="certifications"
+                            value={form?.certifications?.join(', ') || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="emergencyContact.name">Emergency Contact Name</Label>
+                          <Input
+                            id="emergencyContact.name"
+                            name="emergencyContact.name"
+                            value={form?.emergencyContact?.name || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="emergencyContact.phone">Emergency Contact Phone</Label>
+                          <Input
+                            id="emergencyContact.phone"
+                            name="emergencyContact.phone"
+                            value={form?.emergencyContact?.phone || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <InfoField label="Date of Birth" value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} />
+                        <InfoField label="SSN" value={form?.ssn} />
+                        <InfoField label="Nationality" value={form?.nationality} />
+                        <InfoField label="Phone Number" value={form?.phoneNumber} />
+                        <InfoField label="Address" value={form?.address} />
+                        <InfoField label="City" value={form?.city} />
+                        <InfoField label="State" value={form?.state} />
+                        <InfoField label="ZIP Code" value={form?.zipCode} />
+                        <InfoField label="Education Level" value={form?.educationLevel} />
+                        <InfoField label="Certifications" value={form?.certifications?.join(', ')} />
+                        <InfoField label="Emergency Contact Name" value={form?.emergencyContact?.name} />
+                        <InfoField label="Emergency Contact Phone" value={form?.emergencyContact?.phone} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
 
-          {/* Emergency Contact */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Emergency Contact</h3>
-            <Separator className="my-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoField label="Name" value={form?.emergencyContact?.name} />
-              <InfoField label="Phone" value={form?.emergencyContact?.phone} />
+              <TabsContent value="work">
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold">Work Information</h3>
+                  <Separator className="my-4" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {isEditing ? (
+                      <>
+                        <div className="space-y-2">
+                          <Label htmlFor="department">Department</Label>
+                          <Input
+                            id="department"
+                            name="department"
+                            value={form?.department || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="position">Position</Label>
+                          <Input
+                            id="position"
+                            name="position"
+                            value={form?.position || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="jobTitle">Job Title</Label>
+                          <Input
+                            id="jobTitle"
+                            name="jobTitle"
+                            value={form?.jobTitle || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="employmentType">Employment Type</Label>
+                          <Select
+                            value={form?.employmentType || ''}
+                            onValueChange={(value) => handleInputChange({ target: { name: 'employmentType', value } })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Full-time">Full-time</SelectItem>
+                              <SelectItem value="Part-time">Part-time</SelectItem>
+                              <SelectItem value="Contract">Contract</SelectItem>
+                              <SelectItem value="Consultant">Consultant</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="employmentStatus">Employment Status</Label>
+                          <Select
+                            value={form?.employmentStatus || ''}
+                            onValueChange={(value) => handleInputChange({ target: { name: 'employmentStatus', value } })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Active">Active</SelectItem>
+                              <SelectItem value="On leave">On leave</SelectItem>
+                              <SelectItem value="Terminated">Terminated</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="dateOfHire">Date of Hire</Label>
+                          <Input
+                            id="dateOfHire"
+                            name="dateOfHire"
+                            type="date"
+                            value={form?.dateOfHire ? new Date(form.dateOfHire).toISOString().split('T')[0] : ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="terminationDate">Termination Date</Label>
+                          <Input
+                            id="terminationDate"
+                            name="terminationDate"
+                            type="date"
+                            value={form?.terminationDate ? new Date(form.terminationDate).toISOString().split('T')[0] : ''}
+                            onChange={handleInputChange}
+                            disabled={form?.employmentStatus !== 'Terminated'}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="workEmail">Work Email</Label>
+                          <Input
+                            id="workEmail"
+                            name="workEmail"
+                            type="email"
+                            value={form?.workEmail || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="workPhoneNumber">Work Phone Number</Label>
+                          <Input
+                            id="workPhoneNumber"
+                            name="workPhoneNumber"
+                            value={form?.workPhoneNumber || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className="col-span-2 space-y-2">
+                          <Label htmlFor="jobDescription">Job Description</Label>
+                          <Input
+                            id="jobDescription"
+                            name="jobDescription"
+                            value={form?.jobDescription || ''}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <InfoField label="Department" value={form?.department} />
+                        <InfoField label="Position" value={form?.position} />
+                        <InfoField label="Job Title" value={form?.jobTitle} />
+                        <InfoField label="Employment Type" value={form?.employmentType} />
+                        <InfoField label="Employment Status" value={form?.employmentStatus} />
+                        <InfoField label="Date of Hire" value={form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'} />
+                        <InfoField label="Termination Date" value={form?.terminationDate ? new Date(form.terminationDate).toLocaleDateString() : 'Not provided'} />
+                        <InfoField label="Work Email" value={form?.workEmail} />
+                        <InfoField label="Work Phone Number" value={form?.workPhoneNumber} />
+                        <InfoField label="Job Description" value={form?.jobDescription} />
+                      </>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="leave">
+                {/* Leave content */}
+              </TabsContent>
+
+              <TabsContent value="documents">
+                <div className="space-y-6">
+                  <h3 className="text-lg font-semibold">All Documents</h3>
+                  <div className="space-y-8">
+                    {Object.entries(documents).map(([type, docs]) => (
+                      <div key={type}>
+                        <h4 className="font-medium mb-3 capitalize">{type} Documents</h4>
+                        <DocumentList documents={docs} />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="benefits">
+                {/* Benefits content */}
+              </TabsContent>
+
+              <TabsContent value="performance">
+                {/* Performance content */}
+              </TabsContent>
+
+              <TabsContent value="training">
+                {/* Training content */}
+              </TabsContent>
             </div>
-          </div>
+          </Tabs>
         </div>
-      </CardContent>
+      </Card>
 
       {showDeleteModal && (
         <DeleteConfirmationModal
@@ -337,7 +628,7 @@ const EmployeeDetails = () => {
           onConfirm={handleDelete}
         />
       )}
-    </Card>
+    </div>
   );
 };
 

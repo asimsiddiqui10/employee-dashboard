@@ -35,6 +35,15 @@ export default defineConfig({
         target: 'http://localhost:3000',
         changeOrigin: true,
       },
+    },
+    hmr: {
+      overlay: true,
+      clientPort: 5173,
+      timeout: 120000,
+    },
+    watch: {
+      usePolling: true,
+      interval: 100,
     }
   },
 })
