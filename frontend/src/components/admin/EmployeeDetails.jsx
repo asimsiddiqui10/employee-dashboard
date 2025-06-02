@@ -4,7 +4,7 @@ import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { Upload, User, ArrowLeft, Pencil, Trash2, Download } from 'lucide-react';
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -161,20 +161,20 @@ const EmployeeDetails = () => {
   if (!form) return <div>Loading...</div>;
 
   return (
-    <div className="container mx-auto -mt-2">
-      <div className="flex items-center h-14 mb-6">
+    <div className="container mx-auto p-6">
+      <div className="flex items-center mb-6">
         <Button
           variant="ghost"
           onClick={() => navigate(-1)}
-          className="text-muted-foreground hover:text-foreground px-2"
+          className="text-muted-foreground hover:text-foreground"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Employees
         </Button>
       </div>
 
-      <Card className="overflow-hidden">
-        <div className="bg-gray-100 dark:bg-gray-800 p-6">
+      <Card>
+        <CardHeader className="bg-background p-6">
           <div className="flex justify-between items-start">
             <div className="flex items-center gap-6">
               <div className="relative group">
@@ -182,11 +182,11 @@ const EmployeeDetails = () => {
                   <img
                     src={form.profilePic}
                     alt={form.name}
-                    className="w-24 h-24 rounded-lg object-cover border-2 border-white"
+                    className="w-24 h-24 rounded-lg object-cover ring-2 ring-muted"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-lg bg-gray-200 dark:bg-gray-700 flex items-center justify-center border-2 border-white">
-                    <User className="h-12 w-12 text-gray-400" />
+                  <div className="w-24 h-24 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
+                    <User className="h-12 w-12 text-muted-foreground" />
                   </div>
                 )}
                 
@@ -201,7 +201,7 @@ const EmployeeDetails = () => {
                     />
                     <label
                       htmlFor="profile-upload"
-                      className="bg-black/50 hover:bg-black/70 text-white px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center"
+                      className="bg-background/80 hover:bg-background/90 text-foreground px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center shadow-sm"
                     >
                       <Upload size={14} className="mr-1" />
                       Update
@@ -211,7 +211,7 @@ const EmployeeDetails = () => {
               </div>
 
               <div>
-                <h2 className="text-3xl font-bold">{form?.name}</h2>
+                <h2 className="text-2xl font-semibold text-foreground">{form?.name}</h2>
                 <div className="flex items-center gap-2 mt-1 text-muted-foreground">
                   <span>{form?.position}</span>
                   {form?.department && (
@@ -230,14 +230,12 @@ const EmployeeDetails = () => {
                   <Button
                     variant="outline"
                     onClick={() => setIsEditing(true)}
-                    className="bg-white hover:bg-gray-50"
                   >
                     Edit
                   </Button>
                   <Button
-                    variant="outline"
+                    variant="destructive"
                     onClick={() => setShowDeleteModal(true)}
-                    className="bg-white hover:bg-gray-50 text-red-600 hover:text-red-700"
                   >
                     Delete
                   </Button>
@@ -254,52 +252,80 @@ const EmployeeDetails = () => {
           </div>
 
           <Tabs defaultValue="personal" className="mt-6">
-            <TabsList className="bg-white dark:bg-gray-700 p-1 gap-1">
-              <TabsTrigger 
-                value="personal"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
-              >
-                Personal
-              </TabsTrigger>
-              <TabsTrigger 
-                value="work"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
-              >
-                Work
-              </TabsTrigger>
-              <TabsTrigger 
-                value="leave"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
-              >
-                Leave
-              </TabsTrigger>
-              <TabsTrigger 
-                value="documents"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
-              >
-                Documents
-              </TabsTrigger>
-              <TabsTrigger 
-                value="benefits"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
-              >
-                Benefits
-              </TabsTrigger>
-              <TabsTrigger 
-                value="performance"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
-              >
-                Performance
-              </TabsTrigger>
-              <TabsTrigger 
-                value="training"
-                className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground rounded-md"
-              >
-                Training
-              </TabsTrigger>
-            </TabsList>
+            <div className="relative">
+              <div className="overflow-x-auto">
+                <TabsList className="w-full inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground">
+                  {[
+                    'personal',
+                    'work',
+                    'leave',
+                    'documents',
+                    'benefits',
+                    'performance',
+                    'training'
+                  ].map((tab) => (
+                    <TabsTrigger
+                      key={tab}
+                      value={tab}
+                      className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </div>
+            </div>
 
-            <div className="p-6">
+            <CardContent className="p-6">
+              <TabsContent value="documents" className="mt-0">
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Employee Documents</h3>
+                    <Button
+                      onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}`)}
+                      className="gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload Document
+                    </Button>
+                  </div>
+                  <Separator />
+                  <div className="space-y-8">
+                    {Object.entries(documents).map(([type, docs]) => (
+                      <div key={type} className="space-y-4">
+                        <h4 className="font-medium capitalize text-muted-foreground">{type} Documents</h4>
+                        {docs.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">No {type} documents found</p>
+                        ) : (
+                          <div className="grid gap-4">
+                            {docs.map((doc) => (
+                              <div key={doc._id} className="flex justify-between items-center p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
+                                <div>
+                                  <h3 className="font-medium">{doc.title}</h3>
+                                  <p className="text-sm text-muted-foreground">{doc.description}</p>
+                                  <p className="text-xs text-muted-foreground mt-1">
+                                    Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleDownload(doc._id)}
+                                  className="gap-2"
+                                >
+                                  <Download className="h-4 w-4" />
+                                  Download
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </TabsContent>
+
               <TabsContent value="personal">
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold">Personal Information</h3>
@@ -576,54 +602,6 @@ const EmployeeDetails = () => {
                 {/* Leave content */}
               </TabsContent>
 
-              <TabsContent value="documents">
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Employee Documents</h3>
-                    <Button
-                      variant="outline"
-                      onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}`)}
-                      className="bg-white hover:bg-gray-50"
-                    >
-                      Upload New Document
-                    </Button>
-                  </div>
-                  <Separator className="my-4" />
-                  <div className="space-y-8">
-                    {Object.entries(documents).map(([type, docs]) => (
-                      <div key={type} className="space-y-4">
-                        <h4 className="font-medium capitalize">{type} Documents</h4>
-                        {docs.length === 0 ? (
-                          <p className="text-muted-foreground text-sm">No {type} documents found</p>
-                        ) : (
-                          <div className="grid gap-4">
-                            {docs.map((doc) => (
-                              <div key={doc._id} className="flex justify-between items-center p-4 border rounded-lg bg-white dark:bg-gray-900">
-                                <div>
-                                  <h3 className="font-medium">{doc.title}</h3>
-                                  <p className="text-sm text-gray-500">{doc.description}</p>
-                                  <p className="text-xs text-gray-400">
-                                    Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
-                                  </p>
-                                </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  onClick={() => handleDownload(doc._id)}
-                                >
-                                  <Download className="h-4 w-4 mr-2" />
-                                  Download
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-
               <TabsContent value="benefits">
                 {/* Benefits content */}
               </TabsContent>
@@ -635,9 +613,9 @@ const EmployeeDetails = () => {
               <TabsContent value="training">
                 {/* Training content */}
               </TabsContent>
-            </div>
+            </CardContent>
           </Tabs>
-        </div>
+        </CardHeader>
       </Card>
 
       {showDeleteModal && (
@@ -655,7 +633,7 @@ const EmployeeDetails = () => {
 const InfoField = ({ label, value }) => (
   <div className="space-y-1">
     <Label className="text-sm text-muted-foreground">{label}</Label>
-    <p className="font-medium">{value || 'Not provided'}</p>
+    <p className="font-medium text-foreground">{value || 'Not provided'}</p>
   </div>
 );
 

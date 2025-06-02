@@ -3,144 +3,191 @@ import api from '@/lib/axios';
 import { useAuth } from '../../context/authContext';
 import { User } from 'lucide-react';
 import { handleApiError } from '@/utils/errorHandler';
+import { toast } from '@/hooks/use-toast';
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 
 const MyDetails = () => {
   const [employeeDetails, setEmployeeDetails] = useState(null);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
   useEffect(() => {
-    fetchEmployeeDetails();
-  }, []);
+    if (user) {
+      fetchEmployeeDetails();
+    } else {
+      setLoading(false);
+      toast({
+        title: "Error",
+        description: "User not found. Please try logging in again.",
+        variant: "destructive",
+      });
+    }
+  }, [user]);
 
   const fetchEmployeeDetails = async () => {
     try {
-      const response = await api.get(`/employees/${user.employee}`);
+      const response = await api.get('/employees/me');
+      console.log('Employee details:', response.data);
       setEmployeeDetails(response.data);
     } catch (error) {
       const { message } = handleApiError(error);
-      console.error(message);
+      console.error('Error fetching employee details:', error);
+      toast({
+        title: "Error",
+        description: "Failed to load employee details. Please try again later.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (!employeeDetails) return <div>Loading...</div>;
+  if (loading) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Loading your details...</p>
+      </div>
+    </div>
+  );
+
+  if (!employeeDetails) return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <p className="text-muted-foreground">No employee details found.</p>
+      </div>
+    </div>
+  );
+
+  const formatDate = (date) => {
+    return date ? new Date(date).toLocaleDateString() : 'Not provided';
+  };
+
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD'
+    }).format(value);
+  };
+
+  const InfoItem = ({ label, value }) => (
+    <div>
+      <p className="text-sm text-muted-foreground">{label}</p>
+      <p className="font-medium text-foreground">{value}</p>
+    </div>
+  );
 
   return (
-    <div className="bg-white shadow rounded-lg">
-      {/* Header Section with Photo, Name, and Job Info */}
-      <div className="relative h-32 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-t-lg">
-        <div className="absolute -bottom-16 left-8 flex items-end">
-          {employeeDetails.profilePic ? (
-            <img
-              src={employeeDetails.profilePic}
-              alt={employeeDetails.name}
-              className="w-32 h-32 rounded-full border-4 border-white bg-white"
-            />
-          ) : (
-            <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-100 flex items-center justify-center">
-              <User size={64} className="text-gray-400" />
-            </div>
-          )}
-          <div className="ml-4 mb-4 text-white">
-            <h1 className="text-2xl font-bold">{employeeDetails.name}</h1>
-            <p className="text-sm opacity-90">{employeeDetails.position} at {employeeDetails.department}</p>
-          </div>
-        </div>
-      </div>
+    <div className="container mx-auto p-6 space-y-6">
+      <Card>
+        <CardHeader className="bg-background p-6">
+          <div className="flex justify-between items-start">
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                {employeeDetails.profilePic ? (
+                  <img
+                    src={employeeDetails.profilePic}
+                    alt={employeeDetails.name}
+                    className="w-24 h-24 rounded-lg object-cover ring-2 ring-muted"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
+                    <User className="h-12 w-12 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
 
-      {/* Main Content */}
-      <div className="pt-20 p-8">
-        {/* Personal Information */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Personal Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Employee ID</p>
-              <p className="font-medium">{employeeDetails.employeeId}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Email</p>
-              <p className="font-medium">{employeeDetails.email}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Phone Number</p>
-              <p className="font-medium">{employeeDetails.phoneNumber || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Date of Birth</p>
-              <p className="font-medium">
-                {employeeDetails.dateOfBirth ? new Date(employeeDetails.dateOfBirth).toLocaleDateString() : 'Not provided'}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Gender</p>
-              <p className="font-medium">{employeeDetails.gender || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Nationality</p>
-              <p className="font-medium">{employeeDetails.nationality || 'Not provided'}</p>
+              <div>
+                <h2 className="text-2xl font-semibold text-foreground">{employeeDetails.name}</h2>
+                <div className="flex items-center gap-2 mt-1 text-muted-foreground">
+                  <span>{employeeDetails.position}</span>
+                  {employeeDetails.department && (
+                    <>
+                      <span>•</span>
+                      <span>{employeeDetails.department}</span>
+                    </>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Employee ID: {employeeDetails.employeeId}
+                </p>
+              </div>
             </div>
           </div>
-        </div>
+        </CardHeader>
 
-        {/* Work Information */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Work Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Position</p>
-              <p className="font-medium">{employeeDetails.position}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Department</p>
-              <p className="font-medium">{employeeDetails.department}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Employment Type</p>
-              <p className="font-medium">{employeeDetails.employmentType}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Date of Hire</p>
-              <p className="font-medium">
-                {employeeDetails.dateOfHire ? new Date(employeeDetails.dateOfHire).toLocaleDateString() : 'Not provided'}
-              </p>
+        <CardContent className="p-6 space-y-8">
+          {/* Personal Information */}
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Personal Information</h2>
+            <Separator className="mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoItem label="Full Name" value={employeeDetails.name} />
+              <InfoItem label="SSN" value={employeeDetails.ssn || 'Not provided'} />
+              <InfoItem label="Email" value={employeeDetails.email} />
+              <InfoItem label="Phone Number" value={employeeDetails.phoneNumber || 'Not provided'} />
+              <InfoItem label="Work Phone" value={employeeDetails.workPhoneNumber || 'Not provided'} />
+              <InfoItem label="Date of Birth" value={formatDate(employeeDetails.dateOfBirth)} />
+              <InfoItem label="Gender" value={employeeDetails.gender || 'Not provided'} />
+              <InfoItem label="Nationality" value={employeeDetails.nationality || 'Not provided'} />
             </div>
           </div>
-        </div>
 
-        {/* Contact Information */}
-        <div className="mb-8">
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Contact Information</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="col-span-2">
-              <p className="text-sm text-gray-600">Address</p>
-              <p className="font-medium">{employeeDetails.address || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">City</p>
-              <p className="font-medium">{employeeDetails.city || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">State</p>
-              <p className="font-medium">{employeeDetails.state || 'Not provided'}</p>
+          {/* Work Information */}
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Work Information</h2>
+            <Separator className="mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoItem label="Position" value={employeeDetails.position} />
+              <InfoItem label="Department" value={employeeDetails.department} />
+              <InfoItem label="Employment Type" value={employeeDetails.employmentType || 'Not specified'} />
+              <InfoItem label="Role" value={employeeDetails.role} />
+              <InfoItem label="Status" value={employeeDetails.active ? 'Active' : 'Inactive'} />
+              <InfoItem label="Date of Hire" value={formatDate(employeeDetails.dateOfHire)} />
+              <InfoItem label="Manager" value={employeeDetails.manager?.name || 'Not assigned'} />
             </div>
           </div>
-        </div>
 
-        {/* Emergency Contact */}
-        <div>
-          <h2 className="text-xl font-semibold mb-4 text-gray-800 border-b pb-2">Emergency Contact</h2>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-sm text-gray-600">Name</p>
-              <p className="font-medium">{employeeDetails.emergencyContact?.name || 'Not provided'}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Phone</p>
-              <p className="font-medium">{employeeDetails.emergencyContact?.phone || 'Not provided'}</p>
+          {/* Compensation Information */}
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Compensation Information</h2>
+            <Separator className="mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoItem label="Compensation Type" value={employeeDetails.compensationType || 'Not specified'} />
+              <InfoItem 
+                label="Compensation Value" 
+                value={employeeDetails.compensationValue ? formatCurrency(employeeDetails.compensationValue) : 'Not specified'} 
+              />
             </div>
           </div>
-        </div>
-      </div>
+
+          {/* Contact Information */}
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Contact Information</h2>
+            <Separator className="mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoItem label="Address" value={employeeDetails.address || 'Not provided'} />
+              <InfoItem label="City" value={employeeDetails.city || 'Not provided'} />
+              <InfoItem label="State" value={employeeDetails.state || 'Not provided'} />
+              <InfoItem label="Postal Code" value={employeeDetails.postalCode || 'Not provided'} />
+              <InfoItem label="Country" value={employeeDetails.country || 'Not provided'} />
+            </div>
+          </div>
+
+          {/* Emergency Contact */}
+          <div>
+            <h2 className="text-xl font-semibold text-foreground mb-4">Emergency Contact</h2>
+            <Separator className="mb-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InfoItem label="Name" value={employeeDetails.emergencyContact?.name || 'Not provided'} />
+              <InfoItem label="Relationship" value={employeeDetails.emergencyContact?.relationship || 'Not provided'} />
+              <InfoItem label="Phone" value={employeeDetails.emergencyContact?.phone || 'Not provided'} />
+              <InfoItem label="Email" value={employeeDetails.emergencyContact?.email || 'Not provided'} />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

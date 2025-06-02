@@ -40,10 +40,12 @@ export default defineConfig({
       overlay: true,
       clientPort: 5173,
       timeout: 120000,
+      host: 'localhost',
     },
     watch: {
       usePolling: true,
       interval: 100,
+      ignored: ['**/node_modules/**', '**/dist/**', '**/.git/**'],
     }
   },
 })

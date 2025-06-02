@@ -183,14 +183,32 @@ export const getEmployees = async (req, res) => {
 // Add this to your existing employeeController.js
 export const getMyDetails = async (req, res) => {
   try {
-    const employee = await Employee.findOne({ email: req.user.email });
+    // Find employee by user ID since it's attached by auth middleware
+    const employee = await Employee.findOne({ user: req.user._id });
+    
     if (!employee) {
-      return res.status(404).json({ message: 'Employee not found' });
+      return res.status(404).json({ 
+        success: false,
+        message: 'Employee not found' 
+      });
     }
-    res.json(employee);
+
+    // Populate any references you need
+    await employee.populate('user', 'name email');
+    
+    // Send the response
+    res.json({
+      success: true,
+      ...employee.toObject(),
+      email: employee.user.email,
+      name: employee.user.name
+    });
   } catch (error) {
     console.error('Error fetching employee details:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error while fetching employee details' 
+    });
   }
 };
 
