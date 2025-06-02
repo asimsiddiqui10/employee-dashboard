@@ -50,15 +50,21 @@ const EmployeeDetails = () => {
       console.log('Fetching documents for employee:', employeeId);
       
       const fetchPromises = documentTypes.map(type => 
-        api.get(`/documents/employee/${employeeId}/type/${type}`)
-          .then(response => ({
-            type,
-            documents: response.data
-          }))
-          .catch(error => ({
-            type,
-            documents: []
-          }))
+        api.get(`/documents/type/${type}?employeeId=${employeeId}`)
+          .then(response => {
+            console.log(`Fetched ${type} documents:`, response.data);
+            return {
+              type,
+              documents: response.data
+            };
+          })
+          .catch(error => {
+            console.error(`Error fetching ${type} documents:`, error.response || error);
+            return {
+              type,
+              documents: []
+            };
+          })
       );
       
       const results = await Promise.all(fetchPromises);
@@ -74,9 +80,10 @@ const EmployeeDetails = () => {
         training: []
       });
       
+      console.log('All documents fetched:', grouped);
       setDocuments(grouped);
     } catch (error) {
-      console.error('Error fetching documents:', error);
+      console.error('Error in fetchAllDocuments:', error.response || error);
     }
   };
 
@@ -139,39 +146,17 @@ const EmployeeDetails = () => {
   const handleDownload = async (documentId) => {
     try {
       const response = await api.get(`/documents/download/${documentId}`);
-      window.open(response.data.downloadUrl, '_blank');
+      if (response.data.downloadUrl) {
+        window.open(response.data.downloadUrl, '_blank');
+      } else {
+        console.error('Download URL not found in response:', response.data);
+      }
     } catch (error) {
+      console.error('Error downloading document:', error.response || error);
       const { message } = handleApiError(error);
-      console.error(message);
+      alert(`Failed to download document: ${message}`);
     }
   };
-
-  const DocumentList = ({ documents }) => (
-    <div className="space-y-4">
-      {documents.map((doc) => (
-        <div key={doc._id} className="flex justify-between items-center p-4 border rounded-lg">
-          <div>
-            <h3 className="font-medium">{doc.title}</h3>
-            <p className="text-sm text-gray-500">{doc.description}</p>
-            <p className="text-xs text-gray-400">
-              Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
-            </p>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => handleDownload(doc._id)}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Download
-          </Button>
-        </div>
-      ))}
-      {documents.length === 0 && (
-        <p className="text-gray-500 text-center py-4">No documents found</p>
-      )}
-    </div>
-  );
 
   if (!form) return <div>Loading...</div>;
 
@@ -593,12 +578,46 @@ const EmployeeDetails = () => {
 
               <TabsContent value="documents">
                 <div className="space-y-6">
-                  <h3 className="text-lg font-semibold">All Documents</h3>
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Employee Documents</h3>
+                    <Button
+                      variant="outline"
+                      onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}`)}
+                      className="bg-white hover:bg-gray-50"
+                    >
+                      Upload New Document
+                    </Button>
+                  </div>
+                  <Separator className="my-4" />
                   <div className="space-y-8">
                     {Object.entries(documents).map(([type, docs]) => (
-                      <div key={type}>
-                        <h4 className="font-medium mb-3 capitalize">{type} Documents</h4>
-                        <DocumentList documents={docs} />
+                      <div key={type} className="space-y-4">
+                        <h4 className="font-medium capitalize">{type} Documents</h4>
+                        {docs.length === 0 ? (
+                          <p className="text-muted-foreground text-sm">No {type} documents found</p>
+                        ) : (
+                          <div className="grid gap-4">
+                            {docs.map((doc) => (
+                              <div key={doc._id} className="flex justify-between items-center p-4 border rounded-lg bg-white dark:bg-gray-900">
+                                <div>
+                                  <h3 className="font-medium">{doc.title}</h3>
+                                  <p className="text-sm text-gray-500">{doc.description}</p>
+                                  <p className="text-xs text-gray-400">
+                                    Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDownload(doc._id)}
+                                >
+                                  <Download className="h-4 w-4 mr-2" />
+                                  Download
+                                </Button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     ))}
                   </div>

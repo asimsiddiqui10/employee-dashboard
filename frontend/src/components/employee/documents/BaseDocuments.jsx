@@ -29,17 +29,11 @@ export default function BaseDocuments({ documentType, title }) {
   const handleDownload = async (documentId) => {
     try {
       const response = await api.get(`/documents/download/${documentId}`, {
-        responseType: 'blob'
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
       });
-      
-      // Create blob link to download
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `document-${documentId}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      window.open(response.data.downloadUrl, '_blank');
     } catch (error) {
       const { message } = handleApiError(error);
       setError(message);
