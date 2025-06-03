@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/authContext';
 import { EmployeeSidebarNew } from '../components/employee/EmployeeSidebarNew';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Bell, User } from 'lucide-react';
 import {
   SidebarInset,
@@ -10,9 +10,17 @@ import {
 } from "../components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import TimeOffCard from '../components/employee/TimeOffCard';
+import NotificationsCard from '../components/employee/NotificationsCard';
+import MyTeamCard from '../components/employee/MyTeamCard';
+import TasksCard from '../components/employee/TasksCard';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
+  const location = useLocation();
+
+  // Only show the dashboard content on the main route
+  const showDashboard = location.pathname === '/employee-dashboard';
 
   return (
     <SidebarProvider>
@@ -38,9 +46,24 @@ const EmployeeDashboard = () => {
             </div>
           </div>
         </nav>
-        <main className="flex-1 p-6">
-          <Outlet />
-        </main>
+
+        {showDashboard && (
+          <div className="container mx-auto p-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-semibold">Hi, {user?.name || 'Welcome'}! 👋</h2>
+              <p className="text-muted-foreground">Here's what's happening with your team today.</p>
+            </div>
+            <div className="grid gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <TimeOffCard />
+                <TasksCard />
+                <NotificationsCard />
+              </div>
+              <MyTeamCard />
+            </div>
+          </div>
+        )}
+        {!showDashboard && <Outlet />}
       </SidebarInset>
     </SidebarProvider>
   );
