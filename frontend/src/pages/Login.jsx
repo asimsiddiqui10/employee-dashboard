@@ -9,6 +9,7 @@ import { Button } from "../components/ui/button";
 import { Checkbox } from "../components/ui/checkbox";
 import { Label } from "../components/ui/label";
 import { handleApiError } from '@/utils/errorHandler';
+import { ThemeToggle } from "@/components/ui/theme-toggle";
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -75,7 +76,10 @@ const Login = () => {
     };
     
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="absolute top-4 right-4">
+            <ThemeToggle />
+        </div>
         <div className="w-full max-w-md">
           <h2 className="text-3xl font-bold text-foreground text-center mb-6">American Completion Tools</h2>
           {error && <div className="bg-destructive/10 text-destructive p-3 rounded-md mb-4">{error}</div>}
