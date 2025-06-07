@@ -215,7 +215,10 @@ export const getMyDetails = async (req, res) => {
 export const getEmployee = async (req, res) => {
   try {
     const { employeeId } = req.params;
+    console.log('Fetching employee with ID:', employeeId);
+    
     const employee = await Employee.findOne({ employeeId });
+    console.log('Found employee:', employee);
     
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });

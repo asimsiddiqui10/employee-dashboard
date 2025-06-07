@@ -12,9 +12,9 @@ router.get('/me', authMiddleware, getMyDetails);
 // Admin routes (protected by role middleware)
 router.post('/', authMiddleware, addEmployee);
 router.get('/', authMiddleware, getEmployees);
-router.get('/:id', authMiddleware, getEmployee);
-router.put('/:id', authMiddleware, editEmployee);
-router.delete('/:id', authMiddleware, deleteEmployee);
-router.post('/:id/profile-pic', authMiddleware, upload.single('profilePic'), uploadProfilePic);
+router.get('/:employeeId', authMiddleware, getEmployee);
+router.put('/:employeeId', authMiddleware, editEmployee);
+router.delete('/:employeeId', authMiddleware, deleteEmployee);
+router.post('/:employeeId/profile-pic', authMiddleware, upload.single('profilePic'), uploadProfilePic);
 
 export default router;
