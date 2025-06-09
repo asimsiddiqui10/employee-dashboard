@@ -19,12 +19,14 @@ import LeaveRequest from './components/employee/LeaveRequest'
 import DocumentUpload from './components/admin/DocumentUpload';
 import Documents from './components/employee/Documents';
 import { ThemeProvider } from './context/themeContext';
-import { PayrollDocuments } from './components/employee/documents/PayrollDocuments';
 import { PersonalDocuments } from './components/employee/documents/PersonalDocuments';
 import { CompanyDocuments } from './components/employee/documents/CompanyDocuments';
 import { OnboardingDocuments } from './components/employee/documents/OnboardingDocuments';
 import { BenefitsDocuments } from './components/employee/documents/BenefitsDocuments';
 import { TrainingDocuments } from './components/employee/documents/TrainingDocuments';
+import PayrollUpload from './components/admin/PayrollUpload';
+import PayrollDocuments from './components/employee/PayrollDocuments';
+import { useAuth } from './context/authContext';
 
 
 // Error Boundary Component
@@ -55,6 +57,8 @@ class ErrorBoundary extends React.Component {
 }
 
 function App() {
+  const { user, loading } = useAuth();
+  
   return (
     <ThemeProvider>
       <ErrorBoundary>
@@ -76,7 +80,7 @@ function App() {
               <Route path="notifications" element={<AdminNotifications/>}></Route>
               <Route path="analytics" element={<UnderProgress/>}></Route>
               <Route path="projects" element={<UnderProgress/>}></Route>
-              <Route path="payroll" element={<UnderProgress/>}></Route>
+              <Route path="payroll" element={<PayrollUpload />} />
               <Route path="reports" element={<UnderProgress/>}></Route>
               <Route path="training" element={<UnderProgress/>}></Route>
               <Route path="documents" element={<DocumentUpload />} />
@@ -98,9 +102,9 @@ function App() {
               <Route path="notifications" element={<EmployeeNotifications />} />
               <Route path="leave" element={<LeaveRequest />} />
               <Route path="documents" element={<Documents />} />
+              <Route path="payroll" element={<PayrollDocuments />} />
               
               {/* Document section routes */}
-              <Route path="documents/payroll" element={<PayrollDocuments />} />
               <Route path="documents/personal" element={<PersonalDocuments />} />
               <Route path="documents/company" element={<CompanyDocuments />} />
               <Route path="documents/onboarding" element={<OnboardingDocuments />} />

@@ -10,7 +10,7 @@ const documentSchema = new Schema({
   documentType: {
     type: String,
     required: true,
-    enum: ['payroll', 'personal', 'company', 'onboarding', 'benefits', 'training']
+    enum: ['personal', 'company', 'onboarding', 'benefits', 'training']
   },
   uploadedBy: {
     type: Schema.Types.ObjectId,

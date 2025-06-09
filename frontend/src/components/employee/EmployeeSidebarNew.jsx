@@ -46,18 +46,18 @@ const sidebarData = [
     path: "/employee-dashboard/notifications"
   },
   {
-    title: "Leave Management",
+    title: "Payroll",
+    icon: DollarSign,
+    path: "/employee-dashboard/payroll"
+  },
+  {
+    title: "Leave",
     icon: Calendar,
     path: "/employee-dashboard/leave"
   }
 ];
 
 const documentLinks = [
-  {
-    title: "Payroll",
-    icon: DollarSign,
-    path: "/employee-dashboard/documents/payroll"
-  },
   {
     title: "Personal",
     icon: User,
@@ -172,4 +172,4 @@ export function EmployeeSidebarNew({ ...props }) {
       <SidebarRail />
     </Sidebar>
   );
-} 
+}

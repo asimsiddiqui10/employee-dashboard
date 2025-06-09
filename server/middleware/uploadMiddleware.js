@@ -4,11 +4,25 @@ import multer from 'multer';
 const storage = multer.memoryStorage();
 
 const fileFilter = (req, file, cb) => {
+  // Accept images
   if (file.mimetype.startsWith('image/')) {
     cb(null, true);
-  } else {
-    cb(new Error('Not an image! Please upload an image.'), false);
+    return;
   }
+  
+  // Accept documents (PDF, Word, Excel)
+  if (
+    file.mimetype === 'application/pdf' ||
+    file.mimetype === 'application/msword' ||
+    file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+    file.mimetype === 'application/vnd.ms-excel' ||
+    file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+  ) {
+    cb(null, true);
+    return;
+  }
+
+  cb(new Error('Invalid file type! Please upload an image or document (PDF, Word, Excel).'));
 };
 
 const upload = multer({

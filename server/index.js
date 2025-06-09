@@ -7,12 +7,14 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 
 // Import routes
-import routes from './routes/index.js';
+import auth from './routes/auth.js';
+import employeeRoutes from './routes/employeeRoutes.js';
+import documentRoutes from './routes/documentRoutes.js';
+import leaveRoutes from './routes/leaveRoutes.js';
+import payrollRoutes from './routes/payrollRoutes.js';
 
-// Load environment variables based on NODE_ENV
-config({
-  path: process.env.NODE_ENV === 'production' ? '.env.production' : '.env'
-});
+// Load environment variables
+config();
 
 const app = express();
 
@@ -20,17 +22,27 @@ const app = express();
 const allowedOrigins = [
   'http://localhost:5173',  // Local development
   'http://localhost:3000',  // Local production build
-  'https://act-vj78.onrender.com', // Render backend URL
+  'https://act-vj78.onrender.com',  // Render production backend URL
+  'https://dev-staging.onrender.com', // Render dev backend URL
   'https://employee-dashboard-sable.vercel.app',  // Main Vercel deployment
-  'https://employee-dashboard-git-vibecoding-asims-projects-56557ef2.vercel.app', // Preview deployment
-  'https://employee-dashboard-4b3h9az5u-asims-projects-56557ef2.vercel.app', // Preview deployment
+  'https://employee-dashboard-git-dev-asims-projects-56557ef2.vercel.app', // Dev deployment
 ];
 
 app.use(cors({
   origin: function(origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) === -1) {
+    
+    // Check if the origin matches any allowed patterns
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      // Handle Vercel preview deployments
+      if (origin.includes('employee-dashboard-git-') && origin.includes('vercel.app')) {
+        return true;
+      }
+      return allowedOrigin === origin;
+    });
+
+    if (!isAllowed) {
       const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
       return callback(new Error(msg), false);
     }
@@ -53,8 +65,12 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
-// Routes - use only the combined routes
-app.use('/api', routes);
+// Routes
+app.use('/api/auth', auth);
+app.use('/api/employees', employeeRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/leaves', leaveRoutes);
+app.use('/api/payroll', payrollRoutes);
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

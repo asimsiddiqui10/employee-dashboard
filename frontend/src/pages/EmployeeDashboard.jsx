@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/authContext';
 import { EmployeeSidebarNew } from '../components/employee/EmployeeSidebarNew';
 import { Outlet, useLocation } from 'react-router-dom';
@@ -18,6 +18,39 @@ import TasksCard from '../components/employee/TasksCard';
 const EmployeeDashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
+  const [displayText, setDisplayText] = useState('');
+  const [showEmoji, setShowEmoji] = useState(false);
+
+  useEffect(() => {
+    // Clear previous animation state
+    setDisplayText('');
+    setShowEmoji(false);
+
+    // Make sure we have valid user data
+    if (!user?.name) {
+      setDisplayText('Hi, Welcome!');
+      return;
+    }
+
+    // Prepare the full greeting text
+    const greeting = `Hi, ${user.name}!`;
+    let timeouts = [];
+
+    // Animate each letter
+    for (let i = 0; i < greeting.length; i++) {
+      const timeout = setTimeout(() => {
+        setDisplayText(greeting.slice(0, i + 1));
+        // Show emoji after last letter
+        if (i === greeting.length - 1) {
+          setTimeout(() => setShowEmoji(true), 200);
+        }
+      }, i * 100);
+      timeouts.push(timeout);
+    }
+
+    // Cleanup function to clear all timeouts
+    return () => timeouts.forEach(timeout => clearTimeout(timeout));
+  }, [user?.name]); // Only re-run if user name changes
 
   // Only show the dashboard content on the main route
   const showDashboard = location.pathname === '/employee-dashboard';
@@ -50,7 +83,19 @@ const EmployeeDashboard = () => {
         {showDashboard && (
           <div className="container mx-auto p-6">
             <div className="mb-6">
-              <h2 className="text-2xl font-semibold">Hi, {user?.name || 'Welcome'}! 👋</h2>
+              <h2 className="text-2xl font-semibold">
+                <span>{displayText}</span>
+                {showEmoji && (
+                  <span 
+                    className="ml-2 inline-block"
+                    style={{
+                      animation: 'waveAndGrow 1s ease-in-out'
+                    }}
+                  >
+                    👋
+                  </span>
+                )}
+              </h2>
               <p className="text-muted-foreground">Here's what's happening with your team today.</p>
             </div>
             <div className="grid gap-6">
@@ -65,6 +110,16 @@ const EmployeeDashboard = () => {
         )}
         {!showDashboard && <Outlet />}
       </SidebarInset>
+
+      <style jsx>{`
+        @keyframes waveAndGrow {
+          0% { transform: scale(1) rotate(0deg); }
+          25% { transform: scale(1.3) rotate(15deg); }
+          50% { transform: scale(1.3) rotate(30deg); }
+          75% { transform: scale(1.3) rotate(15deg); }
+          100% { transform: scale(1) rotate(0deg); }
+        }
+      `}</style>
     </SidebarProvider>
   );
 };

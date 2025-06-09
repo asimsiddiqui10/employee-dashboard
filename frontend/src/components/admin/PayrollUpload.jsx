@@ -1,43 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { toast } from '@/hooks/use-toast';
+import { Upload } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload } from "lucide-react";
 
-const DOCUMENT_TYPES = {
-  PERSONAL: 'personal',
-  COMPANY: 'company',
-  ONBOARDING: 'onboarding',
-  BENEFITS: 'benefits',
-  TRAINING: 'training'
-};
-
-export default function DocumentUpload() {
+export default function PayrollUpload() {
   const [file, setFile] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState('');
+  const [payPeriodStart, setPayPeriodStart] = useState('');
+  const [payPeriodEnd, setPayPeriodEnd] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const [documentType, setDocumentType] = useState('');
 
   useEffect(() => {
     fetchEmployees();
@@ -50,12 +32,17 @@ export default function DocumentUpload() {
     } catch (error) {
       const { message } = handleApiError(error);
       setError(message);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!file || !title || !documentType || !selectedEmployee) {
+    if (!file || !title || !selectedEmployee || !payPeriodStart || !payPeriodEnd) {
       setError('Please fill in all required fields');
       return;
     }
@@ -64,57 +51,54 @@ export default function DocumentUpload() {
     formData.append('file', file);
     formData.append('title', title);
     formData.append('description', description);
-    formData.append('documentType', documentType);
     formData.append('employeeId', selectedEmployee);
+    formData.append('payPeriodStart', payPeriodStart);
+    formData.append('payPeriodEnd', payPeriodEnd);
 
     try {
-      console.log('Uploading document with data:', {
-        title,
-        description,
-        documentType,
-        employeeId: selectedEmployee
-      });
-      
-      const response = await api.post('/documents/upload', formData, {
+      await api.post('/payroll/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
-      console.log('Upload response:', response.data);
       
-      setSuccess('Document uploaded successfully');
+      setSuccess('Payroll document uploaded successfully');
       // Reset form
       setFile(null);
       setTitle('');
       setDescription('');
       setSelectedEmployee('');
-      setDocumentType('');
+      setPayPeriodStart('');
+      setPayPeriodEnd('');
+      setError('');
     } catch (error) {
       const { message } = handleApiError(error);
       setError(message);
+      setSuccess('');
     }
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
+    <Card>
       <CardHeader>
-        <CardTitle>Upload Document</CardTitle>
+        <CardTitle>Upload Payroll Document</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
-          {success && (
-            <Alert className="bg-green-50 dark:bg-green-900 text-green-700 dark:text-green-200 border-green-200 dark:border-green-800">
-              <AlertDescription>{success}</AlertDescription>
-            </Alert>
-          )}
+        {error && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
+        {success && (
+          <Alert className="mb-4">
+            <AlertDescription>{success}</AlertDescription>
+          </Alert>
+        )}
 
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="employee">Select Employee</Label>
+            <Label htmlFor="employee">Employee</Label>
             <Select
               value={selectedEmployee}
               onValueChange={setSelectedEmployee}
@@ -124,7 +108,7 @@ export default function DocumentUpload() {
               </SelectTrigger>
               <SelectContent>
                 {employees.map((employee) => (
-                  <SelectItem key={employee._id} value={employee.user._id}>
+                  <SelectItem key={employee._id} value={employee._id}>
                     {employee.name} ({employee.employeeId})
                   </SelectItem>
                 ))}
@@ -138,58 +122,58 @@ export default function DocumentUpload() {
               id="title"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter document title"
-              required
+              placeholder="e.g., January 2024 Pay Stub"
             />
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="description">Description</Label>
-            <Textarea
+            <Label htmlFor="description">Description (Optional)</Label>
+            <Input
               id="description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter document description"
-              className="min-h-[100px]"
+              placeholder="Additional details about this payroll document"
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="documentType">Document Type</Label>
-            <Select
-              value={documentType}
-              onValueChange={setDocumentType}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select document type" />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(DOCUMENT_TYPES).map(([key, value]) => (
-                  <SelectItem key={key} value={value}>
-                    {key.charAt(0) + key.slice(1).toLowerCase()}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="payPeriodStart">Pay Period Start</Label>
+              <Input
+                id="payPeriodStart"
+                type="date"
+                value={payPeriodStart}
+                onChange={(e) => setPayPeriodStart(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="payPeriodEnd">Pay Period End</Label>
+              <Input
+                id="payPeriodEnd"
+                type="date"
+                value={payPeriodEnd}
+                onChange={(e) => setPayPeriodEnd(e.target.value)}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="file">Upload File</Label>
+            <Label htmlFor="file-upload">Upload File</Label>
             <Input
-              id="file"
+              id="file-upload"
               type="file"
               onChange={(e) => setFile(e.target.files[0])}
-              className="cursor-pointer"
-              required
+              accept=".pdf,.doc,.docx"
             />
           </div>
 
           <Button type="submit" className="w-full">
             <Upload className="w-4 h-4 mr-2" />
-            Upload Document
+            Upload Payroll Document
           </Button>
         </form>
       </CardContent>
     </Card>
   );
-}
+} 
