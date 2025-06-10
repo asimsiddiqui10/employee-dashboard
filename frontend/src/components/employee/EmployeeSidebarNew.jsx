@@ -1,18 +1,24 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  Home, 
-  User, 
-  Bell, 
-  Calendar,
-  FileText,
-  LogOut,
-  Menu,
+  LayoutDashboard,
+  User,
   DollarSign,
-  Users,
-  Building,
+  Bell,
+  Clock,
+  CalendarDays,
+  Megaphone,
+  InboxIcon,
+  CheckSquare,
+  Receipt,
+  FileText,
+  Users2,
   GraduationCap,
-  Heart
+  Gift,
+  LineChart,
+  MessageSquare,
+  LogOut,
+  Menu
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 
@@ -26,24 +32,18 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarRail,
-  SidebarGroupLabel,
 } from "../ui/sidebar";
 
 const sidebarData = [
   {
-    title: "Home",
-    icon: Home,
+    title: "Dashboard",
+    icon: LayoutDashboard,
     path: "/employee-dashboard"
   },
   {
-    title: "My Details",
+    title: "My Profile",
     icon: User,
     path: "/employee-dashboard/my-details"
-  },
-  {
-    title: "Notifications",
-    icon: Bell,
-    path: "/employee-dashboard/notifications"
   },
   {
     title: "Payroll",
@@ -51,45 +51,80 @@ const sidebarData = [
     path: "/employee-dashboard/payroll"
   },
   {
-    title: "Leave",
-    icon: Calendar,
+    title: "Notifications",
+    icon: Bell,
+    path: "/employee-dashboard/notifications"
+  },
+  {
+    title: "Time Tracking",
+    icon: Clock,
+    path: "/employee-dashboard/time-tracking"
+  },
+  {
+    title: "Leave Management",
+    icon: CalendarDays,
     path: "/employee-dashboard/leave"
-  }
-];
-
-const documentLinks = [
-  {
-    title: "Personal",
-    icon: User,
-    path: "/employee-dashboard/documents/personal"
   },
   {
-    title: "Company",
-    icon: Building,
-    path: "/employee-dashboard/documents/company"
+    title: "Announcements",
+    icon: Megaphone,
+    path: "/employee-dashboard/announcements"
   },
   {
-    title: "Onboarding",
-    icon: GraduationCap,
-    path: "/employee-dashboard/documents/onboarding"
+    title: "Requests",
+    icon: InboxIcon,
+    path: "/employee-dashboard/requests"
   },
   {
-    title: "Benefits",
-    icon: Heart,
-    path: "/employee-dashboard/documents/benefits"
+    title: "Tasks & Projects",
+    icon: CheckSquare,
+    path: "/employee-dashboard/tasks"
+  },
+  {
+    title: "Reimbursements",
+    icon: Receipt,
+    path: "/employee-dashboard/reimbursements"
+  },
+  {
+    title: "Documents",
+    icon: FileText,
+    path: "/employee-dashboard/documents"
+  },
+  {
+    title: "My Team",
+    icon: Users2,
+    path: "/employee-dashboard/team"
   },
   {
     title: "Training",
     icon: GraduationCap,
-    path: "/employee-dashboard/documents/training"
+    path: "/employee-dashboard/training"
+  },
+  {
+    title: "Benefits",
+    icon: Gift,
+    path: "/employee-dashboard/benefits"
+  },
+  {
+    title: "Reports",
+    icon: LineChart,
+    path: "/employee-dashboard/reports"
   }
 ];
 
-export function EmployeeSidebarNew({ ...props }) {
+const bottomMenuItems = [
+  {
+    title: "Feedback",
+    icon: MessageSquare,
+    path: "/employee-dashboard/feedback"
+  }
+];
+
+export function EmployeeSidebarNew() {
   const { logout } = useAuth();
 
   return (
-    <Sidebar {...props}>
+    <Sidebar>
       <SidebarHeader>
         <SidebarMenu>
           <SidebarMenuItem>
@@ -118,36 +153,17 @@ export function EmployeeSidebarNew({ ...props }) {
                     to={item.path}
                     end={item.path === '/employee-dashboard'}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 pr-3 ${
-                        isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
+                      `flex items-center gap-2 px-2 py-1 rounded-md transition-colors ${
+                        isActive 
+                          ? 'bg-accent text-accent-foreground' 
+                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                       }`
                     }
                   >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
-                  </NavLink>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-            ))}
-          </SidebarMenu>
-        </SidebarGroup>
-
-        <SidebarGroup>
-          <SidebarGroupLabel>Documents</SidebarGroupLabel>
-          <SidebarMenu>
-            {documentLinks.map((item) => (
-              <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <NavLink 
-                    to={item.path}
-                    className={({ isActive }) =>
-                      `flex items-center gap-2 pr-3 ${
-                        isActive ? 'text-primary font-medium' : 'text-muted-foreground hover:text-foreground'
-                      }`
-                    }
-                  >
-                    <item.icon className="h-4 w-4" />
-                    <span>{item.title}</span>
+                    <span className="flex items-center gap-2">
+                      <item.icon className="h-4 w-4" />
+                      <span>{item.title}</span>
+                    </span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -158,10 +174,29 @@ export function EmployeeSidebarNew({ ...props }) {
 
       <SidebarFooter>
         <SidebarMenu>
+          {bottomMenuItems.map((item) => (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild>
+                <NavLink
+                  to={item.path}
+                  className={({ isActive }) =>
+                    `flex w-full items-center gap-2 pr-3 ${
+                      isActive
+                        ? "text-primary font-medium"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`
+                  }
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span>{item.title}</span>
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
           <SidebarMenuItem>
             <SidebarMenuButton 
               onClick={logout}
-              className="flex w-full items-center gap-2 pr-3 text-muted-foreground hover:text-foreground"
+              className="flex w-full items-center gap-2 pr-3 text-red-500 hover:text-red-600 transition-colors"
             >
               <LogOut className="h-4 w-4" />
               <span>Logout</span>

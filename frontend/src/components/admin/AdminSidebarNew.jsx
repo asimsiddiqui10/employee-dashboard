@@ -1,20 +1,26 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
-  Home, 
-  Users, 
-  Bell, 
-  FileText,
-  Building2,
-  Calendar,
-  BarChart2,
-  FolderKanban,
+  LayoutDashboard,
+  Users,
+  Bell,
+  DollarSign,
+  Clock,
+  CalendarDays,
+  Users2,
+  Megaphone,
+  InboxIcon,
+  CheckSquare,
+  Receipt,
+  FolderClosed,
+  GraduationCap,
+  Gift,
+  LineChart,
+  MessageSquare,
   Settings,
   HelpCircle,
   LogOut,
-  Menu,
-  DollarSign,
-  GraduationCap
+  Menu
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 
@@ -36,7 +42,7 @@ export function AdminSidebarNew() {
   const mainMenuItems = [
     {
       title: "Dashboard",
-      icon: Home,
+      icon: LayoutDashboard,
       path: "/admin-dashboard"
     },
     {
@@ -50,19 +56,49 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/notifications"
     },
     {
-      title: "Documents",
-      icon: FileText,
-      path: "/admin-dashboard/documents"
-    },
-    {
-      title: "Leave",
-      icon: Calendar,
-      path: "/admin-dashboard/leave"
-    },
-    {
       title: "Payroll",
       icon: DollarSign,
       path: "/admin-dashboard/payroll"
+    },
+    {
+      title: "Time Tracking",
+      icon: Clock,
+      path: "/admin-dashboard/time-tracking"
+    },
+    {
+      title: "Leave Management",
+      icon: CalendarDays,
+      path: "/admin-dashboard/leave"
+    },
+    {
+      title: "Teams",
+      icon: Users2,
+      path: "/admin-dashboard/teams"
+    },
+    {
+      title: "Announcements",
+      icon: Megaphone,
+      path: "/admin-dashboard/announcements"
+    },
+    {
+      title: "Requests",
+      icon: InboxIcon,
+      path: "/admin-dashboard/requests"
+    },
+    {
+      title: "Tasks & Projects",
+      icon: CheckSquare,
+      path: "/admin-dashboard/tasks"
+    },
+    {
+      title: "Expenses",
+      icon: Receipt,
+      path: "/admin-dashboard/expenses"
+    },
+    {
+      title: "Documents",
+      icon: FolderClosed,
+      path: "/admin-dashboard/documents"
     },
     {
       title: "Training",
@@ -70,20 +106,15 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/training"
     },
     {
-      title: "Departments",
-      icon: Building2,
-      path: "/admin-dashboard/departments"
+      title: "Benefits",
+      icon: Gift,
+      path: "/admin-dashboard/benefits"
     },
     {
-      title: "Projects",
-      icon: FolderKanban,
-      path: "/admin-dashboard/projects"
+      title: "Insights & Analysis",
+      icon: LineChart,
+      path: "/admin-dashboard/insights"
     },
-    {
-      title: "Analytics",
-      icon: BarChart2,
-      path: "/admin-dashboard/analytics"
-    }
   ];
 
   const bottomMenuItems = [
@@ -93,9 +124,9 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/settings"
     },
     {
-      title: "Get Help",
-      icon: HelpCircle,
-      path: "/admin-dashboard/help"
+      title: "Feedback",
+      icon: MessageSquare,
+      path: "/admin-dashboard/feedback"
     },
     {
       title: "Logout",
@@ -157,7 +188,7 @@ export function AdminSidebarNew() {
               {item.onClick ? (
                 <SidebarMenuButton 
                   onClick={item.onClick}
-                  className="flex w-full items-center gap-2 pr-3 text-muted-foreground hover:text-foreground"
+                  className="flex w-full items-center gap-2 pr-3 text-red-500 hover:text-red-600 hover:bg-red-100/50 transition-colors"
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.title}</span>
@@ -169,8 +200,8 @@ export function AdminSidebarNew() {
                     className={({ isActive }) =>
                       `flex w-full items-center gap-2 pr-3 ${
                         isActive
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
+                          ? "bg-accent text-foreground"
+                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
                       }`
                     }
                   >

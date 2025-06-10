@@ -1,6 +1,19 @@
 import mongoose from 'mongoose';
 
+const notificationTypes = {
+  PAYROLL: 'payroll',
+  COMPANY: 'company',
+  ANNOUNCEMENT: 'announcement',
+  POLICY: 'policy',
+  OTHER: 'other'
+};
+
 const notificationSchema = new mongoose.Schema({
+  type: {
+    type: String,
+    enum: Object.values(notificationTypes),
+    required: true
+  },
   title: {
     type: String,
     required: true,
@@ -23,18 +36,20 @@ const notificationSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
-  tags: [{
+  createdAt: {
+    type: Date,
+    default: Date.now
+  },
+  priority: {
     type: String,
-    trim: true
-  }],
+    enum: ['low', 'medium', 'high'],
+    default: 'medium'
+  },
   link: {
     type: String,
     trim: true
   },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
+  metadata: {}
 });
 
 const Notification = mongoose.model('Notification', notificationSchema);

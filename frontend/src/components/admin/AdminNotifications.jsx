@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
-import { Send, Tag, Link as LinkIcon, X, Check, ChevronDown } from 'lucide-react';
+import { Send, Tag, Link as LinkIcon, X, Check, ChevronDown, DollarSign, Building2, Megaphone, FileText, AlertCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -31,10 +31,24 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
+const notificationTypes = [
+  { value: 'announcement', label: 'Announcement', icon: Megaphone },
+  { value: 'company', label: 'Company', icon: Building2 },
+  { value: 'policy', label: 'Policy', icon: FileText },
+  { value: 'payroll', label: 'Payroll', icon: DollarSign },
+  { value: 'other', label: 'Other', icon: AlertCircle }
+];
+
 const AdminNotifications = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
-  const [form, setForm] = useState({ title: '', message: '', tags: [], link: '' });
+  const [form, setForm] = useState({
+    type: 'announcement',
+    title: '',
+    message: '',
+    priority: 'medium',
+    link: ''
+  });
   const [currentTag, setCurrentTag] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
   const [employeeUsers, setEmployeeUsers] = useState([]);
@@ -55,6 +69,10 @@ const AdminNotifications = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm({ ...form, [name]: value });
+  };
+
+  const handleTypeChange = (value) => {
+    setForm({ ...form, type: value });
   };
 
   const handleEmployeeSelect = (values) => {
@@ -92,11 +110,18 @@ const AdminNotifications = () => {
       }
 
       await api.post('/notifications', {
-        ...form, recipients: userIds
+        ...form,
+        recipients: userIds
       });
 
       setStatus({ type: 'success', message: 'Notification sent successfully' });
-      setForm({ title: '', message: '', tags: [], link: '' });
+      setForm({
+        type: 'announcement',
+        title: '',
+        message: '',
+        priority: 'medium',
+        link: ''
+      });
       setSelectedEmployees([]);
     } catch (error) {
       const { message } = handleApiError(error);
@@ -109,7 +134,7 @@ const AdminNotifications = () => {
   return (
     <Card className="max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle>Send Notifications</CardTitle>
+        <CardTitle>Send Notification</CardTitle>
       </CardHeader>
       <CardContent>
         {status.message && (
@@ -122,6 +147,28 @@ const AdminNotifications = () => {
         )}
         
         <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <Label htmlFor="type">Notification Type</Label>
+            <Select
+              value={form.type}
+              onValueChange={handleTypeChange}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {notificationTypes.map(type => (
+                  <SelectItem key={type.value} value={type.value}>
+                    <div className="flex items-center gap-2">
+                      <type.icon className="h-4 w-4" />
+                      {type.label}
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          
           <div className="space-y-2">
             <Label htmlFor="title">Title*</Label>
             <Input
@@ -143,6 +190,23 @@ const AdminNotifications = () => {
               className="min-h-[100px]"
               required
             />
+          </div>
+          
+          <div className="space-y-2">
+            <Label htmlFor="priority">Priority</Label>
+            <Select
+              value={form.priority}
+              onValueChange={(value) => setForm({ ...form, priority: value })}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
           
           <div className="space-y-2">
@@ -218,45 +282,6 @@ const AdminNotifications = () => {
               })}
             </div>
             <p className="text-sm text-muted-foreground">Select one or more recipients</p>
-          </div>
-          
-          <div className="space-y-2">
-            <Label>Tags</Label>
-            <div className="flex gap-2">
-              <Input
-                value={currentTag}
-                onChange={(e) => setCurrentTag(e.target.value)}
-                placeholder="Add a tag"
-                onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addTag())}
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={addTag}
-              >
-                <Tag className="h-4 w-4" />
-              </Button>
-            </div>
-            
-            {form.tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-2">
-                {form.tags.map(tag => (
-                  <Badge key={tag} variant="secondary" className="flex items-center gap-1">
-                    {tag}
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="h-4 w-4 p-0 hover:bg-transparent"
-                      onClick={() => removeTag(tag)}
-                    >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                ))}
-              </div>
-            )}
           </div>
           
           <div className="space-y-2">

@@ -12,6 +12,7 @@ import employeeRoutes from './routes/employeeRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
 
 // Load environment variables
 config();
@@ -71,6 +72,7 @@ app.use('/api/employees', employeeRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/payroll', payrollRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

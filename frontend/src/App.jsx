@@ -16,17 +16,12 @@ import EmployeeNotifications from './components/employee/EmployeeNotifications'
 import EmployeeDetails from './components/admin/EmployeeDetails'
 import LeaveManagement from './components/admin/LeaveManagement'
 import LeaveRequest from './components/employee/LeaveRequest'
-import DocumentUpload from './components/admin/DocumentUpload';
-import Documents from './components/employee/Documents';
-import { ThemeProvider } from './context/themeContext';
-import { PersonalDocuments } from './components/employee/documents/PersonalDocuments';
-import { CompanyDocuments } from './components/employee/documents/CompanyDocuments';
-import { OnboardingDocuments } from './components/employee/documents/OnboardingDocuments';
-import { BenefitsDocuments } from './components/employee/documents/BenefitsDocuments';
-import { TrainingDocuments } from './components/employee/documents/TrainingDocuments';
-import PayrollUpload from './components/admin/PayrollUpload';
-import PayrollDocuments from './components/employee/PayrollDocuments';
-import { useAuth } from './context/authContext';
+import DocumentUpload from './components/admin/DocumentUpload'
+import MyDocuments from './components/employee/MyDocuments'
+import { ThemeProvider } from './context/themeContext'
+import PayrollUpload from './components/admin/PayrollUpload'
+import PayrollDocuments from './components/employee/PayrollDocuments'
+import { useAuth } from './context/authContext'
 
 
 // Error Boundary Component
@@ -78,16 +73,20 @@ function App() {
               <Route path="employees" element={<EmployeeManagement/>}></Route>
               <Route path="employees/:employeeId" element={<EmployeeDetails/>}></Route>
               <Route path="notifications" element={<AdminNotifications/>}></Route>
-              <Route path="analytics" element={<UnderProgress/>}></Route>
-              <Route path="projects" element={<UnderProgress/>}></Route>
               <Route path="payroll" element={<PayrollUpload />} />
-              <Route path="reports" element={<UnderProgress/>}></Route>
-              <Route path="training" element={<UnderProgress/>}></Route>
-              <Route path="documents" element={<DocumentUpload />} />
-              <Route path="settings" element={<UnderProgress/>}></Route>
-              <Route path="departments" element={<UnderProgress/>}></Route>
+              <Route path="time-tracking" element={<UnderProgress/>}></Route>
               <Route path="leave" element={<LeaveManagement />} />
-              <Route path="help" element={<UnderProgress/>}></Route>
+              <Route path="teams" element={<UnderProgress/>}></Route>
+              <Route path="announcements" element={<UnderProgress/>}></Route>
+              <Route path="requests" element={<UnderProgress/>}></Route>
+              <Route path="tasks" element={<UnderProgress/>}></Route>
+              <Route path="expenses" element={<UnderProgress/>}></Route>
+              <Route path="documents" element={<DocumentUpload />} />
+              <Route path="training" element={<UnderProgress/>}></Route>
+              <Route path="benefits" element={<UnderProgress/>}></Route>
+              <Route path="insights" element={<UnderProgress/>}></Route>
+              <Route path="feedback" element={<UnderProgress/>}></Route>
+              <Route path="settings" element={<UnderProgress/>}></Route>
             </Route>
 
             <Route path="/employee-dashboard" element={
@@ -100,16 +99,19 @@ function App() {
               <Route index element={<EmployeeHome />} />
               <Route path="my-details" element={<MyDetails />} />
               <Route path="notifications" element={<EmployeeNotifications />} />
-              <Route path="leave" element={<LeaveRequest />} />
-              <Route path="documents" element={<Documents />} />
               <Route path="payroll" element={<PayrollDocuments />} />
-              
-              {/* Document section routes */}
-              <Route path="documents/personal" element={<PersonalDocuments />} />
-              <Route path="documents/company" element={<CompanyDocuments />} />
-              <Route path="documents/onboarding" element={<OnboardingDocuments />} />
-              <Route path="documents/benefits" element={<BenefitsDocuments />} />
-              <Route path="documents/training" element={<TrainingDocuments />} />
+              <Route path="time-tracking" element={<UnderProgress />} />
+              <Route path="leave" element={<LeaveRequest />} />
+              <Route path="announcements" element={<UnderProgress />} />
+              <Route path="requests" element={<UnderProgress />} />
+              <Route path="tasks" element={<UnderProgress />} />
+              <Route path="reimbursements" element={<UnderProgress />} />
+              <Route path="documents" element={<MyDocuments />} />
+              <Route path="team" element={<UnderProgress />} />
+              <Route path="training" element={<UnderProgress />} />
+              <Route path="benefits" element={<UnderProgress />} />
+              <Route path="reports" element={<UnderProgress />} />
+              <Route path="feedback" element={<UnderProgress />} />
             </Route>
 
             <Route path="/unauthorized" element={<Unauthorized />} />
