@@ -130,6 +130,7 @@ const MyDetails = () => {
               <InfoItem label="Work Phone" value={employeeDetails.workPhoneNumber || 'Not provided'} />
               <InfoItem label="Date of Birth" value={formatDate(employeeDetails.dateOfBirth)} />
               <InfoItem label="Gender" value={employeeDetails.gender || 'Not provided'} />
+              <InfoItem label="Marital Status" value={employeeDetails.maritalStatus || 'Not provided'} />
               <InfoItem label="Nationality" value={employeeDetails.nationality || 'Not provided'} />
             </div>
           </div>

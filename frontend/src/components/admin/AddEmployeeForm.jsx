@@ -13,6 +13,7 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
     password: '',
     role: 'employee',
     gender: '',
+    maritalStatus: '',
     ssn: '',
     department: '',
     position: '',
@@ -39,7 +40,8 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
     emergencyContact: {
       name: '',
       phone: '',
-    }
+    },
+    
   });
 
   const handleChange = (e) => {
@@ -215,6 +217,19 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
               <option value="Female">Female</option>
               <option value="Other">Other</option>
             </select>
+            <select
+              name="maritalStatus"
+              value={form.maritalStatus}
+              onChange={handleChange}
+              className="p-2 border rounded"
+            >
+              <option value="">Select Marital Status</option>
+              <option value="Single">Single</option>
+              <option value="Married">Married</option>
+              <option value="Divorced">Divorced</option>
+              <option value="Widowed">Widowed</option>
+              <option value="Separated">Separated</option>
+            </select>
             <input
               type="date"
               name="dateOfBirth"
@@ -282,11 +297,11 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
               className="p-2 border rounded"
               required
             >
-              <option value="">Employment Type *</option>
+              <option value="">Select Employment Type *</option>
               <option value="Full-time">Full-time</option>
               <option value="Part-time">Part-time</option>
               <option value="Contract">Contract</option>
-              <option value="Consultant">Consultant</option>
+              <option value="Hourly">Hourly</option>
             </select>
             <select
               name="employmentStatus"
