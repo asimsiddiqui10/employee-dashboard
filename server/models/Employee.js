@@ -27,7 +27,11 @@ const employeeSchema = new mongoose.Schema({
     phone: { type: String },
   },
   // Work Information
-  department: { type: String },
+  department: { 
+    type: String,
+    enum: ['Engineering', 'Production', 'Administration', 'Management', 'Sales', 'Other'],
+    required: true 
+  },
   position: { type: String },
   jobTitle: { type: String },
   jobDescription: { type: String }, 

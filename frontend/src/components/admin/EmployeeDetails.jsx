@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getDepartmentConfig, departments } from "@/lib/departments";
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
@@ -217,7 +218,22 @@ const EmployeeDetails = () => {
                   {form?.department && (
                     <>
                       <span>•</span>
-                      <span>{form.department}</span>
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const deptConfig = getDepartmentConfig(form.department);
+                          const Icon = deptConfig.icon;
+                          return (
+                            <>
+                              <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
+                                <Icon className={`h-4 w-4 transition-colors ${deptConfig.color}`} />
+                              </div>
+                              <span className={`transition-colors ${deptConfig.color}`}>
+                                {form.department}
+                              </span>
+                            </>
+                          );
+                        })()}
+                      </div>
                     </>
                   )}
                 </div>
@@ -472,12 +488,24 @@ const EmployeeDetails = () => {
                       <>
                         <div className="space-y-2">
                           <Label htmlFor="department">Department</Label>
-                          <Input
-                            id="department"
-                            name="department"
+                          <Select
                             value={form?.department || ''}
-                            onChange={handleInputChange}
-                          />
+                            onValueChange={(value) => handleInputChange({ target: { name: 'department', value } })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {Object.entries(departments).map(([key, dept]) => (
+                                <SelectItem key={key} value={key}>
+                                  <div className="flex items-center gap-2">
+                                    <dept.icon className={`h-4 w-4 ${dept.color}`} />
+                                    <span>{dept.label}</span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="position">Position</Label>
@@ -630,11 +658,28 @@ const EmployeeDetails = () => {
 };
 
 // Helper component for displaying information fields
-const InfoField = ({ label, value }) => (
-  <div className="space-y-1">
-    <Label className="text-sm text-muted-foreground">{label}</Label>
-    <p className="font-medium text-foreground">{value || 'Not provided'}</p>
-  </div>
-);
+const InfoField = ({ label, value }) => {
+  if (label === "Department" && value) {
+    const deptConfig = getDepartmentConfig(value);
+    const Icon = deptConfig.icon;
+    return (
+      <div className="flex flex-col space-y-1">
+        <span className="text-sm font-medium leading-none">{label}</span>
+        <div className="flex items-center gap-2">
+          <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
+            <Icon className={`h-4 w-4 transition-colors ${deptConfig.color}`} />
+          </div>
+          <span className={`transition-colors ${deptConfig.color}`}>{value}</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col space-y-1">
+      <span className="text-sm font-medium leading-none">{label}</span>
+      <span className="text-sm text-muted-foreground">{value || 'Not provided'}</span>
+    </div>
+  );
+};
 
 export default EmployeeDetails; 

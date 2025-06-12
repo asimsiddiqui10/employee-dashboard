@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { departments } from '@/lib/departments';
 
 const AddEmployeeForm = ({ onClose, onSubmit }) => {
   const [error, setError] = useState('');
@@ -273,15 +274,20 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
               className="p-2 border rounded"
               required
             />
-            <input
-              type="text"
+            <select
               name="department"
-              placeholder="Department *"
               value={form.department}
               onChange={handleChange}
               className="p-2 border rounded"
               required
-            />
+            >
+              <option value="">Select Department *</option>
+              {Object.entries(departments).map(([key, dept]) => (
+                <option key={key} value={key}>
+                  {dept.label}
+                </option>
+              ))}
+            </select>
             <input
               type="text"
               name="jobTitle"

@@ -6,6 +6,7 @@ import { handleApiError } from '@/utils/errorHandler';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { getDepartmentConfig } from '@/lib/departments';
 
 const MyDetails = () => {
   const [employeeDetails, setEmployeeDetails] = useState(null);
@@ -71,12 +72,29 @@ const MyDetails = () => {
     }).format(value);
   };
 
-  const InfoItem = ({ label, value }) => (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium text-foreground">{value}</p>
-    </div>
-  );
+  const InfoItem = ({ label, value, isSpecial }) => {
+    if (label === "Department" && value) {
+      const deptConfig = getDepartmentConfig(value);
+      const Icon = deptConfig.icon;
+      return (
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <div className={`p-1.5 rounded-md ${deptConfig.bgColor}`}>
+              <Icon className={`h-4 w-4 ${deptConfig.color}`} />
+            </div>
+            <p className={`font-medium ${deptConfig.color}`}>{value}</p>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div>
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="font-medium text-foreground">{value}</p>
+      </div>
+    );
+  };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -105,7 +123,18 @@ const MyDetails = () => {
                   {employeeDetails.department && (
                     <>
                       <span>•</span>
-                      <span>{employeeDetails.department}</span>
+                      <div className="flex items-center gap-1">
+                        {(() => {
+                          const deptConfig = getDepartmentConfig(employeeDetails.department);
+                          const Icon = deptConfig.icon;
+                          return (
+                            <>
+                              <Icon className={`h-4 w-4 ${deptConfig.color}`} />
+                              <span className={deptConfig.color}>{employeeDetails.department}</span>
+                            </>
+                          );
+                        })()}
+                      </div>
                     </>
                   )}
                 </div>

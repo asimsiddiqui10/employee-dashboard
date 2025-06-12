@@ -41,6 +41,7 @@ import {
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { handleApiError } from '@/utils/errorHandler';
+import { getDepartmentConfig } from "@/lib/departments";
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -130,9 +131,21 @@ const EmployeeList = () => {
     {
       accessorKey: "department",
       header: "Department",
-      cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("department")}</div>
-      ),
+      cell: ({ row }) => {
+        const department = row.getValue("department");
+        const deptConfig = getDepartmentConfig(department);
+        const Icon = deptConfig.icon;
+        return (
+          <div className="flex items-center gap-2">
+            <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
+              <Icon className={`h-4 w-4 transition-colors ${deptConfig.color}`} />
+            </div>
+            <span className={`font-medium transition-colors ${deptConfig.color}`}>
+              {department}
+            </span>
+          </div>
+        );
+      },
     },
   ];
 
