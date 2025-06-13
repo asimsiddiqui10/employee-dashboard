@@ -36,7 +36,11 @@ const employeeSchema = new mongoose.Schema({
   jobTitle: { type: String },
   jobDescription: { type: String }, 
   dateOfHire: { type: Date },
-  manager: { type: mongoose.Schema.Types.ObjectId, ref: 'Employee' },
+  supervisor: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'Employee',
+    default: null
+  },
   employmentType: { type: String, enum: ['Part-time', 'Full-time', 'Contract', 'Hourly'] },
   employmentStatus: { type: String, enum: ['Active', 'On leave', 'Terminated'] },
   terminationDate: { type: Date },

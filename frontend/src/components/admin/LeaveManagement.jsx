@@ -126,10 +126,10 @@ const LeaveManagement = () => {
               {leaveRequests.map((request) => (
                 <TableRow key={request._id}>
                   <TableCell className="font-medium min-w-[150px]">
-                    {request.employee.name}
+                    {request.employee?.name || 'Unknown Employee'}
                     <br />
                     <span className="text-sm text-muted-foreground">
-                      {request.employee.employeeId}
+                      {request.employee?.employeeId || 'No ID'}
                     </span>
                   </TableCell>
                   <TableCell className="min-w-[80px]">{request.leaveType}</TableCell>

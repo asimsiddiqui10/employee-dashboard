@@ -30,6 +30,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import { getDepartmentConfig, departments } from "@/lib/departments";
 
 const notificationTypes = [
   { value: 'announcement', label: 'Announcement', icon: Megaphone },
@@ -42,12 +43,14 @@ const notificationTypes = [
 const AdminNotifications = () => {
   const [employees, setEmployees] = useState([]);
   const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [selectedDepartments, setSelectedDepartments] = useState([]);
   const [form, setForm] = useState({
     type: 'announcement',
     title: '',
     message: '',
     priority: 'medium',
-    link: ''
+    link: '',
+    sendToAll: false
   });
   const [currentTag, setCurrentTag] = useState('');
   const [status, setStatus] = useState({ type: '', message: '' });
@@ -75,8 +78,22 @@ const AdminNotifications = () => {
     setForm({ ...form, type: value });
   };
 
-  const handleEmployeeSelect = (values) => {
-    setSelectedEmployees(Array.isArray(values) ? values : [values]);
+  const handleDepartmentChange = (value) => {
+    setSelectedDepartments(prev => {
+      // If value is an array, use it directly
+      if (Array.isArray(value)) return value;
+      // If it's a single value, create an array with just that value
+      return [value];
+    });
+  };
+
+  const handleEmployeeSelect = (value) => {
+    setSelectedEmployees(prev => {
+      // If value is an array, use it directly
+      if (Array.isArray(value)) return value;
+      // If it's a single value, create an array with just that value
+      return [value];
+    });
   };
 
   const addTag = () => {
@@ -92,17 +109,37 @@ const AdminNotifications = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.title || !form.message || selectedEmployees.length === 0) {
+    if (!form.title || !form.message || (!form.sendToAll && selectedEmployees.length === 0 && selectedDepartments.length === 0)) {
       setStatus({ type: 'error', message: 'Please fill all required fields' });
       return;
     }
 
     try {
       setIsLoading(true);
-      const userIds = selectedEmployees.map(empId => {
-        const employee = employees.find(emp => emp._id === empId);
-        return employee?.user?._id;
-      }).filter(Boolean);
+      let userIds = [];
+
+      if (form.sendToAll) {
+        // Get all employee user IDs
+        userIds = employees.map(emp => emp.user?._id).filter(Boolean);
+      } else if (selectedDepartments.length > 0) {
+        // Get user IDs from selected departments
+        userIds = employees
+          .filter(emp => selectedDepartments.includes(emp.department))
+          .map(emp => emp.user?._id)
+          .filter(Boolean);
+        
+        // Add individually selected employees
+        const individualUserIds = selectedEmployees
+          .map(empId => employees.find(emp => emp._id === empId)?.user?._id)
+          .filter(Boolean);
+        
+        userIds = [...new Set([...userIds, ...individualUserIds])];
+      } else {
+        // Only individually selected employees
+        userIds = selectedEmployees
+          .map(empId => employees.find(emp => emp._id === empId)?.user?._id)
+          .filter(Boolean);
+      }
 
       if (userIds.length === 0) {
         setStatus({ type: 'error', message: 'No valid recipients selected' });
@@ -120,9 +157,11 @@ const AdminNotifications = () => {
         title: '',
         message: '',
         priority: 'medium',
-        link: ''
+        link: '',
+        sendToAll: false
       });
       setSelectedEmployees([]);
+      setSelectedDepartments([]);
     } catch (error) {
       const { message } = handleApiError(error);
       setStatus({ type: 'error', message });
@@ -210,78 +249,119 @@ const AdminNotifications = () => {
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="recipients">Recipients*</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  role="combobox"
-                  className="w-full justify-between"
-                >
-                  {selectedEmployees.length > 0
-                    ? `${selectedEmployees.length} recipient${selectedEmployees.length === 1 ? '' : 's'} selected`
-                    : "Select recipients"}
-                  <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-full p-0">
-                <Command>
-                  <CommandInput placeholder="Search employees..." />
-                  <CommandEmpty>No employee found.</CommandEmpty>
-                  <CommandGroup>
-                    {isLoading ? (
-                      <CommandItem disabled>Loading...</CommandItem>
-                    ) : (
-                      employees.map((employee) => (
-                        <CommandItem
-                          key={employee._id}
-                          onSelect={() => {
-                            const isSelected = selectedEmployees.includes(employee._id);
-                            const newSelected = isSelected
-                              ? selectedEmployees.filter((id) => id !== employee._id)
-                              : [...selectedEmployees, employee._id];
-                            setSelectedEmployees(newSelected);
-                          }}
-                        >
-                          <Check
-                            className={cn(
-                              "mr-2 h-4 w-4",
-                              selectedEmployees.includes(employee._id) ? "opacity-100" : "opacity-0"
-                            )}
-                          />
-                          {employee.name} ({employee.email})
-                        </CommandItem>
-                      ))
-                    )}
-                  </CommandGroup>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedEmployees.map((empId) => {
-                const employee = employees.find((emp) => emp._id === empId);
-                return (
-                  <Badge
-                    key={empId}
-                    variant="secondary"
-                    className="flex items-center gap-1"
-                  >
-                    {employee?.name}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-0 px-1 hover:bg-transparent"
-                      onClick={() => {
-                        setSelectedEmployees(selectedEmployees.filter((id) => id !== empId));
-                      }}
+            <Label>Recipients*</Label>
+            <div className="flex flex-col space-y-4">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="sendToAll"
+                  checked={form.sendToAll}
+                  onChange={(e) => {
+                    setForm({ ...form, sendToAll: e.target.checked });
+                    if (e.target.checked) {
+                      setSelectedEmployees([]);
+                      setSelectedDepartments([]);
+                    }
+                  }}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="sendToAll" className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                  Send to all employees
+                </Label>
+              </div>
+
+              {!form.sendToAll && (
+                <>
+                  <div className="space-y-2">
+                    <Label>Departments</Label>
+                    <Select
+                      value={selectedDepartments[0] || ""}
+                      onValueChange={handleDepartmentChange}
                     >
-                      <X className="h-3 w-3" />
-                    </Button>
-                  </Badge>
-                );
-              })}
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(departments).map(([key, dept]) => {
+                          const Icon = dept.icon;
+                          return (
+                            <SelectItem key={key} value={key}>
+                              <div className="flex items-center gap-2">
+                                <div className={`p-1 rounded ${dept.bgColor}`}>
+                                  <Icon className={`h-4 w-4 ${dept.color}`} />
+                                </div>
+                                <span>{dept.label}</span>
+                              </div>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {selectedDepartments.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedDepartments.map(deptKey => {
+                          const dept = departments[deptKey];
+                          const Icon = dept.icon;
+                          return (
+                            <Badge
+                              key={deptKey}
+                              variant="secondary"
+                              className="flex items-center gap-2"
+                            >
+                              <Icon className={`h-4 w-4 ${dept.color}`} />
+                              {dept.label}
+                              <X
+                                className="h-3 w-3 cursor-pointer"
+                                onClick={() => setSelectedDepartments(prev => prev.filter(d => d !== deptKey))}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Additional Employees</Label>
+                    <Select
+                      value={selectedEmployees[0] || ""}
+                      onValueChange={handleEmployeeSelect}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select employee" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {employees.map((employee) => (
+                          <SelectItem key={employee._id} value={employee._id}>
+                            {employee.name} ({employee.employeeId})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {selectedEmployees.length > 0 && (
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        {selectedEmployees.map(empId => {
+                          const employee = employees.find(emp => emp._id === empId);
+                          return (
+                            <Badge
+                              key={empId}
+                              variant="secondary"
+                              className="flex items-center gap-2"
+                            >
+                              {employee?.name} ({employee?.employeeId})
+                              <X
+                                className="h-3 w-3 cursor-pointer"
+                                onClick={() => setSelectedEmployees(prev => prev.filter(id => id !== empId))}
+                              />
+                            </Badge>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
-            <p className="text-sm text-muted-foreground">Select one or more recipients</p>
           </div>
           
           <div className="space-y-2">

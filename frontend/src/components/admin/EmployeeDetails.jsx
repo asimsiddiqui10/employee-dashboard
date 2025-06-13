@@ -9,9 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { cn } from "@/lib/utils";
 import { getDepartmentConfig, departments } from "@/lib/departments";
 
 const EmployeeDetails = () => {
@@ -21,6 +20,7 @@ const EmployeeDetails = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [activeTab, setActiveTab] = useState('personal');
   const [documents, setDocuments] = useState({
     personal: [],
     payroll: [],
@@ -29,17 +29,30 @@ const EmployeeDetails = () => {
     benefits: [],
     training: []
   });
+  const [employees, setEmployees] = useState([]);
 
   useEffect(() => {
     fetchEmployeeDetails();
     fetchAllDocuments();
+    fetchEmployees();
   }, [employeeId]);
 
   const fetchEmployeeDetails = async () => {
     try {
+      console.log('Fetching employee details for:', employeeId);
       const response = await api.get(`/employees/${employeeId}`);
-      setForm(response.data);
+      console.log('Fetched employee details:', response.data);
+      
+      // Format the data to ensure supervisor is handled consistently
+      const formattedData = {
+        ...response.data,
+        supervisor: response.data.supervisor?._id || null
+      };
+      
+      console.log('Setting formatted form data:', formattedData);
+      setForm(formattedData);
     } catch (error) {
+      console.error('Error fetching employee details:', error.response || error);
       const { message } = handleApiError(error);
       console.error(message);
     }
@@ -88,6 +101,15 @@ const EmployeeDetails = () => {
     }
   };
 
+  const fetchEmployees = async () => {
+    try {
+      const response = await api.get('/employees');
+      setEmployees(response.data);
+    } catch (error) {
+      console.error('Error fetching employees:', error.response || error);
+    }
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name.includes('.')) {
@@ -103,10 +125,22 @@ const EmployeeDetails = () => {
 
   const handleSave = async () => {
     try {
-      await api.put(`/employees/${employeeId}`, form);
+      // Create a copy of the form data to modify
+      const formData = { ...form };
+      
+      // Handle supervisor field
+      if (formData.supervisor) {
+        // If supervisor is an object with _id, use the _id
+        formData.supervisor = formData.supervisor._id || formData.supervisor;
+      }
+
+      console.log('Saving employee with form data:', formData); // Debug log
+      const response = await api.put(`/employees/${employeeId}`, formData);
+      console.log('Save response:', response.data); // Debug log
       setIsEditing(false);
-      fetchEmployeeDetails(); // Refresh the data
+      await fetchEmployeeDetails(); // Refresh the data
     } catch (error) {
+      console.error('Error saving employee:', error.response || error);
       const { message } = handleApiError(error);
       console.error(message);
     }
@@ -159,491 +193,584 @@ const EmployeeDetails = () => {
     }
   };
 
+  const tabs = [
+    'personal',
+    'work',
+    'leave',
+    'documents',
+    'benefits',
+    'performance',
+    'training'
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'documents':
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Employee Documents</h3>
+              <Button
+                onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}`)}
+                size="sm"
+                className="h-8"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Document
+              </Button>
+            </div>
+            <Separator className="my-4" />
+            <div className="space-y-6">
+              {Object.entries(documents).map(([type, docs]) => (
+                <div key={type} className="space-y-3">
+                  <h4 className="font-medium capitalize text-sm text-muted-foreground">{type} Documents</h4>
+                  {docs.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No {type} documents found</p>
+                  ) : (
+                    <div className="grid gap-3">
+                      {docs.map((doc) => (
+                        <div key={doc._id} className="flex justify-between items-center p-3 rounded-lg border bg-card text-card-foreground">
+                          <div>
+                            <h3 className="font-medium text-sm">{doc.title}</h3>
+                            <p className="text-sm text-muted-foreground">{doc.description}</p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDownload(doc._id)}
+                            className="h-8"
+                          >
+                            <Download className="h-4 w-4 mr-2" />
+                            Download
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        );
+      case 'personal':
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Personal Information</h3>
+            </div>
+            <Separator className="my-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {isEditing ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfBirth" className="text-sm">Date of Birth</Label>
+                    <Input
+                      id="dateOfBirth"
+                      name="dateOfBirth"
+                      type="date"
+                      value={form?.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''}
+                      onChange={handleInputChange}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="ssn">SSN</Label>
+                    <Input
+                      id="ssn"
+                      name="ssn"
+                      value={form?.ssn || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="nationality">Nationality</Label>
+                    <Input
+                      id="nationality"
+                      name="nationality"
+                      value={form?.nationality || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="phoneNumber">Phone Number</Label>
+                    <Input
+                      id="phoneNumber"
+                      name="phoneNumber"
+                      value={form?.phoneNumber || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="address">Address</Label>
+                    <Input
+                      id="address"
+                      name="address"
+                      value={form?.address || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="city">City</Label>
+                    <Input
+                      id="city"
+                      name="city"
+                      value={form?.city || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="state">State</Label>
+                    <Input
+                      id="state"
+                      name="state"
+                      value={form?.state || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="zipCode">ZIP Code</Label>
+                    <Input
+                      id="zipCode"
+                      name="zipCode"
+                      value={form?.zipCode || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="educationLevel">Education Level</Label>
+                    <Input
+                      id="educationLevel"
+                      name="educationLevel"
+                      value={form?.educationLevel || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="certifications">Certifications (comma-separated)</Label>
+                    <Input
+                      id="certifications"
+                      name="certifications"
+                      value={form?.certifications?.join(', ') || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContact.name">Emergency Contact Name</Label>
+                    <Input
+                      id="emergencyContact.name"
+                      name="emergencyContact.name"
+                      value={form?.emergencyContact?.name || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyContact.phone">Emergency Contact Phone</Label>
+                    <Input
+                      id="emergencyContact.phone"
+                      name="emergencyContact.phone"
+                      value={form?.emergencyContact?.phone || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <InfoField label="Date of Birth" value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} />
+                  <InfoField label="SSN" value={form?.ssn} />
+                  <InfoField label="Nationality" value={form?.nationality} />
+                  <InfoField label="Phone Number" value={form?.phoneNumber} />
+                  <InfoField label="Address" value={form?.address} />
+                  <InfoField label="City" value={form?.city} />
+                  <InfoField label="State" value={form?.state} />
+                  <InfoField label="ZIP Code" value={form?.zipCode} />
+                  <InfoField label="Education Level" value={form?.educationLevel} />
+                  <InfoField label="Certifications" value={form?.certifications?.join(', ')} />
+                  <InfoField label="Emergency Contact Name" value={form?.emergencyContact?.name} />
+                  <InfoField label="Emergency Contact Phone" value={form?.emergencyContact?.phone} />
+                </>
+              )}
+            </div>
+          </div>
+        );
+      case 'work':
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Work Information</h3>
+            </div>
+            <Separator className="my-4" />
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {isEditing ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="department" className="text-sm">Department</Label>
+                    <Select
+                      value={form?.department || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'department', value } })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select department" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(departments).map(([key, dept]) => (
+                          <SelectItem key={key} value={key}>
+                            <div className="flex items-center gap-2">
+                              <dept.icon className={`h-4 w-4 ${dept.color}`} />
+                              <span>{dept.label}</span>
+                            </div>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="supervisor">Supervisor</Label>
+                    <Select
+                      value={form?.supervisor || 'none'}
+                      onValueChange={(value) => {
+                        console.log('Supervisor selection changed to:', value);
+                        setForm(prev => ({
+                          ...prev,
+                          supervisor: value === 'none' ? null : value
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select supervisor">
+                          {form?.supervisor ? 
+                            employees?.find(emp => emp._id === form.supervisor)?.name || 'None'
+                            : 'None'}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">None</SelectItem>
+                        {employees?.filter(emp => emp._id !== form?._id).map((employee) => (
+                          <SelectItem key={employee._id} value={employee._id}>
+                            {employee.name} ({employee.employeeId})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Position</Label>
+                    <Input
+                      id="position"
+                      name="position"
+                      value={form?.position || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="jobTitle">Job Title</Label>
+                    <Input
+                      id="jobTitle"
+                      name="jobTitle"
+                      value={form?.jobTitle || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employmentType">Employment Type</Label>
+                    <Select
+                      value={form?.employmentType || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'employmentType', value } })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Full-time">Full-time</SelectItem>
+                        <SelectItem value="Part-time">Part-time</SelectItem>
+                        <SelectItem value="Contract">Contract</SelectItem>
+                        <SelectItem value="Consultant">Consultant</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="employmentStatus">Employment Status</Label>
+                    <Select
+                      value={form?.employmentStatus || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'employmentStatus', value } })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Active">Active</SelectItem>
+                        <SelectItem value="On leave">On leave</SelectItem>
+                        <SelectItem value="Terminated">Terminated</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="dateOfHire">Date of Hire</Label>
+                    <Input
+                      id="dateOfHire"
+                      name="dateOfHire"
+                      type="date"
+                      value={form?.dateOfHire ? new Date(form.dateOfHire).toISOString().split('T')[0] : ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="terminationDate">Termination Date</Label>
+                    <Input
+                      id="terminationDate"
+                      name="terminationDate"
+                      type="date"
+                      value={form?.terminationDate ? new Date(form.terminationDate).toISOString().split('T')[0] : ''}
+                      onChange={handleInputChange}
+                      disabled={form?.employmentStatus !== 'Terminated'}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workEmail">Work Email</Label>
+                    <Input
+                      id="workEmail"
+                      name="workEmail"
+                      type="email"
+                      value={form?.workEmail || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="workPhoneNumber">Work Phone Number</Label>
+                    <Input
+                      id="workPhoneNumber"
+                      name="workPhoneNumber"
+                      value={form?.workPhoneNumber || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label htmlFor="jobDescription">Job Description</Label>
+                    <Input
+                      id="jobDescription"
+                      name="jobDescription"
+                      value={form?.jobDescription || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <InfoField label="Department" value={form?.department} />
+                  <InfoField 
+                    label="Supervisor" 
+                    value={
+                      employees?.find(emp => emp._id === form?.supervisor)?.name || 'None'
+                    } 
+                  />
+                  <InfoField label="Position" value={form?.position} />
+                  <InfoField label="Job Title" value={form?.jobTitle} />
+                  <InfoField label="Employment Type" value={form?.employmentType} />
+                  <InfoField label="Employment Status" value={form?.employmentStatus} />
+                  <InfoField label="Date of Hire" value={form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'} />
+                  <InfoField label="Termination Date" value={form?.terminationDate ? new Date(form.terminationDate).toLocaleDateString() : 'Not provided'} />
+                  <InfoField label="Work Email" value={form?.workEmail} />
+                  <InfoField label="Work Phone Number" value={form?.workPhoneNumber} />
+                  <InfoField label="Job Description" value={form?.jobDescription} />
+                </>
+              )}
+            </div>
+          </div>
+        );
+      default:
+        return null;
+    }
+  };
+
   if (!form) return <div>Loading...</div>;
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="flex items-center mb-6">
-        <Button
-          variant="ghost"
-          onClick={() => navigate(-1)}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Employees
-        </Button>
-      </div>
-
-      <Card>
-        <CardHeader className="bg-background p-6">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-6">
-              <div className="relative group">
-                {form?.profilePic ? (
-                  <img
-                    src={form.profilePic}
-                    alt={form.name}
-                    className="w-24 h-24 rounded-lg object-cover ring-2 ring-muted"
+    <div className="container mx-auto pt-2 pb-6">
+      <Card className="border-none">
+        {/* Header Section */}
+        <CardHeader className="px-6 pb-0 border-b">
+          <div className="flex items-start gap-6 pb-6">
+            {/* Profile Picture */}
+            <div className="relative group shrink-0">
+              {form?.profilePic ? (
+                <img
+                  src={form.profilePic}
+                  alt={form.name}
+                  className="w-32 h-32 rounded-lg object-cover ring-2 ring-muted"
+                />
+              ) : (
+                <div className="w-32 h-32 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
+                  <User className="h-16 w-16 text-muted-foreground" />
+                </div>
+              )}
+              
+              {isEditing && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg">
+                  <input
+                    type="file"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                    id="profile-upload"
+                    accept="image/*"
                   />
-                ) : (
-                  <div className="w-24 h-24 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
-                    <User className="h-12 w-12 text-muted-foreground" />
-                  </div>
-                )}
-                
-                {isEditing && (
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                    <input
-                      type="file"
-                      onChange={handleFileSelect}
-                      className="hidden"
-                      id="profile-upload"
-                      accept="image/*"
-                    />
-                    <label
-                      htmlFor="profile-upload"
-                      className="bg-background/80 hover:bg-background/90 text-foreground px-3 py-2 rounded-lg text-sm cursor-pointer flex items-center shadow-sm"
-                    >
-                      <Upload size={14} className="mr-1" />
-                      Update
-                    </label>
-                  </div>
-                )}
-              </div>
+                  <label
+                    htmlFor="profile-upload"
+                    className="bg-background/95 hover:bg-background/100 text-foreground px-3 py-2 rounded-md text-sm cursor-pointer flex items-center shadow-sm"
+                  >
+                    <Upload size={14} className="mr-2" />
+                    Update Photo
+                  </label>
+                </div>
+              )}
+            </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-foreground">{form?.name}</h2>
-                <div className="flex items-center gap-2 mt-1 text-muted-foreground">
-                  <span>{form?.position}</span>
-                  {form?.department && (
+            {/* Employee Info and Actions */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-start justify-between">
+                <div>
+                  {/* Back Button and Name */}
+                  <div className="flex items-center gap-2 mb-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigate(-1)}
+                      className="h-10 w-10 -ml-2.5"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                    {isEditing ? (
+                      <Input
+                        value={form?.name || ''}
+                        onChange={(e) => handleInputChange({ target: { name: 'name', value: e.target.value } })}
+                        className="h-9 text-xl font-semibold"
+                      />
+                    ) : (
+                      <h2 className="text-2xl font-semibold text-foreground">{form?.name}</h2>
+                    )}
+                  </div>
+
+                  {/* Position and Department */}
+                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                    {isEditing ? (
+                      <>
+                        <Input
+                          value={form?.position || ''}
+                          onChange={(e) => handleInputChange({ target: { name: 'position', value: e.target.value } })}
+                          className="h-8 w-40"
+                          placeholder="Position"
+                        />
+                        <span>•</span>
+                        <Select
+                          value={form?.department || ''}
+                          onValueChange={(value) => handleInputChange({ target: { name: 'department', value } })}
+                        >
+                          <SelectTrigger className="h-8 w-40">
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Object.entries(departments).map(([key, dept]) => (
+                              <SelectItem key={key} value={key}>
+                                <div className="flex items-center gap-2">
+                                  <dept.icon className={`h-4 w-4 ${dept.color}`} />
+                                  <span>{dept.label}</span>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </>
+                    ) : (
+                      <>
+                        <span>{form?.position}</span>
+                        {form?.department && (
+                          <>
+                            <span>•</span>
+                            <div className="flex items-center gap-1">
+                              {(() => {
+                                const deptConfig = getDepartmentConfig(form.department);
+                                const Icon = deptConfig.icon;
+                                return (
+                                  <>
+                                    <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
+                                      <Icon className={`h-3.5 w-3.5 transition-colors ${deptConfig.color}`} />
+                                    </div>
+                                    <span className={`transition-colors ${deptConfig.color}`}>
+                                      {form.department}
+                                    </span>
+                                  </>
+                                );
+                              })()}
+                            </div>
+                          </>
+                        )}
+                      </>
+                    )}
+                  </div>
+
+                  {/* Tabs Navigation */}
+                  <div className="flex space-x-1 bg-muted/50 p-1 rounded-lg">
+                    {tabs.map((tab) => (
+                      <button
+                        key={tab}
+                        onClick={() => setActiveTab(tab)}
+                        className={cn(
+                          "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
+                          activeTab === tab
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                        )}
+                      >
+                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center space-x-2">
+                  {!isEditing ? (
                     <>
-                      <span>•</span>
-                      <div className="flex items-center gap-1">
-                        {(() => {
-                          const deptConfig = getDepartmentConfig(form.department);
-                          const Icon = deptConfig.icon;
-                          return (
-                            <>
-                              <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
-                                <Icon className={`h-4 w-4 transition-colors ${deptConfig.color}`} />
-                              </div>
-                              <span className={`transition-colors ${deptConfig.color}`}>
-                                {form.department}
-                              </span>
-                            </>
-                          );
-                        })()}
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsEditing(true)}
+                        className="h-8"
+                      >
+                        <Pencil className="h-4 w-4 mr-2" />
+                        Edit
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setShowDeleteModal(true)}
+                        className="h-8"
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete
+                      </Button>
                     </>
+                  ) : (
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleSave}
+                      className="h-8"
+                    >
+                      Save Changes
+                    </Button>
                   )}
                 </div>
               </div>
             </div>
-
-            <div className="flex gap-2">
-              {!isEditing ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    onClick={() => setShowDeleteModal(true)}
-                  >
-                    Delete
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  variant="default"
-                  onClick={handleSave}
-                >
-                  Save Changes
-                </Button>
-              )}
-            </div>
           </div>
-
-          <Tabs defaultValue="personal" className="mt-6">
-            <div className="relative">
-              <div className="overflow-x-auto">
-                <TabsList className="w-full inline-flex h-10 items-center justify-start rounded-md bg-muted p-1 text-muted-foreground">
-                  {[
-                    'personal',
-                    'work',
-                    'leave',
-                    'documents',
-                    'benefits',
-                    'performance',
-                    'training'
-                  ].map((tab) => (
-                    <TabsTrigger
-                      key={tab}
-                      value={tab}
-                      className="inline-flex items-center justify-center whitespace-nowrap rounded-sm px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm"
-                    >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-              </div>
-            </div>
-
-            <CardContent className="p-6">
-              <TabsContent value="documents" className="mt-0">
-                <div className="space-y-6">
-                  <div className="flex justify-between items-center">
-                    <h3 className="text-lg font-semibold">Employee Documents</h3>
-                    <Button
-                      onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}`)}
-                      className="gap-2"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Upload Document
-                    </Button>
-                  </div>
-                  <Separator />
-                  <div className="space-y-8">
-                    {Object.entries(documents).map(([type, docs]) => (
-                      <div key={type} className="space-y-4">
-                        <h4 className="font-medium capitalize text-muted-foreground">{type} Documents</h4>
-                        {docs.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No {type} documents found</p>
-                        ) : (
-                          <div className="grid gap-4">
-                            {docs.map((doc) => (
-                              <div key={doc._id} className="flex justify-between items-center p-4 rounded-lg border bg-card text-card-foreground shadow-sm">
-                                <div>
-                                  <h3 className="font-medium">{doc.title}</h3>
-                                  <p className="text-sm text-muted-foreground">{doc.description}</p>
-                                  <p className="text-xs text-muted-foreground mt-1">
-                                    Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
-                                  </p>
-                                </div>
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  onClick={() => handleDownload(doc._id)}
-                                  className="gap-2"
-                                >
-                                  <Download className="h-4 w-4" />
-                                  Download
-                                </Button>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="personal">
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold">Personal Information</h3>
-                  <Separator className="my-4" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {isEditing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="dateOfBirth">Date of Birth</Label>
-                          <Input
-                            id="dateOfBirth"
-                            name="dateOfBirth"
-                            type="date"
-                            value={form?.dateOfBirth ? new Date(form.dateOfBirth).toISOString().split('T')[0] : ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="ssn">SSN</Label>
-                          <Input
-                            id="ssn"
-                            name="ssn"
-                            value={form?.ssn || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="nationality">Nationality</Label>
-                          <Input
-                            id="nationality"
-                            name="nationality"
-                            value={form?.nationality || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="phoneNumber">Phone Number</Label>
-                          <Input
-                            id="phoneNumber"
-                            name="phoneNumber"
-                            value={form?.phoneNumber || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="address">Address</Label>
-                          <Input
-                            id="address"
-                            name="address"
-                            value={form?.address || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="city">City</Label>
-                          <Input
-                            id="city"
-                            name="city"
-                            value={form?.city || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="state">State</Label>
-                          <Input
-                            id="state"
-                            name="state"
-                            value={form?.state || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="zipCode">ZIP Code</Label>
-                          <Input
-                            id="zipCode"
-                            name="zipCode"
-                            value={form?.zipCode || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="educationLevel">Education Level</Label>
-                          <Input
-                            id="educationLevel"
-                            name="educationLevel"
-                            value={form?.educationLevel || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-2">
-                          <Label htmlFor="certifications">Certifications (comma-separated)</Label>
-                          <Input
-                            id="certifications"
-                            name="certifications"
-                            value={form?.certifications?.join(', ') || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="emergencyContact.name">Emergency Contact Name</Label>
-                          <Input
-                            id="emergencyContact.name"
-                            name="emergencyContact.name"
-                            value={form?.emergencyContact?.name || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="emergencyContact.phone">Emergency Contact Phone</Label>
-                          <Input
-                            id="emergencyContact.phone"
-                            name="emergencyContact.phone"
-                            value={form?.emergencyContact?.phone || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <InfoField label="Date of Birth" value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} />
-                        <InfoField label="SSN" value={form?.ssn} />
-                        <InfoField label="Nationality" value={form?.nationality} />
-                        <InfoField label="Phone Number" value={form?.phoneNumber} />
-                        <InfoField label="Address" value={form?.address} />
-                        <InfoField label="City" value={form?.city} />
-                        <InfoField label="State" value={form?.state} />
-                        <InfoField label="ZIP Code" value={form?.zipCode} />
-                        <InfoField label="Education Level" value={form?.educationLevel} />
-                        <InfoField label="Certifications" value={form?.certifications?.join(', ')} />
-                        <InfoField label="Emergency Contact Name" value={form?.emergencyContact?.name} />
-                        <InfoField label="Emergency Contact Phone" value={form?.emergencyContact?.phone} />
-                      </>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="work">
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold">Work Information</h3>
-                  <Separator className="my-4" />
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {isEditing ? (
-                      <>
-                        <div className="space-y-2">
-                          <Label htmlFor="department">Department</Label>
-                          <Select
-                            value={form?.department || ''}
-                            onValueChange={(value) => handleInputChange({ target: { name: 'department', value } })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select department" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {Object.entries(departments).map(([key, dept]) => (
-                                <SelectItem key={key} value={key}>
-                                  <div className="flex items-center gap-2">
-                                    <dept.icon className={`h-4 w-4 ${dept.color}`} />
-                                    <span>{dept.label}</span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="position">Position</Label>
-                          <Input
-                            id="position"
-                            name="position"
-                            value={form?.position || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="jobTitle">Job Title</Label>
-                          <Input
-                            id="jobTitle"
-                            name="jobTitle"
-                            value={form?.jobTitle || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="employmentType">Employment Type</Label>
-                          <Select
-                            value={form?.employmentType || ''}
-                            onValueChange={(value) => handleInputChange({ target: { name: 'employmentType', value } })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select type" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Full-time">Full-time</SelectItem>
-                              <SelectItem value="Part-time">Part-time</SelectItem>
-                              <SelectItem value="Contract">Contract</SelectItem>
-                              <SelectItem value="Consultant">Consultant</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="employmentStatus">Employment Status</Label>
-                          <Select
-                            value={form?.employmentStatus || ''}
-                            onValueChange={(value) => handleInputChange({ target: { name: 'employmentStatus', value } })}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="Active">Active</SelectItem>
-                              <SelectItem value="On leave">On leave</SelectItem>
-                              <SelectItem value="Terminated">Terminated</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="dateOfHire">Date of Hire</Label>
-                          <Input
-                            id="dateOfHire"
-                            name="dateOfHire"
-                            type="date"
-                            value={form?.dateOfHire ? new Date(form.dateOfHire).toISOString().split('T')[0] : ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="terminationDate">Termination Date</Label>
-                          <Input
-                            id="terminationDate"
-                            name="terminationDate"
-                            type="date"
-                            value={form?.terminationDate ? new Date(form.terminationDate).toISOString().split('T')[0] : ''}
-                            onChange={handleInputChange}
-                            disabled={form?.employmentStatus !== 'Terminated'}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="workEmail">Work Email</Label>
-                          <Input
-                            id="workEmail"
-                            name="workEmail"
-                            type="email"
-                            value={form?.workEmail || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="workPhoneNumber">Work Phone Number</Label>
-                          <Input
-                            id="workPhoneNumber"
-                            name="workPhoneNumber"
-                            value={form?.workPhoneNumber || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                        <div className="col-span-2 space-y-2">
-                          <Label htmlFor="jobDescription">Job Description</Label>
-                          <Input
-                            id="jobDescription"
-                            name="jobDescription"
-                            value={form?.jobDescription || ''}
-                            onChange={handleInputChange}
-                          />
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <InfoField label="Department" value={form?.department} />
-                        <InfoField label="Position" value={form?.position} />
-                        <InfoField label="Job Title" value={form?.jobTitle} />
-                        <InfoField label="Employment Type" value={form?.employmentType} />
-                        <InfoField label="Employment Status" value={form?.employmentStatus} />
-                        <InfoField label="Date of Hire" value={form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'} />
-                        <InfoField label="Termination Date" value={form?.terminationDate ? new Date(form.terminationDate).toLocaleDateString() : 'Not provided'} />
-                        <InfoField label="Work Email" value={form?.workEmail} />
-                        <InfoField label="Work Phone Number" value={form?.workPhoneNumber} />
-                        <InfoField label="Job Description" value={form?.jobDescription} />
-                      </>
-                    )}
-                  </div>
-                </div>
-              </TabsContent>
-
-              <TabsContent value="leave">
-                {/* Leave content */}
-              </TabsContent>
-
-              <TabsContent value="benefits">
-                {/* Benefits content */}
-              </TabsContent>
-
-              <TabsContent value="performance">
-                {/* Performance content */}
-              </TabsContent>
-
-              <TabsContent value="training">
-                {/* Training content */}
-              </TabsContent>
-            </CardContent>
-          </Tabs>
         </CardHeader>
+
+        {/* Content Section */}
+        <CardContent className="px-6 pt-6">
+          {renderTabContent()}
+        </CardContent>
       </Card>
 
       {showDeleteModal && (
@@ -663,21 +790,21 @@ const InfoField = ({ label, value }) => {
     const deptConfig = getDepartmentConfig(value);
     const Icon = deptConfig.icon;
     return (
-      <div className="flex flex-col space-y-1">
-        <span className="text-sm font-medium leading-none">{label}</span>
+      <div className="flex flex-col space-y-1.5">
+        <span className="text-sm font-medium text-muted-foreground">{label}</span>
         <div className="flex items-center gap-2">
           <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
-            <Icon className={`h-4 w-4 transition-colors ${deptConfig.color}`} />
+            <Icon className={`h-3.5 w-3.5 transition-colors ${deptConfig.color}`} />
           </div>
-          <span className={`transition-colors ${deptConfig.color}`}>{value}</span>
+          <span className={`text-sm transition-colors ${deptConfig.color}`}>{value}</span>
         </div>
       </div>
     );
   }
   return (
-    <div className="flex flex-col space-y-1">
-      <span className="text-sm font-medium leading-none">{label}</span>
-      <span className="text-sm text-muted-foreground">{value || 'Not provided'}</span>
+    <div className="flex flex-col space-y-1.5">
+      <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <span className="text-sm">{value || 'Not provided'}</span>
     </div>
   );
 };

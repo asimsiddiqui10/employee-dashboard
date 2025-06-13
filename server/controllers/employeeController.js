@@ -107,7 +107,9 @@ export const addEmployee = async (req, res) => {
 export const editEmployee = async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const { email, role, password, workPhoneNumber, compensationType, compensationValue, active, ...rest } = req.body;
+    const { email, role, password, workPhoneNumber, compensationType, compensationValue, active, supervisor, ...rest } = req.body;
+
+    console.log('Edit request received:', { employeeId, supervisor }); // Debug log
 
     // Validate compensation if being updated
     if (compensationType || compensationValue) {
@@ -119,12 +121,42 @@ export const editEmployee = async (req, res) => {
       }
     }
 
+    // Validate supervisor if provided
+    if (supervisor) {
+      if (!mongoose.Types.ObjectId.isValid(supervisor)) {
+        console.log('Invalid supervisor ID:', supervisor); // Debug log
+        return res.status(400).json({ message: 'Invalid supervisor ID' });
+      }
+
+      // Check if supervisor exists and is not the same as the employee
+      const supervisorExists = await Employee.findById(supervisor);
+      if (!supervisorExists) {
+        return res.status(400).json({ message: 'Supervisor not found' });
+      }
+      if (supervisorExists.employeeId === employeeId) {
+        return res.status(400).json({ message: 'Employee cannot be their own supervisor' });
+      }
+    }
+
     // Update employee fields
+    const updateData = {
+      email,
+      role,
+      workPhoneNumber,
+      compensationType,
+      compensationValue,
+      active,
+      supervisor: supervisor || null,
+      ...rest
+    };
+
+    console.log('Updating employee with data:', updateData); // Debug log
+
     const updatedEmployee = await Employee.findOneAndUpdate(
       { employeeId },
-      { email, role, workPhoneNumber, compensationType, compensationValue, active, ...rest },
+      updateData,
       { new: true }
-    );
+    ).populate('supervisor', 'name employeeId');
 
     // Update user if necessary
     if (updatedEmployee) {
@@ -137,6 +169,8 @@ export const editEmployee = async (req, res) => {
         }
         await userToUpdate.save();
       }
+
+      console.log('Employee updated successfully:', updatedEmployee); // Debug log
       return res.status(200).json({ message: 'Employee updated', employee: updatedEmployee });
     } else {
       return res.status(404).json({ message: 'Employee not found' });
@@ -171,7 +205,11 @@ export const getEmployees = async (req, res) => {
     const employees = await Employee.find()
       .populate({
         path: 'user',
-        select: '_id name email role' // Include all needed fields
+        select: '_id name email role'
+      })
+      .populate({
+        path: 'supervisor',
+        select: 'name employeeId'
       });
     res.json(employees);
   } catch (error) {
@@ -180,46 +218,20 @@ export const getEmployees = async (req, res) => {
   }
 };
 
-// Add this to your existing employeeController.js
-export const getMyDetails = async (req, res) => {
-  try {
-    // Find employee by user ID since it's attached by auth middleware
-    const employee = await Employee.findOne({ user: req.user._id });
-    
-    if (!employee) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Employee not found' 
-      });
-    }
-
-    // Populate any references you need
-    await employee.populate('user', 'name email');
-    
-    // Send the response
-    res.json({
-      success: true,
-      ...employee.toObject(),
-      email: employee.user.email,
-      name: employee.user.name
-    });
-  } catch (error) {
-    console.error('Error fetching employee details:', error);
-    res.status(500).json({ 
-      success: false,
-      message: 'Server error while fetching employee details' 
-    });
-  }
-};
-
+// Get employee by ID
 export const getEmployee = async (req, res) => {
   try {
     const { employeeId } = req.params;
-    console.log('Fetching employee with ID:', employeeId);
-    
-    const employee = await Employee.findOne({ employeeId });
-    console.log('Found employee:', employee);
-    
+    const employee = await Employee.findOne({ employeeId })
+      .populate({
+        path: 'user',
+        select: '_id name email role'
+      })
+      .populate({
+        path: 'supervisor',
+        select: 'name employeeId'
+      });
+
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
@@ -227,7 +239,28 @@ export const getEmployee = async (req, res) => {
     res.json(employee);
   } catch (error) {
     console.error('Error fetching employee:', error);
-    res.status(500).json({ error: 'Failed to fetch employee' });
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Get my details
+export const getMyDetails = async (req, res) => {
+  try {
+    const employee = await Employee.findOne({ user: req.user._id })
+      .populate('user', 'name email')
+      .populate('supervisor', 'name employeeId');
+    
+    if (!employee) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Employee not found' 
+      });
+    }
+    
+    res.json(employee);
+  } catch (error) {
+    console.error('Error fetching employee details:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
 
