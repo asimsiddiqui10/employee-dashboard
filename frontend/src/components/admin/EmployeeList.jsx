@@ -156,6 +156,11 @@ const EmployeeList = () => {
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 7,
+      },
+    },
     state: {
       sorting,
       globalFilter,
@@ -212,7 +217,7 @@ const EmployeeList = () => {
         <div className="flex items-center justify-between">
           <div>
             <CardTitle>Employee List</CardTitle>
-            <CardDescription className="pt-1">Manage your employees and their roles here.</CardDescription>
+            <CardDescription className="pt-1.5">Manage your employees and their roles here.</CardDescription>
           </div>
           <Button 
             onClick={() => setShowAddForm(true)} 
@@ -227,7 +232,7 @@ const EmployeeList = () => {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4 py-4">
+        <div className="flex items-center gap-4 pb-2">
           <div className="flex-1">
             <Input
               placeholder="Search employees..."
@@ -306,6 +311,10 @@ const EmployeeList = () => {
           >
             Next
           </Button>
+          <span className="text-sm text-muted-foreground ml-2">
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
+          </span>
         </div>
       </CardContent>
     </Card>

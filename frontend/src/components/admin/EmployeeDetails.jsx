@@ -197,6 +197,7 @@ const EmployeeDetails = () => {
     'personal',
     'work',
     'leave',
+    'payroll',
     'documents',
     'benefits',
     'performance',
@@ -205,6 +206,51 @@ const EmployeeDetails = () => {
 
   const renderTabContent = () => {
     switch (activeTab) {
+      case 'payroll':
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Payroll Documents</h3>
+              <Button
+                onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}&type=payroll`)}
+                size="sm"
+                className="h-8"
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                Upload Payroll Document
+              </Button>
+            </div>
+            <Separator className="my-4" />
+            <div className="space-y-6">
+              {documents.payroll.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No payroll documents found</p>
+              ) : (
+                <div className="grid gap-3">
+                  {documents.payroll.map((doc) => (
+                    <div key={doc._id} className="flex justify-between items-center p-3 rounded-lg border bg-card text-card-foreground">
+                      <div>
+                        <h3 className="font-medium text-sm">{doc.title}</h3>
+                        <p className="text-sm text-muted-foreground">{doc.description}</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Uploaded on {new Date(doc.uploadedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownload(doc._id)}
+                        className="h-8"
+                      >
+                        <Download className="h-4 w-4 mr-2" />
+                        Download
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
       case 'documents':
         return (
           <div className="space-y-4">
@@ -221,7 +267,9 @@ const EmployeeDetails = () => {
             </div>
             <Separator className="my-4" />
             <div className="space-y-6">
-              {Object.entries(documents).map(([type, docs]) => (
+              {Object.entries(documents)
+                .filter(([type]) => type !== 'payroll') // Exclude payroll documents
+                .map(([type, docs]) => (
                 <div key={type} className="space-y-3">
                   <h4 className="font-medium capitalize text-sm text-muted-foreground">{type} Documents</h4>
                   {docs.length === 0 ? (
@@ -590,19 +638,19 @@ const EmployeeDetails = () => {
     <div className="container mx-auto pt-2 pb-6">
       <Card className="border-none">
         {/* Header Section */}
-        <CardHeader className="px-6 pb-0 border-b">
-          <div className="flex items-start gap-6 pb-6">
+        <CardHeader className="px-6 pb-0">
+          <div className="flex flex-col lg:flex-row items-start gap-6 pb-6">
             {/* Profile Picture */}
             <div className="relative group shrink-0">
               {form?.profilePic ? (
                 <img
                   src={form.profilePic}
                   alt={form.name}
-                  className="w-32 h-32 rounded-lg object-cover ring-2 ring-muted"
+                  className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg object-cover ring-2 ring-muted"
                 />
               ) : (
-                <div className="w-32 h-32 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
-                  <User className="h-16 w-16 text-muted-foreground" />
+                <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
+                  <User className="h-12 w-12 lg:h-16 lg:w-16 text-muted-foreground" />
                 </div>
               )}
               
@@ -627,11 +675,11 @@ const EmployeeDetails = () => {
             </div>
 
             {/* Employee Info and Actions */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-start justify-between">
-                <div>
+            <div className="flex-1 min-w-0 w-full">
+              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                <div className="space-y-4">
                   {/* Back Button and Name */}
-                  <div className="flex items-center gap-2 mb-2">
+                  <div className="flex items-center gap-2">
                     <Button
                       variant="ghost"
                       size="icon"
@@ -647,26 +695,26 @@ const EmployeeDetails = () => {
                         className="h-9 text-xl font-semibold"
                       />
                     ) : (
-                      <h2 className="text-2xl font-semibold text-foreground">{form?.name}</h2>
+                      <h2 className="text-xl lg:text-2xl font-semibold text-foreground">{form?.name}</h2>
                     )}
                   </div>
 
-                  {/* Position and Department */}
-                  <div className="flex items-center gap-2 text-muted-foreground mb-4">
+                  {/* Position, Department and ID */}
+                  <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
                     {isEditing ? (
-                      <>
+                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
                         <Input
                           value={form?.position || ''}
                           onChange={(e) => handleInputChange({ target: { name: 'position', value: e.target.value } })}
-                          className="h-8 w-40"
+                          className="h-8 w-full sm:w-40"
                           placeholder="Position"
                         />
-                        <span>•</span>
+                        <span className="hidden sm:inline">•</span>
                         <Select
                           value={form?.department || ''}
                           onValueChange={(value) => handleInputChange({ target: { name: 'department', value } })}
                         >
-                          <SelectTrigger className="h-8 w-40">
+                          <SelectTrigger className="h-8 w-full sm:w-40">
                             <SelectValue placeholder="Select department" />
                           </SelectTrigger>
                           <SelectContent>
@@ -680,13 +728,20 @@ const EmployeeDetails = () => {
                             ))}
                           </SelectContent>
                         </Select>
-                      </>
+                        <span className="hidden sm:inline"> </span>
+                        <Input
+                          value={form?.employeeId || ''}
+                          onChange={(e) => handleInputChange({ target: { name: 'employeeId', value: e.target.value } })}
+                          className="h-8 w-full sm:w-32"
+                          placeholder="Employee ID"
+                        />
+                      </div>
                     ) : (
                       <>
                         <span>{form?.position}</span>
                         {form?.department && (
                           <>
-                            <span>•</span>
+                            <span className="hidden sm:inline"> </span>
                             <div className="flex items-center gap-1">
                               {(() => {
                                 const deptConfig = getDepartmentConfig(form.department);
@@ -705,26 +760,10 @@ const EmployeeDetails = () => {
                             </div>
                           </>
                         )}
+                        <span className="hidden sm:inline"></span>
+                        <span>ID: {form?.employeeId}</span>
                       </>
                     )}
-                  </div>
-
-                  {/* Tabs Navigation */}
-                  <div className="flex space-x-1 bg-muted/50 p-1 rounded-lg">
-                    {tabs.map((tab) => (
-                      <button
-                        key={tab}
-                        onClick={() => setActiveTab(tab)}
-                        className={cn(
-                          "px-3 py-1.5 text-sm font-medium rounded-md transition-colors",
-                          activeTab === tab
-                            ? "bg-background text-foreground shadow-sm"
-                            : "text-muted-foreground hover:text-foreground hover:bg-muted"
-                        )}
-                      >
-                        {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                      </button>
-                    ))}
                   </div>
                 </div>
 
@@ -742,10 +781,10 @@ const EmployeeDetails = () => {
                         Edit
                       </Button>
                       <Button
-                        variant="destructive"
+                        variant="ghost"
                         size="sm"
                         onClick={() => setShowDeleteModal(true)}
-                        className="h-8"
+                        className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
@@ -763,13 +802,35 @@ const EmployeeDetails = () => {
                   )}
                 </div>
               </div>
+
+              {/* Tabs Navigation */}
+              <div className="mt-6 overflow-x-auto pb-2">
+                <div className="flex space-x-1 bg-accent p-1 rounded-lg min-w-max">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={cn(
+                        "px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
+                        activeTab === tab
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-accent-foreground/80 hover:text-accent-foreground hover:bg-accent-foreground/10"
+                      )}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </CardHeader>
 
         {/* Content Section */}
-        <CardContent className="px-6 pt-6">
-          {renderTabContent()}
+        <CardContent className="px-4 sm:px-6 pt-6">
+          <div className="max-w-full overflow-x-auto">
+            {renderTabContent()}
+          </div>
         </CardContent>
       </Card>
 
