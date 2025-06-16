@@ -17,7 +17,7 @@ const AdminDashboard = () => {
   return (
     <SidebarProvider>
       <AdminSidebarNew />
-      <SidebarInset>
+      <SidebarInset className="flex flex-col overflow-x-hidden">
         <nav className="flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center gap-2 px-3">
             <SidebarTrigger />
@@ -38,7 +38,7 @@ const AdminDashboard = () => {
             </div>
           </div>
         </nav>
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-6 overflow-x-hidden">
           <Outlet />
         </main>
       </SidebarInset>

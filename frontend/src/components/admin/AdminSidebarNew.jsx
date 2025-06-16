@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   Users,
@@ -23,6 +23,7 @@ import {
   Menu
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
+import { useSidebar } from '../ui/sidebar';
 
 import {
   Sidebar,
@@ -38,6 +39,14 @@ import {
 
 export function AdminSidebarNew() {
   const { logout } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const location = useLocation();
+
+  const handleNavigation = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
 
   const mainMenuItems = [
     {
@@ -131,9 +140,21 @@ export function AdminSidebarNew() {
     {
       title: "Logout",
       icon: LogOut,
-      onClick: logout
+      onClick: () => {
+        if (isMobile) {
+          setOpenMobile(false);
+        }
+        logout();
+      }
     }
   ];
+
+  const isActive = (path) => {
+    if (path === '/admin-dashboard') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <Sidebar>
@@ -160,14 +181,16 @@ export function AdminSidebarNew() {
           <SidebarMenu>
             {mainMenuItems.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={location.pathname === item.path || (item.path !== '/admin-dashboard' && location.pathname.startsWith(item.path))}>
                   <NavLink
                     to={item.path}
+                    end={item.path === '/admin-dashboard'}
+                    onClick={handleNavigation}
                     className={({ isActive }) =>
-                      `flex w-full items-center gap-2 pr-3 ${
-                        isActive
-                          ? "text-foreground"
-                          : "text-muted-foreground hover:text-foreground"
+                      `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors ${
+                        location.pathname === item.path || (item.path !== '/admin-dashboard' && location.pathname.startsWith(item.path))
+                          ? 'bg-accent text-accent-foreground font-medium'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
                       }`
                     }
                   >
@@ -188,20 +211,22 @@ export function AdminSidebarNew() {
               {item.onClick ? (
                 <SidebarMenuButton 
                   onClick={item.onClick}
-                  className="flex w-full items-center gap-2 pr-3 text-red-500 hover:text-red-600 hover:bg-red-100/50 transition-colors"
+                  className="flex w-full items-center gap-2 px-2 py-1.5 rounded-md text-red-500 hover:text-red-600 hover:bg-red-100/50 transition-colors"
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.title}</span>
                 </SidebarMenuButton>
               ) : (
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={location.pathname === item.path || location.pathname.startsWith(item.path)}>
                   <NavLink
                     to={item.path}
+                    end={item.path === '/admin-dashboard'}
+                    onClick={handleNavigation}
                     className={({ isActive }) =>
-                      `flex w-full items-center gap-2 pr-3 ${
-                        isActive
-                          ? "bg-accent text-foreground"
-                          : "text-muted-foreground hover:text-foreground hover:bg-accent"
+                      `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors ${
+                        location.pathname === item.path || location.pathname.startsWith(item.path)
+                          ? 'bg-accent text-accent-foreground font-medium'
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
                       }`
                     }
                   >
@@ -214,7 +239,6 @@ export function AdminSidebarNew() {
           ))}
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   );
 } 

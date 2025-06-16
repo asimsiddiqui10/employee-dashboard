@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import { NavLink, useLocation } from 'react-router-dom';
 import { 
   LayoutDashboard,
   User,
@@ -21,6 +21,7 @@ import {
   Menu
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
+import { useSidebar } from '../ui/sidebar';
 
 import {
   Sidebar,
@@ -122,6 +123,21 @@ const bottomMenuItems = [
 
 export function EmployeeSidebarNew() {
   const { logout } = useAuth();
+  const { isMobile, setOpenMobile } = useSidebar();
+  const location = useLocation();
+
+  const handleNavigation = () => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+  };
+
+  const isActive = (path) => {
+    if (path === '/employee-dashboard') {
+      return location.pathname === path;
+    }
+    return location.pathname.startsWith(path);
+  };
 
   return (
     <Sidebar>
@@ -148,22 +164,21 @@ export function EmployeeSidebarNew() {
           <SidebarMenu>
             {sidebarData.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
+                <SidebarMenuButton asChild isActive={location.pathname === item.path || (item.path !== '/employee-dashboard' && location.pathname.startsWith(item.path))}>
                   <NavLink 
                     to={item.path}
                     end={item.path === '/employee-dashboard'}
+                    onClick={handleNavigation}
                     className={({ isActive }) =>
-                      `flex items-center gap-2 px-2 py-1 rounded-md transition-colors ${
-                        isActive 
-                          ? 'bg-accent text-accent-foreground' 
-                          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                      `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors ${
+                        location.pathname === item.path || (item.path !== '/employee-dashboard' && location.pathname.startsWith(item.path))
+                          ? 'bg-accent text-accent-foreground font-medium' 
+                          : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
                       }`
                     }
                   >
-                    <span className="flex items-center gap-2">
-                      <item.icon className="h-4 w-4" />
-                      <span>{item.title}</span>
-                    </span>
+                    <item.icon className="h-4 w-4" />
+                    <span>{item.title}</span>
                   </NavLink>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -176,14 +191,15 @@ export function EmployeeSidebarNew() {
         <SidebarMenu>
           {bottomMenuItems.map((item) => (
             <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton asChild>
+              <SidebarMenuButton asChild isActive={location.pathname === item.path || location.pathname.startsWith(item.path)}>
                 <NavLink
                   to={item.path}
+                  onClick={handleNavigation}
                   className={({ isActive }) =>
-                    `flex w-full items-center gap-2 pr-3 ${
-                      isActive
-                        ? "text-primary font-medium"
-                        : "text-muted-foreground hover:text-foreground"
+                    `flex items-center gap-2 px-2 py-1.5 rounded-md transition-colors ${
+                      location.pathname === item.path || location.pathname.startsWith(item.path)
+                        ? 'bg-accent text-accent-foreground font-medium'
+                        : 'text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground'
                     }`
                   }
                 >
@@ -195,8 +211,13 @@ export function EmployeeSidebarNew() {
           ))}
           <SidebarMenuItem>
             <SidebarMenuButton 
-              onClick={logout}
-              className="flex w-full items-center gap-2 pr-3 text-red-500 hover:text-red-600 transition-colors"
+              onClick={() => {
+                if (isMobile) {
+                  setOpenMobile(false);
+                }
+                logout();
+              }}
+              className="flex w-full items-center gap-2 px-2 py-1.5 rounded-md text-red-500 hover:text-red-600 hover:bg-red-100/50 transition-colors"
             >
               <LogOut className="h-4 w-4" />
               <span>Logout</span>
@@ -204,7 +225,6 @@ export function EmployeeSidebarNew() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarFooter>
-      <SidebarRail />
     </Sidebar>
   );
 }

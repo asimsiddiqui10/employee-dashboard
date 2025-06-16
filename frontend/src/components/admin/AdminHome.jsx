@@ -63,11 +63,11 @@ const AdminHome = () => {
   ];
 
   return (
-    <div className="flex flex-col-reverse gap-4 lg:flex-row">
+    <div className="flex flex-col-reverse gap-4 lg:flex-row min-w-0">
       {/* Main Content */}
-      <div className="flex w-full flex-col gap-4 lg:w-3/4">
+      <div className="flex w-full flex-col gap-4 lg:w-3/4 min-w-0">
         {/* Stats Section */}
-        <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">Total Revenue</CardTitle>
@@ -134,25 +134,25 @@ const AdminHome = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-          <div className="col-span-full lg:col-span-4">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+          <div className="col-span-full lg:col-span-4 min-w-0">
             <RevenueBarChart />
           </div>
-          <div className="col-span-full md:col-span-1 lg:col-span-3">
+          <div className="col-span-full lg:col-span-3 min-w-0">
             <DonutChartComponent />
           </div>
         </div>
 
         {/* Visitors Area Chart */}
         <div className="grid gap-4">
-          <div className="w-full">
+          <div className="w-full min-w-0">
             <VisitorsAreaChart />
           </div>
         </div>
       </div>
 
       {/* Notifications Card */}
-      <Card className="w-full lg:w-1/4">
+      <Card className="w-full lg:w-1/4 min-w-0">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-xl font-semibold">Notifications</CardTitle>
@@ -171,7 +171,7 @@ const AdminHome = () => {
                   className="flex flex-col gap-2 rounded-lg border p-4 shadow-sm"
                 >
                   <div className="flex items-center justify-between">
-                    <h4 className="font-medium">{notification.title}</h4>
+                    <h4 className="font-medium truncate">{notification.title}</h4>
                     <Badge 
                       variant={
                         notification.type === "warning" 
@@ -180,12 +180,12 @@ const AdminHome = () => {
                           ? "secondary" 
                           : "outline"
                       }
-                      className="text-xs"
+                      className="text-xs shrink-0 ml-2"
                     >
                       {notification.type}
                     </Badge>
                   </div>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground break-words">
                     {notification.description}
                   </p>
                   <span className="text-xs text-muted-foreground">
