@@ -22,6 +22,8 @@ import { ThemeProvider } from './context/themeContext'
 import PayrollUpload from './components/admin/PayrollUpload'
 import PayrollDocuments from './components/employee/PayrollDocuments'
 import { useAuth } from './context/authContext'
+import Departments from './components/admin/Departments'
+import DepartmentDetails from './components/admin/DepartmentDetails'
 
 
 // Error Boundary Component
@@ -87,6 +89,8 @@ function App() {
               <Route path="insights" element={<UnderProgress/>}></Route>
               <Route path="feedback" element={<UnderProgress/>}></Route>
               <Route path="settings" element={<UnderProgress/>}></Route>
+              <Route path="departments" element={<Departments />} />
+              <Route path="departments/:departmentId" element={<DepartmentDetails />} />
             </Route>
 
             <Route path="/employee-dashboard" element={

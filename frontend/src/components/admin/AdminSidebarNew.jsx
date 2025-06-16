@@ -7,7 +7,7 @@ import {
   DollarSign,
   Clock,
   CalendarDays,
-  Users2,
+  Building2,
   Megaphone,
   InboxIcon,
   CheckSquare,
@@ -71,9 +71,9 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/leave"
     },
     {
-      title: "Teams",
-      icon: Users2,
-      path: "/admin-dashboard/teams"
+      title: "Departments",
+      icon: Building2,
+      path: "/admin-dashboard/departments"
     },
     {
       title: "Announcements",

@@ -1,20 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
-import { useNavigate } from 'react-router-dom';
-import { 
-  ChevronDown, 
-  MoreHorizontal,
-  Plus,
-  Search,
-  UserPlus,
-  Mail,
-  Phone,
-  ArrowLeft,
-  ArrowUpDown,
-  ChevronLeft,
-  ChevronRight
-} from 'lucide-react';
-import AddEmployeeForm from './AddEmployeeForm';
 import {
   Table,
   TableBody,
@@ -24,6 +10,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowUpDown,
+  ChevronLeft,
+  ChevronRight,
+  ArrowLeft,
+  Mail,
+  Phone
+} from 'lucide-react';
+import {
   flexRender,
   getCoreRowModel,
   useReactTable,
@@ -31,51 +35,80 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { departments } from '@/lib/departments';
 import { handleApiError } from '@/utils/errorHandler';
-import { getDepartmentConfig } from "@/lib/departments";
 
-const EmployeeList = () => {
-  const [employees, setEmployees] = useState([]);
+const DepartmentDetails = () => {
+  const { departmentId } = useParams();
+  const navigate = useNavigate();
+  const [allEmployees, setAllEmployees] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [sorting, setSorting] = useState([]);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({
+    pageIndex: 0,
+    pageSize: 10,
+  });
+
+  const department = departments[departmentId];
 
   useEffect(() => {
+    if (!department) {
+      navigate('/admin-dashboard/departments');
+      return;
+    }
     fetchEmployees();
-  }, []);
+  }, [departmentId]);
 
   const fetchEmployees = async () => {
     try {
+      setLoading(true);
       const response = await api.get('/employees');
-      setEmployees(response.data);
+      // Filter employees by department
+      const departmentEmployees = response.data.filter(emp => emp.department === departmentId);
+      setAllEmployees(departmentEmployees);
     } catch (error) {
       const { message } = handleApiError(error);
-      console.error(message);
+      console.error('Error fetching employees:', message);
+      setAllEmployees([]);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleViewDetails = (employee) => {
-    navigate(`/admin-dashboard/employees/${employee.employeeId}`);
-  };
+  // Filter and paginate employees client-side
+  const employees = useMemo(() => {
+    let filtered = [...allEmployees];
+    
+    // Apply global filter
+    if (globalFilter) {
+      const lowerFilter = globalFilter.toLowerCase();
+      filtered = filtered.filter(employee => 
+        employee.name?.toLowerCase().includes(lowerFilter) ||
+        employee.email?.toLowerCase().includes(lowerFilter) ||
+        employee.position?.toLowerCase().includes(lowerFilter) ||
+        employee.employeeId?.toString().includes(lowerFilter)
+      );
+    }
+    
+    // Apply sorting
+    if (sorting.length) {
+      const { id, desc } = sorting[0];
+      filtered.sort((a, b) => {
+        if (a[id] < b[id]) return desc ? 1 : -1;
+        if (a[id] > b[id]) return desc ? -1 : 1;
+        return 0;
+      });
+    }
+    
+    return filtered;
+  }, [allEmployees, globalFilter, sorting]);
 
-  const handleEdit = (employee) => {
-    setSelectedEmployee(employee);
-    setIsEditing(true);
-  };
+  const paginatedEmployees = useMemo(() => {
+    const start = pagination.pageIndex * pagination.pageSize;
+    const end = start + pagination.pageSize;
+    return employees.slice(start, end);
+  }, [employees, pagination]);
 
   const columns = [
     {
@@ -130,84 +163,40 @@ const EmployeeList = () => {
         </Badge>
       ),
     },
-    {
-      accessorKey: "department",
-      header: "Department",
-      cell: ({ row }) => {
-        const department = row.getValue("department");
-        const deptConfig = getDepartmentConfig(department);
-        const Icon = deptConfig.icon;
-        return (
-          <div className="flex items-center gap-2">
-            <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
-              <Icon className={`h-4 w-4 transition-colors ${deptConfig.color}`} />
-            </div>
-            <span className={`font-medium transition-colors ${deptConfig.color}`}>
-              {department}
-            </span>
-          </div>
-        );
-      },
-    },
   ];
 
   const table = useReactTable({
-    data: employees,
+    data: paginatedEmployees,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
-    initialState: {
-      pagination: {
-        pageSize: 7,
-      },
-    },
+    manualPagination: true,
+    pageCount: Math.ceil(employees.length / pagination.pageSize),
     state: {
       sorting,
       globalFilter,
+      pagination,
     },
+    onPaginationChange: setPagination,
     onSortingChange: setSorting,
     onGlobalFilterChange: setGlobalFilter,
   });
 
-  const handleAddEmployee = async (formData) => {
-    try {
-      const response = await api.post('/employees', formData);
-      console.log('Employee created successfully:', response.data);
-      setShowAddForm(false);
-      fetchEmployees();
-      alert(`Employee created successfully!\nLogin credentials:\nEmail: ${formData.email}\nPassword: ${formData.password}`);
-    } catch (error) {
-      const { message } = handleApiError(error);
-      alert(message);
-    }
+  const handleViewEmployee = (employee) => {
+    navigate(`/admin-dashboard/employees/${employee.employeeId}`);
   };
 
-  if (showAddForm) {
+  const Icon = department?.icon;
+
+  if (loading && employees.length === 0) {
     return (
       <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle>Add New Employee</CardTitle>
-              <CardDescription>Enter employee details below.</CardDescription>
-            </div>
-            <Button 
-              variant="outline"
-              onClick={() => setShowAddForm(false)} 
-              className="ml-auto"
-            >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to List
-            </Button>
+        <CardContent className="py-10">
+          <div className="flex justify-center items-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <AddEmployeeForm
-            onClose={() => setShowAddForm(false)}
-            onSubmit={handleAddEmployee}
-          />
         </CardContent>
       </Card>
     );
@@ -218,23 +207,33 @@ const EmployeeList = () => {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Employee List</CardTitle>
-            <CardDescription className="pt-1.5">Manage your employees and their roles here.</CardDescription>
+            <div className="flex items-center gap-4">
+              <Button 
+                variant="ghost" 
+                className="h-8 w-8 p-0"
+                onClick={() => navigate('/admin-dashboard/departments')}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <div className={`p-1 rounded transition-colors ${department?.bgColor}`}>
+                    <Icon className={`h-5 w-5 transition-colors ${department?.color}`} />
+                  </div>
+                  <CardTitle className={`transition-colors ${department?.color}`}>
+                    {department?.label}
+                  </CardTitle>
+                </div>
+                <CardDescription className="pt-1.5">
+                  {loading ? 'Loading...' : `${employees.length} employees in ${department?.label} department`}
+                </CardDescription>
+              </div>
+            </div>
           </div>
-          <Button 
-            onClick={() => setShowAddForm(true)} 
-            className={cn(
-              "ml-auto bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
-              "transition-colors font-medium"
-            )}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Employee
-          </Button>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="flex items-center gap-4 pb-2">
+        <div className="flex items-center gap-4 pb-4">
           <div className="flex-1">
             <Input
               placeholder="Search employees..."
@@ -250,7 +249,7 @@ const EmployeeList = () => {
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
                   {headerGroup.headers.map((header) => (
-                    <TableHead 
+                    <TableHead
                       key={header.id}
                       onClick={header.column.getToggleSortingHandler()}
                       className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
@@ -277,7 +276,7 @@ const EmployeeList = () => {
                   <TableRow
                     key={row.id}
                     className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleViewDetails(row.original)}
+                    onClick={() => handleViewEmployee(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
                       <TableCell key={cell.id}>
@@ -289,7 +288,13 @@ const EmployeeList = () => {
               ) : (
                 <TableRow>
                   <TableCell colSpan={columns.length} className="h-24 text-center">
-                    No results.
+                    {loading ? (
+                      <div className="flex justify-center items-center">
+                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                      </div>
+                    ) : (
+                      'No employees found in this department.'
+                    )}
                   </TableCell>
                 </TableRow>
               )}
@@ -298,15 +303,18 @@ const EmployeeList = () => {
         </div>
         <div className="flex items-center justify-between py-4">
           <span className="text-sm text-muted-foreground/70">
-            Page {table.getState().pagination.pageIndex + 1} of{" "}
-            {table.getPageCount()}
+            {loading ? (
+              'Loading...'
+            ) : (
+              `Showing ${pagination.pageIndex * pagination.pageSize + 1} to ${Math.min((pagination.pageIndex + 1) * pagination.pageSize, employees.length)} of ${employees.length} employees`
+            )}
           </span>
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
               className="h-8 w-8 p-0 opacity-70 hover:opacity-100"
               onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              disabled={!table.getCanPreviousPage() || loading}
             >
               <ChevronLeft className="h-4 w-4" />
             </Button>
@@ -314,7 +322,7 @@ const EmployeeList = () => {
               variant="ghost"
               className="h-8 w-8 p-0 opacity-70 hover:opacity-100"
               onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              disabled={!table.getCanNextPage() || loading}
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
@@ -325,4 +333,4 @@ const EmployeeList = () => {
   );
 };
 
-export default EmployeeList;
+export default DepartmentDetails; 
