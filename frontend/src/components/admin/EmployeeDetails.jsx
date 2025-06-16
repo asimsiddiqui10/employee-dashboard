@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { Upload, User, ArrowLeft, Pencil, Trash2, Download } from 'lucide-react';
+import { Upload, User, ArrowLeft, Pencil, Trash2, Download, Eye, EyeOff } from 'lucide-react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +30,8 @@ const EmployeeDetails = () => {
     training: []
   });
   const [employees, setEmployees] = useState([]);
+  const [showSSN, setShowSSN] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     fetchEmployeeDetails();
@@ -427,7 +429,7 @@ const EmployeeDetails = () => {
               ) : (
                 <>
                   <InfoField label="Date of Birth" value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} />
-                  <InfoField label="SSN" value={form?.ssn} />
+                  <InfoField label="SSN" value={form?.ssn} isSSN />
                   <InfoField label="Nationality" value={form?.nationality} />
                   <InfoField label="Phone Number" value={form?.phoneNumber} />
                   <InfoField label="Address" value={form?.address} />
@@ -846,26 +848,51 @@ const EmployeeDetails = () => {
 };
 
 // Helper component for displaying information fields
-const InfoField = ({ label, value }) => {
-  if (label === "Department" && value) {
-    const deptConfig = getDepartmentConfig(value);
-    const Icon = deptConfig.icon;
+const InfoField = ({ label, value, isPassword, isSSN }) => {
+  if (isPassword || isSSN) {
+    const isVisible = isPassword ? showPassword : showSSN;
+    const toggleVisibility = isPassword ? () => setShowPassword(!showPassword) : () => setShowSSN(!showSSN);
     return (
-      <div className="flex flex-col space-y-1.5">
-        <span className="text-sm font-medium text-muted-foreground">{label}</span>
+      <div className="space-y-1.5">
+        <Label>{label}</Label>
         <div className="flex items-center gap-2">
-          <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
-            <Icon className={`h-3.5 w-3.5 transition-colors ${deptConfig.color}`} />
+          <div className="flex-1">
+            {isEditing ? (
+              <Input
+                name={label.toLowerCase()}
+                value={value || ''}
+                onChange={handleInputChange}
+                type={isVisible ? "text" : "password"}
+              />
+            ) : (
+              <p className="text-sm">{isVisible ? value : '••••••••'}</p>
+            )}
           </div>
-          <span className={`text-sm transition-colors ${deptConfig.color}`}>{value}</span>
+          <Button 
+            variant="ghost" 
+            size="sm"
+            className="h-8 w-8 p-0"
+            onClick={toggleVisibility}
+            type="button"
+          >
+            {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+          </Button>
         </div>
       </div>
     );
   }
   return (
-    <div className="flex flex-col space-y-1.5">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <span className="text-sm">{value || 'Not provided'}</span>
+    <div className="space-y-1.5">
+      <Label>{label}</Label>
+      {isEditing ? (
+        <Input
+          name={label.toLowerCase()}
+          value={value || ''}
+          onChange={handleInputChange}
+        />
+      ) : (
+        <p className="text-sm">{value || 'Not provided'}</p>
+      )}
     </div>
   );
 };

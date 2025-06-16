@@ -24,6 +24,7 @@ import PayrollDocuments from './components/employee/PayrollDocuments'
 import { useAuth } from './context/authContext'
 import Departments from './components/admin/Departments'
 import DepartmentDetails from './components/admin/DepartmentDetails'
+import TimeClock from './components/employee/TimeClock'
 
 
 // Error Boundary Component
@@ -104,7 +105,7 @@ function App() {
               <Route path="my-details" element={<MyDetails />} />
               <Route path="notifications" element={<EmployeeNotifications />} />
               <Route path="payroll" element={<PayrollDocuments />} />
-              <Route path="time-tracking" element={<UnderProgress />} />
+              <Route path="time-tracking" element={<TimeClock />} />
               <Route path="leave" element={<LeaveRequest />} />
               <Route path="announcements" element={<UnderProgress />} />
               <Route path="requests" element={<UnderProgress />} />

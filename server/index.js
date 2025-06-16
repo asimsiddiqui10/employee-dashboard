@@ -13,6 +13,7 @@ import documentRoutes from './routes/documentRoutes.js';
 import leaveRoutes from './routes/leaveRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import timeClockRoutes from './routes/timeClockRoutes.js';
 
 // Load environment variables
 config();
@@ -73,6 +74,7 @@ app.use('/api/documents', documentRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/time-clock', timeClockRoutes);
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

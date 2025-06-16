@@ -1,16 +1,19 @@
 import React, { useEffect, useState } from 'react';
 import api from '@/lib/axios';
 import { useAuth } from '../../context/authContext';
-import { User } from 'lucide-react';
+import { User, Eye, EyeOff } from 'lucide-react';
 import { handleApiError } from '@/utils/errorHandler';
 import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Button } from "@/components/ui/button";
 import { getDepartmentConfig } from '@/lib/departments';
 
 const MyDetails = () => {
   const [employeeDetails, setEmployeeDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showSSN, setShowSSN] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -72,7 +75,7 @@ const MyDetails = () => {
     }).format(value);
   };
 
-  const InfoItem = ({ label, value, isSpecial }) => {
+  const InfoItem = ({ label, value, isPassword, isSSN }) => {
     if (label === "Department" && value) {
       const deptConfig = getDepartmentConfig(value);
       const Icon = deptConfig.icon;
@@ -88,6 +91,30 @@ const MyDetails = () => {
         </div>
       );
     }
+
+    if (isPassword || isSSN) {
+      const isVisible = isPassword ? showPassword : showSSN;
+      const toggleVisibility = isPassword ? () => setShowPassword(!showPassword) : () => setShowSSN(!showSSN);
+      return (
+        <div>
+          <p className="text-sm text-muted-foreground">{label}</p>
+          <div className="flex items-center gap-2">
+            <p className="font-medium text-foreground">
+              {isVisible ? value : '••••••••'}
+            </p>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={toggleVisibility}
+            >
+              {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div>
         <p className="text-sm text-muted-foreground">{label}</p>
@@ -153,8 +180,9 @@ const MyDetails = () => {
             <Separator className="mb-4" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <InfoItem label="Full Name" value={employeeDetails.name} />
-              <InfoItem label="SSN" value={employeeDetails.ssn || 'Not provided'} />
+              <InfoItem label="SSN" value={employeeDetails.ssn || 'Not provided'} isSSN />
               <InfoItem label="Email" value={employeeDetails.email} />
+              <InfoItem label="Password" value={employeeDetails.password || 'Not provided'} isPassword />
               <InfoItem label="Phone Number" value={employeeDetails.phoneNumber || 'Not provided'} />
               <InfoItem label="Work Phone" value={employeeDetails.workPhoneNumber || 'Not provided'} />
               <InfoItem label="Date of Birth" value={formatDate(employeeDetails.dateOfBirth)} />

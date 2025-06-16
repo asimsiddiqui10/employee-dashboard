@@ -145,7 +145,7 @@ const EmployeeList = () => {
             <span className={`font-medium transition-colors ${deptConfig.color}`}>
               {department}
             </span>
-          </div>
+      </div>
         );
       },
     },
@@ -220,7 +220,7 @@ const EmployeeList = () => {
           <div>
             <CardTitle>Employee List</CardTitle>
             <CardDescription className="pt-1.5">Manage your employees and their roles here.</CardDescription>
-          </div>
+                        </div>
           <Button 
             onClick={() => setShowAddForm(true)} 
             className={cn(
@@ -242,8 +242,8 @@ const EmployeeList = () => {
               onChange={(e) => setGlobalFilter(e.target.value)}
               className="max-w-sm"
             />
-          </div>
-        </div>
+                    </div>
+                      </div>
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -318,8 +318,8 @@ const EmployeeList = () => {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-          </div>
-        </div>
+      </div>
+    </div>
       </CardContent>
     </Card>
   );
