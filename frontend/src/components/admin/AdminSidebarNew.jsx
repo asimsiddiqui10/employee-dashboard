@@ -75,14 +75,19 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/time-tracking"
     },
     {
-      title: "Leave Management",
-      icon: CalendarDays,
-      path: "/admin-dashboard/leave"
-    },
-    {
       title: "Departments",
       icon: Building2,
       path: "/admin-dashboard/departments"
+    },
+    {
+      title: "Documents",
+      icon: FolderClosed,
+      path: "/admin-dashboard/documents"
+    },
+    {
+      title: "Leave",
+      icon: CalendarDays,
+      path: "/admin-dashboard/leave"
     },
     {
       title: "Announcements",
@@ -103,11 +108,6 @@ export function AdminSidebarNew() {
       title: "Expenses",
       icon: Receipt,
       path: "/admin-dashboard/expenses"
-    },
-    {
-      title: "Documents",
-      icon: FolderClosed,
-      path: "/admin-dashboard/documents"
     },
     {
       title: "Training",

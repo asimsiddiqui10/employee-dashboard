@@ -634,6 +634,56 @@ const EmployeeDetails = () => {
     }
   };
 
+  // Move InfoField inside EmployeeDetails component
+  const InfoField = ({ label, value, isPassword, isSSN }) => {
+    if (isPassword || isSSN) {
+      const isVisible = isPassword ? showPassword : showSSN;
+      const toggleVisibility = isPassword ? () => setShowPassword(!showPassword) : () => setShowSSN(!showSSN);
+      return (
+        <div className="space-y-1.5">
+          <Label>{label}</Label>
+          <div className="flex items-center gap-2">
+            <div className="flex-1">
+              {isEditing ? (
+                <Input
+                  name={label.toLowerCase()}
+                  value={value || ''}
+                  onChange={handleInputChange}
+                  type={isVisible ? "text" : "password"}
+                />
+              ) : (
+                <p className="text-sm">{isVisible ? value : '••••••••'}</p>
+              )}
+            </div>
+            <Button 
+              variant="ghost" 
+              size="sm"
+              className="h-8 w-8 p-0"
+              onClick={toggleVisibility}
+              type="button"
+            >
+              {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+    return (
+      <div className="space-y-1.5">
+        <Label>{label}</Label>
+        {isEditing ? (
+          <Input
+            name={label.toLowerCase()}
+            value={value || ''}
+            onChange={handleInputChange}
+          />
+        ) : (
+          <p className="text-sm">{value || 'Not provided'}</p>
+        )}
+      </div>
+    );
+  };
+
   if (!form) return <div>Loading...</div>;
 
   return (
@@ -842,56 +892,6 @@ const EmployeeDetails = () => {
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDelete}
         />
-      )}
-    </div>
-  );
-};
-
-// Helper component for displaying information fields
-const InfoField = ({ label, value, isPassword, isSSN }) => {
-  if (isPassword || isSSN) {
-    const isVisible = isPassword ? showPassword : showSSN;
-    const toggleVisibility = isPassword ? () => setShowPassword(!showPassword) : () => setShowSSN(!showSSN);
-    return (
-      <div className="space-y-1.5">
-        <Label>{label}</Label>
-        <div className="flex items-center gap-2">
-          <div className="flex-1">
-            {isEditing ? (
-              <Input
-                name={label.toLowerCase()}
-                value={value || ''}
-                onChange={handleInputChange}
-                type={isVisible ? "text" : "password"}
-              />
-            ) : (
-              <p className="text-sm">{isVisible ? value : '••••••••'}</p>
-            )}
-          </div>
-          <Button 
-            variant="ghost" 
-            size="sm"
-            className="h-8 w-8 p-0"
-            onClick={toggleVisibility}
-            type="button"
-          >
-            {isVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
-        </div>
-      </div>
-    );
-  }
-  return (
-    <div className="space-y-1.5">
-      <Label>{label}</Label>
-      {isEditing ? (
-        <Input
-          name={label.toLowerCase()}
-          value={value || ''}
-          onChange={handleInputChange}
-        />
-      ) : (
-        <p className="text-sm">{value || 'Not provided'}</p>
       )}
     </div>
   );

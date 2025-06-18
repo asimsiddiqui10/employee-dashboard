@@ -62,7 +62,12 @@ const sidebarData = [
     path: "/employee-dashboard/time-tracking"
   },
   {
-    title: "Leave Management",
+    title: "Documents",
+    icon: FileText,
+    path: "/employee-dashboard/documents"
+  },
+  {
+    title: "Time Off",
     icon: CalendarDays,
     path: "/employee-dashboard/leave"
   },
@@ -85,11 +90,6 @@ const sidebarData = [
     title: "Reimbursements",
     icon: Receipt,
     path: "/employee-dashboard/reimbursements"
-  },
-  {
-    title: "Documents",
-    icon: FileText,
-    path: "/employee-dashboard/documents"
   },
   {
     title: "My Team",
