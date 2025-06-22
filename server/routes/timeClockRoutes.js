@@ -9,6 +9,7 @@ import {
   getTimeSummary
 } from '../controllers/timeClockController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
+import { roleMiddleware } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
@@ -25,5 +26,8 @@ router.post('/break/end', endBreak);
 router.get('/today', getTodayTimeEntry);
 router.get('/', getTimeEntries);
 router.get('/summary', getTimeSummary);
+
+// Get all time entries for today (admin only)
+router.get('/today/all', roleMiddleware(['admin']), getTodayTimeEntry);
 
 export default router; 

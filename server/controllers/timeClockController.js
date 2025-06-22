@@ -181,6 +181,25 @@ export const endBreak = async (req, res) => {
 // Get Today's Time Entry
 export const getTodayTimeEntry = async (req, res) => {
   try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    // If admin and requesting all entries
+    if (req.user.role === 'admin' && req.path.endsWith('/all')) {
+      const entries = await TimeEntry.find({
+        clockIn: {
+          $gte: today,
+          $lt: tomorrow
+        }
+      }).populate('employee', 'name employeeId profilePic department position');
+
+      return res.json(entries);
+    }
+
+    // For individual employee
     const employeeId = req.user.employee;
     
     // First check for active session
@@ -193,7 +212,6 @@ export const getTodayTimeEntry = async (req, res) => {
     }
 
     // If no active session, check database for today's completed entry
-    const today = new Date();
     const timeEntry = await TimeEntry.findOne({
       employee: employeeId,
       date: {
@@ -208,6 +226,7 @@ export const getTodayTimeEntry = async (req, res) => {
       data: timeEntry || null
     });
   } catch (error) {
+    console.error('Error fetching time entry:', error);
     res.status(500).json({
       success: false,
       message: 'Error fetching time entry',
@@ -305,5 +324,27 @@ export const getTimeSummary = async (req, res) => {
       message: 'Error fetching time summary',
       error: error.message
     });
+  }
+};
+
+export const getAllTodayEntries = async (req, res) => {
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const entries = await TimeEntry.find({
+      clockIn: {
+        $gte: today,
+        $lt: tomorrow
+      }
+    }).populate('employee', 'name employeeId profilePic department position');
+
+    res.json(entries);
+  } catch (error) {
+    console.error('Error fetching today\'s time entries:', error);
+    res.status(500).json({ message: 'Failed to fetch time entries' });
   }
 }; 
