@@ -103,15 +103,12 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
 // MongoDB connection with retry logic
 const connectDB = async (retries = 5) => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
+    await mongoose.connect(process.env.MONGODB_URI);
     console.log('MongoDB Connected Successfully');
   } catch (error) {
     if (retries > 0) {
@@ -124,17 +121,9 @@ const connectDB = async (retries = 5) => {
   }
 };
 
-// Start server only after MongoDB connects
 connectDB().then(() => {
-  const server = app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    console.log(`Health check available at http://localhost:${PORT}/health`);
-  });
-
-  // Handle server errors
-  server.on('error', (error) => {
-    console.error('Server error:', error);
-    process.exit(1);
   });
 });
 
