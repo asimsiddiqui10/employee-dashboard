@@ -1,5 +1,5 @@
 import TimeEntry from '../models/TimeEntry.js';
-import { startOfDay, endOfDay, startOfWeek, startOfMonth } from 'date-fns';
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
 // Store active sessions in memory
 const activeSessions = new Map();
@@ -346,5 +346,68 @@ export const getAllTodayEntries = async (req, res) => {
   } catch (error) {
     console.error('Error fetching today\'s time entries:', error);
     res.status(500).json({ message: 'Failed to fetch time entries' });
+  }
+};
+
+// Get Time Entries by Period
+export const getTimeEntriesByPeriod = async (req, res) => {
+  try {
+    const { period } = req.params;
+    const now = new Date();
+    let startDate, endDate;
+
+    switch (period) {
+      case 'today':
+        startDate = startOfDay(now);
+        endDate = endOfDay(now);
+        break;
+      case 'week':
+        startDate = startOfWeek(now);
+        endDate = endOfWeek(now);
+        break;
+      case 'month':
+        startDate = startOfMonth(now);
+        endDate = endOfMonth(now);
+        break;
+      default:
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid period specified' 
+        });
+    }
+
+    // If admin and requesting all entries
+    if (req.user.role === 'admin') {
+      const entries = await TimeEntry.find({
+        clockIn: {
+          $gte: startDate,
+          $lte: endDate
+        }
+      }).populate('employee', 'name employeeId profilePic department position');
+
+      return res.json(entries);
+    }
+
+    // For individual employee
+    const employeeId = req.user.employee;
+    const entries = await TimeEntry.find({
+      employee: employeeId,
+      clockIn: {
+        $gte: startDate,
+        $lte: endDate
+      }
+    });
+
+    res.json({
+      success: true,
+      data: entries
+    });
+  } catch (error) {
+    console.error('Error fetching time entries:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error fetching time entries',
+      error: error.message
+    });
   }
 }; 

@@ -32,6 +32,7 @@ export default function AdminTimeTracking() {
   const [timeEntries, setTimeEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, active, break
+  const [period, setPeriod] = useState('today'); // today, week, month
   const { toast } = useToast();
 
   useEffect(() => {
@@ -39,11 +40,11 @@ export default function AdminTimeTracking() {
     // Refresh data every minute
     const interval = setInterval(fetchTimeEntries, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [period]); // Re-fetch when period changes
 
   const fetchTimeEntries = async () => {
     try {
-      const response = await api.get('/time-clock/today/all');
+      const response = await api.get(`/time-clock/${period}/all`);
       setTimeEntries(response.data);
       setLoading(false);
     } catch (error) {
@@ -108,23 +109,35 @@ export default function AdminTimeTracking() {
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Time Tracking Overview</h1>
-        <Select value={filter} onValueChange={setFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder="Filter by status" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Employees</SelectItem>
-            <SelectItem value="active">Currently Working</SelectItem>
-            <SelectItem value="break">On Break</SelectItem>
-          </SelectContent>
-        </Select>
+        <div className="flex gap-4">
+          <Select value={period} onValueChange={setPeriod}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Select period" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="week">This Week</SelectItem>
+              <SelectItem value="month">This Month</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Employees</SelectItem>
+              <SelectItem value="active">Currently Working</SelectItem>
+              <SelectItem value="break">On Break</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader>
-            <CardTitle>Total Clocked In</CardTitle>
-            <CardDescription>Today's attendance</CardDescription>
+            <CardTitle>Total Entries</CardTitle>
+            <CardDescription>{period === 'today' ? "Today's attendance" : period === 'week' ? 'This week' : 'This month'}</CardDescription>
           </CardHeader>
           <CardContent>
             <p className="text-4xl font-bold">{getTotalEmployees('all')}</p>
@@ -153,7 +166,13 @@ export default function AdminTimeTracking() {
       <Card>
         <CardHeader>
           <CardTitle>Employee Time Entries</CardTitle>
-          <CardDescription>Real-time tracking data for today</CardDescription>
+          <CardDescription>
+            {period === 'today' 
+              ? "Real-time tracking data for today" 
+              : period === 'week' 
+                ? "This week's time entries" 
+                : "This month's time entries"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

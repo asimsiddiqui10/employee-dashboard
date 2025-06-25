@@ -61,7 +61,10 @@ export const getDocumentsByType = async (req, res) => {
     // If employee, only show their documents
     const query = req.user.role === 'admin' 
       ? { documentType }
-      : { documentType, employeeId: req.user._id };
+      : { 
+          documentType, 
+          employeeId: req.user.employee // Use the employee ID instead of user._id
+        };
     
     const documents = await Document.find(query)
       .sort('-uploadedAt')
@@ -84,21 +87,12 @@ export const downloadDocument = async (req, res) => {
     }
 
     // Check if user has access to this document
-    if (req.user.role !== 'admin' && document.employeeId.toString() !== req.user._id.toString()) {
+    if (req.user.role === 'admin' || document.employeeId.toString() === req.user.employee?._id.toString()) {
+      // User has access - return the download URL
+      res.json({ downloadUrl: document.fileUrl });
+    } else {
       return res.status(403).json({ message: 'Access denied' });
     }
-
-    // Construct absolute file path
-    const filePath = new URL(document.fileUrl).pathname.split('/').slice(-3).join('/');
-
-    // Check if file exists
-    try {
-      await deleteFile('documents', filePath);
-    } catch (error) {
-      return res.status(404).json({ message: 'File not found' });
-    }
-
-    res.download(filePath, document.fileName);
   } catch (error) {
     console.error('Download error:', error);
     res.status(500).json({ message: 'Error downloading document' });
