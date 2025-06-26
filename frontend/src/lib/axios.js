@@ -7,30 +7,25 @@ const getApiUrl = () => {
     return import.meta.env.VITE_API_URL;
   }
   
-  // For deployed environments, check the URL
-  const currentUrl = window.location.origin;
-  
-  // For dev/staging branch deployment
-  if (currentUrl.includes('-git-dev-') || currentUrl.includes('-git-staging-')) {
-    return import.meta.env.VITE_API_URL_DEV;
-  }
-  
-  // For production/main branch
+  // For production, always use PROD URL
   return import.meta.env.VITE_API_URL_PROD;
 };
 
 // Debug: Log the API URL being used
 const apiUrl = getApiUrl();
-console.log('API URL being used:', apiUrl);
-console.log('Environment:', import.meta.env.MODE);
-console.log('Current URL:', window.location.origin);
+console.log('API Configuration:', {
+  apiUrl,
+  environment: import.meta.env.MODE,
+  currentUrl: window.location.origin,
+  dev: import.meta.env.DEV,
+  prod: import.meta.env.PROD
+});
 
 const api = axios.create({
   baseURL: apiUrl,
   headers: {
     'Content-Type': 'application/json'
-  },
-  withCredentials: true // Enable if you're using cookies
+  }
 });
 
 // Add request interceptor for auth token
@@ -41,10 +36,14 @@ api.interceptors.request.use(
       config.headers.Authorization = `Bearer ${token}`;
     }
     // Debug: Log outgoing requests
-    console.log('Request URL:', `${config.baseURL}${config.url}`);
+    console.log('Making request to:', `${config.baseURL}${config.url}`, {
+      method: config.method,
+      headers: config.headers
+    });
     return config;
   },
   (error) => {
+    console.error('Request error:', error);
     return Promise.reject(error);
   }
 );
@@ -53,6 +52,14 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Log detailed error information
+    console.error('Response error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      config: error.config,
+      message: error.message
+    });
+
     // Handle 401 Unauthorized errors
     if (error.response?.status === 401) {
       localStorage.removeItem('token');
