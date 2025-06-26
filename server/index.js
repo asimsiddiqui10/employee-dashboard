@@ -35,20 +35,18 @@ app.use(cors({
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
-    // Check if the origin matches any allowed patterns
-    const isAllowed = allowedOrigins.some(allowedOrigin => {
-      // Handle Vercel preview deployments
-      if (origin.includes('employee-dashboard-git-') && origin.includes('vercel.app')) {
-        return true;
-      }
-      return allowedOrigin === origin;
-    });
-
-    if (!isAllowed) {
-      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
+    // Allow all Vercel preview deployments
+    if (origin.includes('vercel.app')) {
+      return callback(null, true);
     }
-    return callback(null, true);
+
+    // Check if the origin matches any allowed patterns
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+    return callback(new Error(msg), false);
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -122,7 +120,7 @@ const connectDB = async (retries = 5) => {
 };
 
 connectDB().then(() => {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
 });
