@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
-import { Upload, User, ArrowLeft, Pencil, Trash2, Download, Eye, EyeOff } from 'lucide-react';
+import { Upload, User, ArrowLeft, Pencil, Trash2, Download, Eye, EyeOff, Key } from 'lucide-react';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,6 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getDepartmentConfig, departments } from "@/lib/departments";
+import ChangePasswordModal from './ChangePasswordModal';
+import { toast } from '@/hooks/use-toast';
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
@@ -32,6 +34,7 @@ const EmployeeDetails = () => {
   const [employees, setEmployees] = useState([]);
   const [showSSN, setShowSSN] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   useEffect(() => {
     fetchEmployeeDetails();
@@ -151,10 +154,12 @@ const EmployeeDetails = () => {
   const handleDelete = async () => {
     try {
       await api.delete(`/employees/${employeeId}`);
+      toast.success('Employee deleted successfully');
       navigate('/admin-dashboard/employees');
     } catch (error) {
       const { message } = handleApiError(error);
       console.error(message);
+      toast.error('Failed to delete employee');
     }
   };
 
@@ -192,6 +197,27 @@ const EmployeeDetails = () => {
       console.error('Error downloading document:', error.response || error);
       const { message } = handleApiError(error);
       alert(`Failed to download document: ${message}`);
+    }
+  };
+
+  const handlePasswordChange = async (passwordData) => {
+    try {
+      const response = await api.put(`/employees/${employeeId}/change-password`, passwordData);
+      
+      if (response.data.message) {
+        toast({
+          title: "Success",
+          description: "Password changed successfully",
+        });
+        setShowPasswordModal(false);
+      }
+    } catch (error) {
+      console.error('Error changing password:', error);
+      toast({
+        title: "Error",
+        description: "Failed to change password",
+        variant: "destructive",
+      });
     }
   };
 
@@ -833,6 +859,15 @@ const EmployeeDetails = () => {
                         Edit
                       </Button>
                       <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowPasswordModal(true)}
+                        className="h-8"
+                      >
+                        <Key className="h-4 w-4 mr-2" />
+                        Change Password
+                      </Button>
+                      <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => setShowDeleteModal(true)}
@@ -891,6 +926,14 @@ const EmployeeDetails = () => {
           employee={form}
           onClose={() => setShowDeleteModal(false)}
           onConfirm={handleDelete}
+        />
+      )}
+
+      {showPasswordModal && (
+        <ChangePasswordModal
+          employee={form}
+          onClose={() => setShowPasswordModal(false)}
+          onSubmit={handlePasswordChange}
         />
       )}
     </div>

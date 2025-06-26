@@ -7,13 +7,13 @@ import path from 'path';
 import fs from 'fs';
 import { uploadFile } from '../config/supabase.js';
 
-// Add a new employee
+// Add a new employee or admin
 export const addEmployee = async (req, res) => {
   try {
     console.log('Request received to add employee:', req.body);
     console.log('User making request:', req.user);
     
-    const { employeeId, role, name, email, password, ssn, manager, workPhoneNumber, compensationType, compensationValue, active, ...rest } = req.body;
+    const { employeeId, role, name, email, password, ssn, manager, workPhoneNumber, compensationType, compensationValue, active, isAdmin, ...rest } = req.body;
 
     // Validate required fields
     if (!email || !password || !name || !role) {
@@ -29,77 +29,69 @@ export const addEmployee = async (req, res) => {
       });
     }
 
-    // Validate manager field
-    if (manager && !mongoose.Types.ObjectId.isValid(manager)) {
-      return res.status(400).json({ message: 'Invalid manager ID' });
+    // Check if user making request is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can create new users' });
     }
 
-    // Check if employeeId or ssn already exists
-    const existingEmployee = await Employee.findOne({ $or: [{ employeeId }, { ssn }] });
-    if (existingEmployee) {
-      return res.status(400).json({ message: 'Employee ID or SSN already exists' });
-    }
-
-    // Check if email already exists in User collection
+    // Check if email already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'Email already exists' });
     }
 
-    // Validate compensation
-    if (!compensationType || !compensationValue) {
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Compensation type and value are required' 
-      });
-    }
-
-    // 1. Create the User record first
+    // Create user first
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({
       name,
       email,
       password: hashedPassword,
-      role
+      role: isAdmin ? 'admin' : 'employee',
+      profileImage: 'https://via.placeholder.com/150'
     });
-    const savedUser = await newUser.save();
+    await newUser.save();
 
-    // 2. Now create the Employee record with the user reference
-    const newEmployee = new Employee({
-      employeeId,
-      role,
-      name,
-      email,
-      ssn,
-      manager: manager || undefined,
-      user: savedUser._id,
-      workPhoneNumber,
-      compensationType,
-      compensationValue,
-      active: active !== undefined ? active : true,
-      ...rest,
-    });
-    const savedEmployee = await newEmployee.save();
+    // If creating an employee (not admin), create employee record
+    if (!isAdmin) {
+      const employeeData = {
+        employeeId,
+        name,
+        email,
+        role,
+        ssn,
+        workPhoneNumber,
+        compensationType,
+        compensationValue,
+        ...rest
+      };
 
-    // 3. Update the User with the employee reference
-    savedUser.employee = savedEmployee._id;
-    await savedUser.save();
+      if (manager && mongoose.Types.ObjectId.isValid(manager)) {
+        employeeData.supervisor = manager;
+      }
 
-    return res.status(201).json({ message: 'Employee created successfully', employee: savedEmployee });
-  } catch (error) {
-    if (error.code === 11000) {
-      // Handle duplicate key error
-      return res.status(400).json({ message: 'Duplicate key error', error: error.message });
+      const employee = new Employee(employeeData);
+      await employee.save();
+
+      // Link employee to user
+      newUser.employee = employee._id;
+      await newUser.save();
+
+      return res.status(201).json({ 
+        message: 'Employee created successfully',
+        employee,
+        user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role }
+      });
     }
-    console.error('Detailed error in addEmployee:', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code
+
+    // If creating admin, just return the user
+    return res.status(201).json({ 
+      message: 'Admin created successfully',
+      user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role }
     });
-    return res.status(400).json({ 
-      message: 'Error adding employee', 
-      error: error.message 
-    });
+
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ success: false, error: 'Failed to create user' });
   }
 };
 
@@ -315,5 +307,44 @@ export const uploadProfilePic = async (req, res) => {
       message: 'Error uploading profile picture',
       error: error.message 
     });
+  }
+};
+
+// Change employee password
+export const changeEmployeePassword = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { currentPassword, newPassword } = req.body;
+
+    // Find the employee
+    const employee = await Employee.findOne({ employeeId });
+    if (!employee) {
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
+    // Find associated user
+    const user = await User.findOne({ employee: employee._id });
+    if (!user) {
+      return res.status(404).json({ message: 'User account not found' });
+    }
+
+    // If admin is making the change, skip current password verification
+    if (req.user.role !== 'admin') {
+      // Verify current password
+      const isMatch = await bcrypt.compare(currentPassword, user.password);
+      if (!isMatch) {
+        return res.status(401).json({ message: 'Current password is incorrect' });
+      }
+    }
+
+    // Hash and update new password
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 };
