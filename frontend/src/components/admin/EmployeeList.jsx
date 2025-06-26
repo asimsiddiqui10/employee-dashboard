@@ -303,9 +303,12 @@ const EmployeeList = () => {
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className={`cursor-pointer hover:bg-muted/50 ${
-                      row.original.employmentStatus === 'Terminated' ? 'bg-gray-100' : ''
-                    }`}
+                    className={cn(
+                      "cursor-pointer hover:bg-muted/50",
+                      row.original.employmentStatus === 'Terminated' 
+                        ? "bg-gray-100 dark:bg-gray-900/50" 
+                        : ""
+                    )}
                     onClick={() => handleViewDetails(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (

@@ -143,21 +143,45 @@ const EmployeeDetails = () => {
       // Create a copy of the form data to modify
       const formData = { ...form };
       
+      // Store the original email to check if it changed
+      const originalEmail = form.email;
+      
       // Handle supervisor field
       if (formData.supervisor) {
         // If supervisor is an object with _id, use the _id
         formData.supervisor = formData.supervisor._id || formData.supervisor;
       }
 
-      console.log('Saving employee with form data:', formData); // Debug log
+      console.log('Saving employee with form data:', formData);
+      
+      // Update employee details (this will also update the user's email)
       const response = await api.put(`/employees/${employeeId}`, formData);
-      console.log('Save response:', response.data); // Debug log
+      console.log('Save response:', response.data);
+      
       setIsEditing(false);
       await fetchEmployeeDetails(); // Refresh the data
+      
+      // Show different toast messages based on whether email was changed
+      if (formData.email !== originalEmail) {
+        toast({
+          title: "Success",
+          description: "Employee details updated successfully. New login credentials have been set with the updated email.",
+          duration: 5000,
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Employee details updated successfully",
+        });
+      }
     } catch (error) {
       console.error('Error saving employee:', error.response || error);
       const { message } = handleApiError(error);
-      console.error(message);
+      toast({
+        title: "Error",
+        description: message || "Failed to update employee details",
+        variant: "destructive",
+      });
     }
   };
 
@@ -352,6 +376,16 @@ const EmployeeDetails = () => {
               {isEditing ? (
                 <>
                   <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      value={form?.email || ''}
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="dateOfBirth" className="text-sm">Date of Birth</Label>
                     <Input
                       id="dateOfBirth"
@@ -464,6 +498,7 @@ const EmployeeDetails = () => {
                 </>
               ) : (
                 <>
+                  <InfoField label="Email" value={form?.email} />
                   <InfoField label="Date of Birth" value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} />
                   <InfoField label="SSN" value={form?.ssn} isSSN />
                   <InfoField label="Nationality" value={form?.nationality} />
