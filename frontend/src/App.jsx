@@ -14,7 +14,6 @@ import UnderProgress from './components/common/UnderProgress'
 import AdminNotifications from './components/admin/AdminNotifications'
 import EmployeeNotifications from './components/employee/EmployeeNotifications'
 import EmployeeDetails from './components/admin/EmployeeDetails'
-import ChangePassword from './components/admin/ChangePassword'
 import LeaveManagement from './components/admin/LeaveManagement'
 import LeaveRequest from './components/employee/LeaveRequest'
 import DocumentUpload from './components/admin/DocumentUpload'
@@ -77,7 +76,6 @@ function App() {
               <Route index element={<AdminHome/>}></Route>
               <Route path="employees" element={<EmployeeManagement/>}></Route>
               <Route path="employees/:employeeId" element={<EmployeeDetails/>}></Route>
-              <Route path="change-password/:employeeId" element={<ChangePassword />} />
               <Route path="notifications" element={<AdminNotifications/>}></Route>
               <Route path="payroll" element={<PayrollUpload />} />
               <Route path="time-tracking" element={<AdminTimeTracking />} />
@@ -120,7 +118,6 @@ function App() {
               <Route path="benefits" element={<UnderProgress />} />
               <Route path="reports" element={<UnderProgress />} />
               <Route path="feedback" element={<UnderProgress />} />
-              <Route path="change-password" element={<ChangePassword />} />
             </Route>
 
             <Route path="/unauthorized" element={<Unauthorized />} />

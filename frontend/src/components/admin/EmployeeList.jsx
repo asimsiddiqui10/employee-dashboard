@@ -12,7 +12,8 @@ import {
   ArrowLeft,
   ArrowUpDown,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Eye
 } from 'lucide-react';
 import AddEmployeeForm from './AddEmployeeForm';
 import {
@@ -44,6 +45,8 @@ import {
 import { cn } from "@/lib/utils";
 import { handleApiError } from '@/utils/errorHandler';
 import { getDepartmentConfig } from "@/lib/departments";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
 
 const EmployeeList = () => {
   const [employees, setEmployees] = useState([]);
@@ -52,11 +55,21 @@ const EmployeeList = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showTerminated, setShowTerminated] = useState(false);
+  const [filteredEmployees, setFilteredEmployees] = useState([]);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchEmployees();
   }, []);
+
+  useEffect(() => {
+    // Filter employees based on showTerminated state
+    const filtered = employees.filter(employee => 
+      showTerminated ? true : employee.employmentStatus !== 'Terminated'
+    );
+    setFilteredEmployees(filtered);
+  }, [employees, showTerminated]);
 
   const fetchEmployees = async () => {
     try {
@@ -121,8 +134,9 @@ const EmployeeList = () => {
         <Badge 
           variant={
             row.getValue("employmentStatus") === "Active" ? "success" :
-            row.getValue("employmentStatus") === "Inactive" || row.getValue("employmentStatus") === "On Leave" ? "default" : 
-            "destructive"
+            row.getValue("employmentStatus") === "On Leave" ? "warning" : 
+            row.getValue("employmentStatus") === "Terminated" ? "destructive" :
+            "default"
           }
           className="font-medium"
         >
@@ -152,7 +166,7 @@ const EmployeeList = () => {
   ];
 
   const table = useReactTable({
-    data: employees,
+    data: filteredEmployees,
     columns,
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
@@ -220,30 +234,43 @@ const EmployeeList = () => {
           <div>
             <CardTitle>Employee List</CardTitle>
             <CardDescription className="pt-1.5">Manage your employees and their roles here.</CardDescription>
-                        </div>
-          <Button 
-            onClick={() => setShowAddForm(true)} 
-            className={cn(
-              "ml-auto bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
-              "transition-colors font-medium"
-            )}
-          >
-            <UserPlus className="mr-2 h-4 w-4" />
-            Add Employee
-          </Button>
+          </div>
+          <div className="flex items-center space-x-6">
+            <div className="flex items-center gap-2">
+              <Switch
+                id="show-terminated"
+                checked={showTerminated}
+                onCheckedChange={setShowTerminated}
+              />
+              <Label htmlFor="show-terminated" className="text-sm font-medium">
+                Show Ex-Employees
+              </Label>
+            </div>
+            <Button
+              onClick={() => setShowAddForm(true)}
+              className={cn(
+                "ml-auto bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
+                "transition-colors font-medium"
+              )}
+            >
+              <UserPlus className="mr-2 h-4 w-4" />
+              Add Employee
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         <div className="flex items-center gap-4 pb-2">
-          <div className="flex-1">
-            <Input
-              placeholder="Search employees..."
-              value={globalFilter ?? ""}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="max-w-sm"
-            />
-                    </div>
-                      </div>
+          <div className="flex-1 flex items-center gap-4">
+            <div className="flex-1 max-w-sm">
+              <Input
+                placeholder="Search employees..."
+                value={globalFilter ?? ""}
+                onChange={(e) => setGlobalFilter(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
         <div className="rounded-md border">
           <Table>
             <TableHeader>
@@ -276,7 +303,9 @@ const EmployeeList = () => {
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
-                    className="cursor-pointer hover:bg-muted/50"
+                    className={`cursor-pointer hover:bg-muted/50 ${
+                      row.original.employmentStatus === 'Terminated' ? 'bg-gray-100' : ''
+                    }`}
                     onClick={() => handleViewDetails(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
@@ -318,8 +347,8 @@ const EmployeeList = () => {
             >
               <ChevronRight className="h-4 w-4" />
             </Button>
-      </div>
-    </div>
+          </div>
+        </div>
       </CardContent>
     </Card>
   );

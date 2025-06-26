@@ -42,6 +42,16 @@ const EmployeeDetails = () => {
     fetchEmployees();
   }, [employeeId]);
 
+  useEffect(() => {
+    // When employment status changes to Terminated, set termination date
+    if (form?.employmentStatus === 'Terminated' && !form.terminationDate) {
+      setForm(prev => ({
+        ...prev,
+        terminationDate: new Date().toISOString().split('T')[0]
+      }));
+    }
+  }, [form?.employmentStatus]);
+
   const fetchEmployeeDetails = async () => {
     try {
       console.log('Fetching employee details for:', employeeId);
@@ -577,7 +587,7 @@ const EmployeeDetails = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Active">Active</SelectItem>
-                        <SelectItem value="On leave">On leave</SelectItem>
+                        <SelectItem value="On leave">On Leave</SelectItem>
                         <SelectItem value="Terminated">Terminated</SelectItem>
                       </SelectContent>
                     </Select>
@@ -600,7 +610,18 @@ const EmployeeDetails = () => {
                       type="date"
                       value={form?.terminationDate ? new Date(form.terminationDate).toISOString().split('T')[0] : ''}
                       onChange={handleInputChange}
-                      disabled={form?.employmentStatus !== 'Terminated'}
+                      className="h-9"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="terminationReason">Termination Reason</Label>
+                    <Input
+                      id="terminationReason"
+                      name="terminationReason"
+                      value={form?.terminationReason || ''}
+                      onChange={handleInputChange}
+                      className="h-9"
+                      placeholder="Enter reason for termination"
                     />
                   </div>
                   <div className="space-y-2">

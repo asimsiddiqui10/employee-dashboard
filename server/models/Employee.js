@@ -42,8 +42,19 @@ const employeeSchema = new mongoose.Schema({
     default: null
   },
   employmentType: { type: String, enum: ['Part-time', 'Full-time', 'Contract', 'Hourly'] },
-  employmentStatus: { type: String, enum: ['Active', 'On leave', 'Terminated'] },
-  terminationDate: { type: Date },
+  employmentStatus: { 
+    type: String, 
+    enum: ['Active', 'On leave', 'Terminated'], 
+    default: 'Active' 
+  },
+  terminationDate: { 
+    type: Date,
+    default: null
+  },
+  terminationReason: {
+    type: String,
+    default: null
+  },
   exportCode: { type: String },
   workEmail: { type: String },
   workPhoneNumber: { type: String },
@@ -69,6 +80,19 @@ const employeeSchema = new mongoose.Schema({
     leavesRejected: { type: Number, default: 0 },
     leavesRemaining: { type: Number, default: 20 }
   },
+});
+
+// Add a pre-save middleware to handle termination date
+employeeSchema.pre('save', function(next) {
+  if (this.isModified('employmentStatus')) {
+    if (this.employmentStatus === 'Terminated' && !this.terminationDate) {
+      this.terminationDate = new Date();
+    } else if (this.employmentStatus !== 'Terminated') {
+      this.terminationDate = null;
+      this.terminationReason = null;
+    }
+  }
+  next();
 });
 
 const Employee = mongoose.model('Employee', employeeSchema);
