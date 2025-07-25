@@ -9,6 +9,49 @@ const notificationTypes = {
   OTHER: 'other'
 };
 
+// Helper function to get date filter based on timeFilter parameter
+const getDateFilter = (timeFilter) => {
+  const now = new Date();
+  switch (timeFilter) {
+    case '24h':
+      return new Date(now - 24 * 60 * 60 * 1000);
+    case 'week':
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      return startOfWeek;
+    case 'month':
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      return startOfMonth;
+    default:
+      return null;
+  }
+};
+
+export const getAllNotifications = async (req, res) => {
+  try {
+    const { timeFilter = '24h' } = req.query;
+    
+    // Build query
+    const query = {};
+    const dateFilter = getDateFilter(timeFilter);
+    if (dateFilter) {
+      query.createdAt = { $gte: dateFilter };
+    }
+
+    const notifications = await Notification.find(query)
+      .populate('sender', 'name')
+      .populate('recipients', 'name')
+      .sort('-createdAt')
+      .lean();
+
+    res.json(notifications);
+  } catch (error) {
+    console.error('Error fetching all notifications:', error);
+    res.status(500).json({ message: 'Failed to fetch notifications' });
+  }
+};
+
 export const createNotification = async (req, res) => {
   try {
     const { type, title, message, recipients, priority = 'medium', link } = req.body;
@@ -148,5 +191,6 @@ export default {
   getMyNotifications,
   markAsRead,
   getUnreadCount,
-  createPayrollNotification
+  createPayrollNotification,
+  getAllNotifications
 }; 
