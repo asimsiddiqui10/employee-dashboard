@@ -1,5 +1,6 @@
 import TimeEntry from '../models/TimeEntry.js';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import Employee from '../models/Employee.js'; // Added import for Employee
 
 // Store active sessions in memory
 const activeSessions = new Map();
@@ -29,12 +30,15 @@ export const clockIn = async (req, res) => {
 
     // Store in memory
     activeSessions.set(employeeId.toString(), session);
+    
+    console.log('Active sessions after clock in:', Array.from(activeSessions.entries())); // Debug log
 
     res.status(201).json({
       success: true,
       data: session
     });
   } catch (error) {
+    console.error('Error clocking in:', error);
     res.status(500).json({
       success: false,
       message: 'Error clocking in',
@@ -73,12 +77,15 @@ export const clockOut = async (req, res) => {
 
     // Remove active session
     activeSessions.delete(employeeId.toString());
+    
+    console.log('Active sessions after clock out:', Array.from(activeSessions.entries())); // Debug log
 
     res.json({
       success: true,
       data: timeEntry
     });
   } catch (error) {
+    console.error('Error clocking out:', error);
     res.status(500).json({
       success: false,
       message: 'Error clocking out',
@@ -189,14 +196,30 @@ export const getTodayTimeEntry = async (req, res) => {
 
     // If admin and requesting all entries
     if (req.user.role === 'admin' && req.path.endsWith('/all')) {
-      const entries = await TimeEntry.find({
+      // Get completed entries from database
+      const completedEntries = await TimeEntry.find({
         clockIn: {
           $gte: today,
           $lt: tomorrow
         }
       }).populate('employee', 'name employeeId profilePic department position');
 
-      return res.json(entries);
+      // Get active sessions and convert them to the same format
+      const activeSessionEntries = Array.from(activeSessions.values()).map(session => ({
+        ...session,
+        employee: session.employee, // This will be populated by the next query
+        status: 'active'
+      }));
+
+      // Populate employee details for active sessions
+      const populatedActiveSessions = await TimeEntry.populate(activeSessionEntries, {
+        path: 'employee',
+        select: 'name employeeId profilePic department position'
+      });
+
+      // Combine and return both active and completed entries
+      const allEntries = [...populatedActiveSessions, ...completedEntries];
+      return res.json(allEntries);
     }
 
     // For individual employee
@@ -352,7 +375,7 @@ export const getAllTodayEntries = async (req, res) => {
 // Get Time Entries by Period
 export const getTimeEntriesByPeriod = async (req, res) => {
   try {
-    const { period } = req.params;
+    const period = req.params.period;
     const now = new Date();
     let startDate, endDate;
 
@@ -370,38 +393,50 @@ export const getTimeEntriesByPeriod = async (req, res) => {
         endDate = endOfMonth(now);
         break;
       default:
-        return res.status(400).json({ 
-          success: false, 
-          message: 'Invalid period specified' 
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid period specified'
         });
     }
 
-    // If admin and requesting all entries
-    if (req.user.role === 'admin') {
-      const entries = await TimeEntry.find({
-        clockIn: {
-          $gte: startDate,
-          $lte: endDate
-        }
-      }).populate('employee', 'name employeeId profilePic department position');
-
-      return res.json(entries);
-    }
-
-    // For individual employee
-    const employeeId = req.user.employee;
-    const entries = await TimeEntry.find({
-      employee: employeeId,
+    // Get completed entries from database
+    const completedEntries = await TimeEntry.find({
       clockIn: {
         $gte: startDate,
-        $lte: endDate
+        $lt: endDate
       }
+    }).populate('employee', 'name employeeId profilePic department position');
+
+    // Get active sessions and convert them to the same format
+    const activeSessionEntries = Array.from(activeSessions.values()).map(session => ({
+      ...session,
+      _id: session.employee.toString() + Date.now(), // Generate a temporary unique ID
+      status: 'active'
+    }));
+
+    // Get employee details for active sessions
+    const activeEmployees = await Employee.find({
+      _id: { $in: Array.from(activeSessions.values()).map(session => session.employee) }
+    }).select('name employeeId profilePic department position');
+
+    // Combine employee details with active sessions
+    const populatedActiveSessions = activeSessionEntries.map(session => {
+      const employeeData = activeEmployees.find(emp => emp._id.toString() === session.employee.toString());
+      return {
+        ...session,
+        employee: employeeData
+      };
     });
 
-    res.json({
-      success: true,
-      data: entries
+    // Combine and return both active and completed entries
+    const allEntries = [...populatedActiveSessions, ...completedEntries];
+    console.log('Sending entries to admin:', {
+      active: populatedActiveSessions.length,
+      completed: completedEntries.length,
+      total: allEntries.length
     });
+    res.json(allEntries);
+
   } catch (error) {
     console.error('Error fetching time entries:', error);
     res.status(500).json({

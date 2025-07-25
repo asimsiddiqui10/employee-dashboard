@@ -83,9 +83,11 @@ const TimeClock = () => {
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-      if (timeEntry?.clockIn && !timeEntry?.clockOut && !activeBreak) {
-        const elapsed = Math.floor((new Date() - new Date(timeEntry.clockIn)) / 1000);
-        setElapsedTime(elapsed);
+      if (timeEntry?.clockIn && !timeEntry?.clockOut) {
+        if (!activeBreak) {
+          const elapsed = Math.floor((new Date() - new Date(timeEntry.clockIn)) / 1000);
+          setElapsedTime(elapsed - (timeEntry.totalBreakTime || 0) * 60); // Convert break minutes to seconds
+        }
       }
     }, 1000);
 
