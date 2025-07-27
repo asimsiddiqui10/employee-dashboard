@@ -174,9 +174,15 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
       dateOfBirth: form.dateOfBirth || undefined
     };
 
-    // Remove any undefined or empty string values
+    // Remove empty values but keep required fields
+    const requiredFields = ['name', 'email', 'password', 'gender'];
+    if (!isAdmin) {
+      requiredFields.push('employeeId', 'ssn', 'department', 'position', 'employmentType');
+    }
+
     Object.keys(formattedData).forEach(key => {
-      if (formattedData[key] === '' || formattedData[key] === undefined) {
+      // Don't remove required fields even if empty
+      if (!requiredFields.includes(key) && (formattedData[key] === '' || formattedData[key] === undefined)) {
         delete formattedData[key];
       }
     });
@@ -367,6 +373,32 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
             <div className="space-y-4">
               <h3 className="font-medium text-gray-900">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <select
+                  name="gender"
+                  value={form.gender}
+                  onChange={handleChange}
+                  className="p-2 border rounded"
+                  required
+                >
+                  <option value="">Select Gender *</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                </select>
+                <select
+                  name="maritalStatus"
+                  value={form.maritalStatus}
+                  onChange={handleChange}
+                  className="p-2 border rounded"
+                >
+                  <option value="">Select Marital Status</option>
+                  <option value="Single">Single</option>
+                  <option value="Married">Married</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Separated">Separated</option>
+                  <option value="Other">Other</option>
+                </select>
                 <input
                   type="text"
                   name="ssn"

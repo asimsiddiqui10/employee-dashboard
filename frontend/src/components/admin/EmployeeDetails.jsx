@@ -163,13 +163,26 @@ const EmployeeDetails = () => {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/employees/${employeeId}`);
-      toast.success('Employee deleted successfully');
-      navigate('/admin-dashboard/employees');
+      const response = await api.delete(`/employees/${employeeId}`);
+      if (response.data.success) {
+        toast({
+          title: "Success",
+          description: response.data.message || "Employee deleted successfully",
+        });
+        setShowDeleteModal(false);
+        navigate('/admin-dashboard/employees', { replace: true });
+      } else {
+        throw new Error(response.data.message || 'Failed to delete employee');
+      }
     } catch (error) {
       const { message } = handleApiError(error);
-      console.error(message);
-      toast.error('Failed to delete employee');
+      console.error('Error deleting employee:', error);
+      toast({
+        title: "Error",
+        description: message || "Failed to delete employee",
+        variant: "destructive",
+      });
+      setShowDeleteModal(false);
     }
   };
 
@@ -352,6 +365,41 @@ const EmployeeDetails = () => {
               {isEditing ? (
                 <>
                   <div className="space-y-2">
+                    <Label htmlFor="gender" className="text-sm">Gender</Label>
+                    <Select
+                      value={form?.gender || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'gender', value } })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maritalStatus" className="text-sm">Marital Status</Label>
+                    <Select
+                      value={form?.maritalStatus || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'maritalStatus', value } })}
+                    >
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Select marital status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single">Single</SelectItem>
+                        <SelectItem value="Married">Married</SelectItem>
+                        <SelectItem value="Divorced">Divorced</SelectItem>
+                        <SelectItem value="Widowed">Widowed</SelectItem>
+                        <SelectItem value="Separated">Separated</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="dateOfBirth" className="text-sm">Date of Birth</Label>
                     <Input
                       id="dateOfBirth"
@@ -464,6 +512,8 @@ const EmployeeDetails = () => {
                 </>
               ) : (
                 <>
+                  <InfoField label="Gender" value={form?.gender} />
+                  <InfoField label="Marital Status" value={form?.maritalStatus} />
                   <InfoField label="Date of Birth" value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} />
                   <InfoField label="SSN" value={form?.ssn} isSSN />
                   <InfoField label="Nationality" value={form?.nationality} />
@@ -961,4 +1011,4 @@ const EmployeeDetails = () => {
   );
 };
 
-export default EmployeeDetails; 
+export default EmployeeDetails;
