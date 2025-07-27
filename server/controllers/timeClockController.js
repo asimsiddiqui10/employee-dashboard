@@ -18,14 +18,23 @@ export const clockIn = async (req, res) => {
       });
     }
 
-    // Create new temporary session
-    const session = {
+    // Create new time entry in database
+    const timeEntry = new TimeEntry({
       employee: employeeId,
       clockIn: new Date(),
       date: new Date(),
       breaks: [],
       totalBreakTime: 0,
       status: 'active'
+    });
+
+    // Save to database
+    await timeEntry.save();
+
+    // Also store in memory for quick access
+    const session = {
+      ...timeEntry.toObject(),
+      _id: timeEntry._id // Keep the same ID as database entry
     };
 
     // Store in memory
@@ -33,9 +42,13 @@ export const clockIn = async (req, res) => {
     
     console.log('Active sessions after clock in:', Array.from(activeSessions.entries())); // Debug log
 
+    // Populate employee details before sending response
+    const populatedEntry = await TimeEntry.findById(timeEntry._id)
+      .populate('employee', 'name employeeId profilePic department position');
+
     res.status(201).json({
       success: true,
-      data: session
+      data: populatedEntry
     });
   } catch (error) {
     console.error('Error clocking in:', error);
@@ -62,12 +75,20 @@ export const clockOut = async (req, res) => {
       });
     }
 
-    // Create permanent time entry
-    const timeEntry = new TimeEntry({
-      ...session,
-      clockOut: new Date(),
-      status: 'completed'
-    });
+    // Find and update the existing time entry
+    const timeEntry = await TimeEntry.findById(session._id);
+    if (!timeEntry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Time entry not found'
+      });
+    }
+
+    // Update the time entry
+    timeEntry.clockOut = new Date();
+    timeEntry.status = 'completed';
+    timeEntry.breaks = session.breaks;
+    timeEntry.totalBreakTime = session.totalBreakTime;
 
     // Calculate total work time
     timeEntry.calculateTotalTime();
@@ -80,9 +101,13 @@ export const clockOut = async (req, res) => {
     
     console.log('Active sessions after clock out:', Array.from(activeSessions.entries())); // Debug log
 
+    // Populate employee details before sending response
+    const populatedEntry = await TimeEntry.findById(timeEntry._id)
+      .populate('employee', 'name employeeId profilePic department position');
+
     res.json({
       success: true,
-      data: timeEntry
+      data: populatedEntry
     });
   } catch (error) {
     console.error('Error clocking out:', error);
@@ -399,43 +424,34 @@ export const getTimeEntriesByPeriod = async (req, res) => {
         });
     }
 
-    // Get completed entries from database
-    const completedEntries = await TimeEntry.find({
+    // Get all time entries for the period (both active and completed)
+    const timeEntries = await TimeEntry.find({
       clockIn: {
         $gte: startDate,
         $lt: endDate
       }
     }).populate('employee', 'name employeeId profilePic department position');
 
-    // Get active sessions and convert them to the same format
-    const activeSessionEntries = Array.from(activeSessions.values()).map(session => ({
-      ...session,
-      _id: session.employee.toString() + Date.now(), // Generate a temporary unique ID
-      status: 'active'
-    }));
-
-    // Get employee details for active sessions
-    const activeEmployees = await Employee.find({
-      _id: { $in: Array.from(activeSessions.values()).map(session => session.employee) }
-    }).select('name employeeId profilePic department position');
-
-    // Combine employee details with active sessions
-    const populatedActiveSessions = activeSessionEntries.map(session => {
-      const employeeData = activeEmployees.find(emp => emp._id.toString() === session.employee.toString());
-      return {
-        ...session,
-        employee: employeeData
-      };
+    // Update any active entries with the latest data from memory
+    const updatedEntries = timeEntries.map(entry => {
+      const activeSession = activeSessions.get(entry.employee?._id.toString());
+      if (activeSession && activeSession._id.toString() === entry._id.toString()) {
+        return {
+          ...entry.toObject(),
+          breaks: activeSession.breaks,
+          totalBreakTime: activeSession.totalBreakTime
+        };
+      }
+      return entry;
     });
 
-    // Combine and return both active and completed entries
-    const allEntries = [...populatedActiveSessions, ...completedEntries];
-    console.log('Sending entries to admin:', {
-      active: populatedActiveSessions.length,
-      completed: completedEntries.length,
-      total: allEntries.length
+    console.log('Sending time entries to admin:', {
+      total: updatedEntries.length,
+      active: updatedEntries.filter(e => e.status === 'active').length,
+      completed: updatedEntries.filter(e => e.status === 'completed').length
     });
-    res.json(allEntries);
+
+    res.json(updatedEntries);
 
   } catch (error) {
     console.error('Error fetching time entries:', error);
@@ -445,4 +461,4 @@ export const getTimeEntriesByPeriod = async (req, res) => {
       error: error.message
     });
   }
-}; 
+};
