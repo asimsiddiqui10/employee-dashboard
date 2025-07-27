@@ -27,6 +27,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "../../hooks/use-toast";
 import api from '../../lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
+import { Users, Coffee } from 'lucide-react';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function AdminTimeTracking() {
   const [timeEntries, setTimeEntries] = useState([]);
@@ -34,6 +36,8 @@ export default function AdminTimeTracking() {
   const [filter, setFilter] = useState('all'); // all, active, break
   const [period, setPeriod] = useState('today'); // today, week, month
   const { toast } = useToast();
+  const [activeEmployees, setActiveEmployees] = useState([]);
+  const [onBreakEmployees, setOnBreakEmployees] = useState([]);
 
   useEffect(() => {
     fetchTimeEntries();
@@ -45,10 +49,43 @@ export default function AdminTimeTracking() {
   const fetchTimeEntries = async () => {
     try {
       const response = await api.get(`/time-clock/${period}/all`);
-      setTimeEntries(response.data);
+      console.log('Time entries response:', response.data); // Debug log
+      
+      const entries = response.data;
+      
+      // Debug log each entry's structure
+      entries.forEach((entry, index) => {
+        console.log(`Entry ${index + 1}:`, {
+          id: entry._id,
+          status: entry.status,
+          employee: entry.employee,
+          breaks: entry.breaks
+        });
+      });
+      
+      // Separate active and completed entries
+      const active = entries.filter(entry => 
+        entry.status === 'active' && 
+        (!entry.breaks || !entry.breaks.some(b => !b.endTime))
+      );
+      const onBreak = entries.filter(entry => 
+        entry.status === 'active' && 
+        entry.breaks && 
+        entry.breaks.some(b => !b.endTime)
+      );
+      const completed = entries.filter(entry => entry.status === 'completed');
+
+      console.log('Active employees:', active); // Debug log
+      console.log('On break employees:', onBreak); // Debug log
+      console.log('Completed entries:', completed); // Debug log
+
+      setActiveEmployees(active);
+      setOnBreakEmployees(onBreak);
+      setTimeEntries(completed);
       setLoading(false);
     } catch (error) {
       const { message } = handleApiError(error);
+      console.error('Error fetching time entries:', error); // Debug log
       toast({
         title: "Error",
         description: `Failed to fetch time entries: ${message}`,
@@ -105,6 +142,7 @@ export default function AdminTimeTracking() {
     return timeEntries.filter(entry => entry.status === status).length;
   };
 
+  // Update the summary card section
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -133,32 +171,60 @@ export default function AdminTimeTracking() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid gap-4 md:grid-cols-3">
         <Card>
-          <CardHeader>
-            <CardTitle>Total Entries</CardTitle>
-            <CardDescription>{period === 'today' ? "Today's attendance" : period === 'week' ? 'This week' : 'This month'}</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Currently Working
+            </CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold">{getTotalEmployees('all')}</p>
+            <div className="text-2xl font-bold">{activeEmployees.length}</div>
+            <div className="text-xs text-muted-foreground">
+              Active Employees
+            </div>
+            <ScrollArea className="h-[100px] mt-2">
+              {activeEmployees.map(entry => (
+                <div key={entry._id || entry.employee?._id} className="flex items-center space-x-2 text-sm py-1">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={entry.employee?.profilePic} />
+                    <AvatarFallback>
+                      {entry.employee?.name ? entry.employee.name.split(' ').map(n => n[0]).join('') : 'N/A'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>{entry.employee?.name || 'N/A'}</span>
+                </div>
+              ))}
+            </ScrollArea>
           </CardContent>
         </Card>
+
         <Card>
-          <CardHeader>
-            <CardTitle>Currently Working</CardTitle>
-            <CardDescription>Active employees</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              On Break
+            </CardTitle>
+            <Coffee className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <p className="text-4xl font-bold text-green-600">{getTotalEmployees('active')}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>On Break</CardTitle>
-            <CardDescription>Break time</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <p className="text-4xl font-bold text-yellow-600">{getTotalEmployees('break')}</p>
+            <div className="text-2xl font-bold">{onBreakEmployees.length}</div>
+            <div className="text-xs text-muted-foreground">
+              Employees on Break
+            </div>
+            <ScrollArea className="h-[100px] mt-2">
+              {onBreakEmployees.map(entry => (
+                <div key={entry._id || entry.employee?._id} className="flex items-center space-x-2 text-sm py-1">
+                  <Avatar className="h-6 w-6">
+                    <AvatarImage src={entry.employee?.profilePic} />
+                    <AvatarFallback>
+                      {entry.employee?.name ? entry.employee.name.split(' ').map(n => n[0]).join('') : 'N/A'}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span>{entry.employee?.name || 'N/A'}</span>
+                </div>
+              ))}
+            </ScrollArea>
           </CardContent>
         </Card>
       </div>
@@ -202,12 +268,14 @@ export default function AdminTimeTracking() {
                       <Avatar>
                         <AvatarImage src={entry.employee?.profilePic} />
                         <AvatarFallback>
-                          {entry.employee?.name?.split(' ').map(n => n[0]).join('')}
+                          {entry.employee?.name ? entry.employee.name.split(' ').map(n => n[0]).join('') : 'N/A'}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="font-medium">{entry.employee?.name}</p>
-                        <p className="text-sm text-gray-500">#{entry.employee?.employeeId}</p>
+                        <div className="font-medium">{entry.employee?.name || 'N/A'}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {entry.employee?.employeeId || 'N/A'}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
