@@ -342,8 +342,13 @@ export const getMyDetails = async (req, res) => {
 export const uploadProfilePic = async (req, res) => {
   try {
     console.log('Upload request received:', {
-      file: req.file,
-      employeeId: req.params.employeeId
+      file: req.file ? {
+        originalname: req.file.originalname,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      } : null,
+      employeeId: req.params.employeeId,
+      headers: req.headers
     });
 
     if (!req.file) {
@@ -352,9 +357,23 @@ export const uploadProfilePic = async (req, res) => {
 
     const { employeeId } = req.params;
     
+    // Validate employee exists
+    const employee = await Employee.findOne({ employeeId });
+    if (!employee) {
+      console.log('Employee not found:', employeeId);
+      return res.status(404).json({ message: 'Employee not found' });
+    }
+
     // Create unique filename
     const timestamp = Date.now();
     const filename = `${employeeId}/${timestamp}-${req.file.originalname}`;
+
+    console.log('Attempting to upload file to Supabase:', {
+      bucket: 'profile-pics',
+      filename,
+      fileSize: req.file.size,
+      mimetype: req.file.mimetype
+    });
 
     // Upload to Supabase
     const { publicUrl } = await uploadFile(
@@ -366,6 +385,8 @@ export const uploadProfilePic = async (req, res) => {
       }
     );
 
+    console.log('File uploaded successfully to Supabase:', publicUrl);
+
     const updatedEmployee = await Employee.findOneAndUpdate(
       { employeeId },
       { profilePic: publicUrl },
@@ -373,11 +394,11 @@ export const uploadProfilePic = async (req, res) => {
     );
 
     if (!updatedEmployee) {
-      console.log('Employee not found:', employeeId);
-      return res.status(404).json({ message: 'Employee not found' });
+      console.log('Failed to update employee record:', employeeId);
+      return res.status(500).json({ message: 'Failed to update employee record' });
     }
 
-    console.log('Employee updated successfully:', updatedEmployee);
+    console.log('Employee updated successfully:', updatedEmployee.employeeId);
 
     res.json({ 
       message: 'Profile picture uploaded successfully',
@@ -385,8 +406,20 @@ export const uploadProfilePic = async (req, res) => {
     });
   } catch (error) {
     console.error('Error in uploadProfilePic:', error);
+    
+    // Provide more specific error messages
+    let errorMessage = 'Error uploading profile picture';
+    
+    if (error.message.includes('bucket')) {
+      errorMessage = 'Storage bucket not found. Please check Supabase configuration.';
+    } else if (error.message.includes('permission')) {
+      errorMessage = 'Permission denied. Please check Supabase credentials.';
+    } else if (error.message.includes('network')) {
+      errorMessage = 'Network error. Please check your connection.';
+    }
+    
     res.status(500).json({ 
-      message: 'Error uploading profile picture',
+      message: errorMessage,
       error: error.message 
     });
   }

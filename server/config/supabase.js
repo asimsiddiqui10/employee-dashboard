@@ -11,6 +11,18 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 export const uploadFile = async (bucket, filePath, file, options = {}) => {
   try {
+    console.log('Supabase upload attempt:', {
+      bucket,
+      filePath,
+      fileSize: file.length,
+      contentType: options.contentType
+    });
+
+    // Validate inputs
+    if (!bucket || !filePath || !file) {
+      throw new Error('Missing required parameters for file upload');
+    }
+
     const { data, error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, {
@@ -19,16 +31,25 @@ export const uploadFile = async (bucket, filePath, file, options = {}) => {
         ...options
       });
 
-    if (error) throw error;
+    if (error) {
+      console.error('Supabase upload error:', error);
+      throw new Error(`Supabase upload failed: ${error.message}`);
+    }
     
     // Get public URL
     const { data: { publicUrl } } = supabase.storage
       .from(bucket)
       .getPublicUrl(filePath);
 
+    console.log('File uploaded successfully:', {
+      bucket,
+      filePath,
+      publicUrl
+    });
+
     return { data, publicUrl };
   } catch (error) {
-    console.error('Error uploading file:', error);
+    console.error('Error uploading file to Supabase:', error);
     throw error;
   }
 };

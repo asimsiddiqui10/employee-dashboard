@@ -218,17 +218,29 @@ const EmployeeDetails = () => {
     formData.append('profilePic', file);
 
     try {
+      console.log('Uploading profile picture for employee:', employeeId);
       const response = await api.post(`/employees/${employeeId}/profile-pic`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }
       });
       
+      console.log('Profile picture upload response:', response.data);
       setForm(prev => ({ ...prev, profilePic: response.data.profilePic }));
+      
+      toast({
+        title: "Success",
+        description: "Profile picture uploaded successfully",
+      });
     } catch (error) {
+      console.error('Error uploading profile picture:', error);
       const { message } = handleApiError(error);
-      console.error(message);
-      alert('Failed to upload profile picture');
+      
+      toast({
+        title: "Error",
+        description: message || "Failed to upload profile picture",
+        variant: "destructive",
+      });
     }
   };
 
