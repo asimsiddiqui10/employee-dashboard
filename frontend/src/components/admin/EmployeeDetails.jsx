@@ -187,13 +187,26 @@ const EmployeeDetails = () => {
 
   const handleDelete = async () => {
     try {
-      await api.delete(`/employees/${employeeId}`);
-      toast.success('Employee deleted successfully');
-      navigate('/admin-dashboard/employees');
+      const response = await api.delete(`/employees/${employeeId}`);
+      if (response.data.success) {
+        toast({
+          title: "Success",
+          description: response.data.message || "Employee deleted successfully",
+        });
+        setShowDeleteModal(false);
+        navigate('/admin-dashboard/employees', { replace: true });
+      } else {
+        throw new Error(response.data.message || 'Failed to delete employee');
+      }
     } catch (error) {
       const { message } = handleApiError(error);
-      console.error(message);
-      toast.error('Failed to delete employee');
+      console.error('Error deleting employee:', error);
+      toast({
+        title: "Error",
+        description: message || "Failed to delete employee",
+        variant: "destructive",
+      });
+      setShowDeleteModal(false);
     }
   };
 
@@ -498,7 +511,8 @@ const EmployeeDetails = () => {
                 </>
               ) : (
                 <>
-                  <InfoField label="Email" value={form?.email} />
+                  <InfoField label="Gender" value={form?.gender} />
+                  <InfoField label="Marital Status" value={form?.maritalStatus} />
                   <InfoField label="Date of Birth" value={form?.dateOfBirth ? new Date(form.dateOfBirth).toLocaleDateString() : 'Not provided'} />
                   <InfoField label="SSN" value={form?.ssn} isSSN />
                   <InfoField label="Nationality" value={form?.nationality} />
@@ -996,4 +1010,4 @@ const EmployeeDetails = () => {
   );
 };
 
-export default EmployeeDetails; 
+export default EmployeeDetails;

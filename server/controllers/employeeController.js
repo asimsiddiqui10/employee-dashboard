@@ -9,6 +9,10 @@ import { uploadFile } from '../config/supabase.js';
 
 // Add a new employee or admin
 export const addEmployee = async (req, res) => {
+  // Start a session for transaction
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     console.log('Request received to add employee:', req.body);
     console.log('User making request:', req.user);
@@ -35,9 +39,21 @@ export const addEmployee = async (req, res) => {
     }
 
     // Check if email already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email }).session(session);
     if (existingUser) {
+      await session.abortTransaction();
+      session.endSession();
       return res.status(400).json({ message: 'Email already exists' });
+    }
+
+    // Check if employeeId already exists
+    if (!isAdmin) {
+      const existingEmployee = await Employee.findOne({ employeeId }).session(session);
+      if (existingEmployee) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ message: 'Employee ID already exists' });
+      }
     }
 
     // Create user first
@@ -49,7 +65,7 @@ export const addEmployee = async (req, res) => {
       role: isAdmin ? 'admin' : 'employee',
       profileImage: 'https://via.placeholder.com/150'
     });
-    await newUser.save();
+    await newUser.save({ session });
 
     // If creating an employee (not admin), create employee record
     if (!isAdmin) {
@@ -62,6 +78,7 @@ export const addEmployee = async (req, res) => {
         workPhoneNumber,
         compensationType,
         compensationValue,
+        user: newUser._id, // Link to user
         ...rest
       };
 
@@ -70,28 +87,66 @@ export const addEmployee = async (req, res) => {
       }
 
       const employee = new Employee(employeeData);
-      await employee.save();
+      await employee.save({ session });
 
       // Link employee to user
       newUser.employee = employee._id;
-      await newUser.save();
+      await newUser.save({ session });
+
+      // Commit transaction
+      await session.commitTransaction();
+      session.endSession();
 
       return res.status(201).json({ 
+        success: true,
         message: 'Employee created successfully',
         employee,
         user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role }
       });
     }
 
-    // If creating admin, just return the user
+    // If creating admin, just commit the user creation
+    await session.commitTransaction();
+    session.endSession();
     return res.status(201).json({ 
+      success: true,
       message: 'Admin created successfully',
       user: { id: newUser._id, name: newUser.name, email: newUser.email, role: newUser.role }
     });
 
   } catch (error) {
     console.error('Error creating user:', error);
-    res.status(500).json({ success: false, error: 'Failed to create user' });
+    
+    // Only abort if transaction is active
+    try {
+      if (session.inTransaction()) {
+        await session.abortTransaction();
+      }
+    } catch (transactionError) {
+      console.error('Error aborting transaction:', transactionError);
+    }
+    
+    session.endSession();
+
+    // Send appropriate error message based on error type
+    if (error.code === 11000) {
+      // Duplicate key error
+      const field = Object.keys(error.keyPattern)[0];
+      return res.status(400).json({
+        success: false,
+        message: `${field.charAt(0).toUpperCase() + field.slice(1)} already exists`
+      });
+    }
+
+    // Validation or other errors
+    const errorMessage = error.errors 
+      ? Object.values(error.errors).map(err => err.message).join(', ')
+      : error.message || 'Failed to create user';
+    
+    res.status(400).json({ 
+      success: false, 
+      message: errorMessage
+    });
   }
 };
 
@@ -175,19 +230,46 @@ export const editEmployee = async (req, res) => {
 
 // Delete employee
 export const deleteEmployee = async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { employeeId } = req.params;
-    const employee = await Employee.findOneAndDelete({ employeeId });
+    
+    // Find employee first
+    const employee = await Employee.findOne({ employeeId }).session(session);
     if (!employee) {
-      return res.status(404).json({ message: 'Employee not found' });
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(404).json({ success: false, message: 'Employee not found' });
     }
-    // Remove user associated with this employee
-    await User.findOneAndDelete({ employee: employee._id });
 
-    return res.status(200).json({ message: 'Employee deleted' });
+    // Find and delete user associated with this employee
+    const user = await User.findById(employee.user).session(session);
+    if (user) {
+      await User.findByIdAndDelete(user._id).session(session);
+    }
+
+    // Delete the employee
+    await Employee.findByIdAndDelete(employee._id).session(session);
+
+    // Commit the transaction
+    await session.commitTransaction();
+    session.endSession();
+
+    return res.status(200).json({ 
+      success: true, 
+      message: 'Employee deleted successfully' 
+    });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    console.error('Error deleting employee:', error);
+    await session.abortTransaction();
+    session.endSession();
+    return res.status(500).json({ 
+      success: false, 
+      message: 'Error deleting employee',
+      error: error.message 
+    });
   }
 };
 
