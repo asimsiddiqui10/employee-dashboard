@@ -1,65 +1,72 @@
 import React, { useState, useEffect } from 'react';
 import api from '@/lib/axios';
-import { toast } from '@/hooks/use-toast';
 import { handleApiError } from '@/utils/errorHandler';
+import { toast } from '@/hooks/use-toast';
+import { format, differenceInBusinessDays } from 'date-fns';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Calendar, Clock, AlertCircle } from 'lucide-react';
 
 const LeaveRequest = () => {
   const [form, setForm] = useState({
     leaveType: '',
     startDate: '',
     endDate: '',
-    reason: ''
+    description: ''
   });
   const [leaveRequests, setLeaveRequests] = useState([]);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [leaveSummary, setLeaveSummary] = useState(null);
-  const [employeeDetails, setEmployeeDetails] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [totalDays, setTotalDays] = useState(0);
 
   useEffect(() => {
     fetchLeaveRequests();
     fetchEmployeeDetails();
   }, []);
 
+  useEffect(() => {
+    // Calculate total days when dates change
+    if (form.startDate && form.endDate) {
+      const days = differenceInBusinessDays(
+        new Date(form.endDate),
+        new Date(form.startDate)
+      ) + 1;
+      setTotalDays(days > 0 ? days : 0);
+    } else {
+      setTotalDays(0);
+    }
+  }, [form.startDate, form.endDate]);
+
   const fetchEmployeeDetails = async () => {
     try {
       const response = await api.get('/employees/me');
-      setEmployeeDetails(response.data);
       setLeaveSummary(response.data.leaveSummary);
     } catch (error) {
       const { message } = handleApiError(error);
-      console.error(message);
-    }
-  };
-
-  const fetchLeaveRequests = async () => {
-    try {
-      const response = await api.get('/leaves/my-requests');
-      setLeaveRequests(response.data);
-    } catch (error) {
-      const { message } = handleApiError(error);
-      console.error(message);
-    }
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setError('');
-    setSuccess('');
-
-    try {
-      await api.post('/leaves/request', form);
-      setSuccess('Leave request submitted successfully');
-      setForm({ leaveType: '', startDate: '', endDate: '', reason: '' });
-      fetchLeaveRequests();
-      fetchEmployeeDetails();
-      toast({
-        title: "Success",
-        description: "Leave request submitted successfully",
-      });
-    } catch (error) {
-      const { message } = handleApiError(error);
-      setError(message);
       toast({
         title: "Error",
         description: message,
@@ -68,136 +75,257 @@ const LeaveRequest = () => {
     }
   };
 
-  const handleInputChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+  const fetchLeaveRequests = async () => {
+    try {
+      const response = await api.get('/leaves/my-requests');
+      setLeaveRequests(response.data.data);
+    } catch (error) {
+      const { message } = handleApiError(error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      await api.post('/leaves/request', form);
+      
+      // Reset form and refresh data
+      setForm({
+        leaveType: '',
+        startDate: '',
+        endDate: '',
+        description: ''
+      });
+      fetchLeaveRequests();
+      fetchEmployeeDetails();
+      
+      toast({
+        title: "Success",
+        description: `Leave request submitted successfully for ${format(new Date(form.startDate), 'MMM d')} - ${format(new Date(form.endDate), 'MMM d')} (${totalDays} days)`,
+      });
+    } catch (error) {
+      const { message } = handleApiError(error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = async (requestId) => {
+    try {
+      await api.delete(`/leaves/cancel/${requestId}`);
+      fetchLeaveRequests();
+      fetchEmployeeDetails();
+      toast({
+        title: "Success",
+        description: "Leave request cancelled successfully",
+      });
+    } catch (error) {
+      const { message } = handleApiError(error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      Pending: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+      Approved: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+      Rejected: "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+    };
+    return <Badge className={styles[status]}>{status}</Badge>;
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-semibold mb-6">Leave Management</h2>
-      
-      {/* Leave Summary */}
-      {leaveSummary && (
-        <div className="bg-white p-4 rounded-lg shadow mb-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-          <div className="text-center">
-            <p className="text-gray-600">Total Leaves</p>
-            <p className="text-2xl font-semibold">{leaveSummary.totalLeaves}</p>
+    <div className="container mx-auto p-6 space-y-6">
+      {/* Leave Request Status */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Leave Request Status</CardTitle>
+          <CardDescription>Your leave request history and status</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Dates</TableHead>
+                  <TableHead>Days</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leaveRequests.map((request) => (
+                  <TableRow key={request._id}>
+                    <TableCell>{request.leaveType}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-4 w-4" />
+                        <span>
+                          {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d, yyyy')}
+                        </span>
+                      </div>
+                    </TableCell>
+                    <TableCell>{request.totalDays} days</TableCell>
+                    <TableCell>{getStatusBadge(request.status)}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        <span>{format(new Date(request.createdAt), 'MMM d, yyyy')}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {request.status === 'Pending' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleCancel(request._id)}
+                          className="h-8 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      {request.reviewNotes && (
+                        <span className="text-sm text-muted-foreground ml-2">
+                          Note: {request.reviewNotes}
+                        </span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {leaveRequests.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-4 text-muted-foreground">
+                      No leave requests found
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
           </div>
-          <div className="text-center">
-            <p className="text-gray-600">Leaves Taken</p>
-            <p className="text-2xl font-semibold">{leaveSummary.leavesTaken}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-600">Leaves Remaining</p>
-            <p className="text-2xl font-semibold">{leaveSummary.leavesRemaining}</p>
-          </div>
-          <div className="text-center">
-            <p className="text-gray-600">Leaves Rejected</p>
-            <p className="text-2xl font-semibold">{leaveSummary.leavesRejected}</p>
-          </div>
-        </div>
-      )}
+        </CardContent>
+      </Card>
 
-      {/* Leave Request Form */}
-      <div className="bg-white p-6 rounded-lg shadow mb-6">
-        <h3 className="text-xl font-semibold mb-4">Request Leave</h3>
-        {error && <div className="text-red-500 mb-4">{error}</div>}
-        {success && <div className="text-green-500 mb-4">{success}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Leave Type</label>
-            <select
-              name="leaveType"
-              value={form.leaveType}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              required
-            >
-              <option value="">Select Leave Type</option>
-              <option value="Vacation">Vacation</option>
-              <option value="Sick">Sick</option>
-              <option value="Personal">Personal</option>
-              <option value="Other">Other</option>
-            </select>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700">Start Date</label>
-              <input
-                type="date"
-                name="startDate"
-                value={form.startDate}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                required
-              />
+      {/* Request Form */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Request Leave</CardTitle>
+          <CardDescription>Submit a new leave request</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Select
+                  value={form.leaveType}
+                  onValueChange={(value) => setForm(prev => ({ ...prev, leaveType: value }))}
+                  required
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select leave type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Vacation">Vacation</SelectItem>
+                    <SelectItem value="Sick">Sick Leave</SelectItem>
+                    <SelectItem value="Personal">Personal Leave</SelectItem>
+                    <SelectItem value="Family">Family Leave</SelectItem>
+                    <SelectItem value="Bereavement">Bereavement</SelectItem>
+                    <SelectItem value="Other">Other</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Input
+                  type="date"
+                  value={form.startDate}
+                  onChange={(e) => setForm(prev => ({ ...prev, startDate: e.target.value }))}
+                  min={new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Input
+                  type="date"
+                  value={form.endDate}
+                  onChange={(e) => setForm(prev => ({ ...prev, endDate: e.target.value }))}
+                  min={form.startDate || new Date().toISOString().split('T')[0]}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <div className="bg-muted p-2 rounded text-sm">
+                  Total Days: <span className="font-bold">{totalDays}</span>
+                  {totalDays > (leaveSummary?.leavesRemaining || 0) && (
+                    <div className="text-red-500 flex items-center gap-1 mt-1">
+                      <AlertCircle className="h-4 w-4" />
+                      Exceeds available balance
+                    </div>
+                  )}
+                </div>
+              </div>
+              <div className="col-span-2">
+                <Textarea
+                  placeholder="Description (optional)"
+                  value={form.description}
+                  onChange={(e) => setForm(prev => ({ ...prev, description: e.target.value }))}
+                  className="h-20"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">End Date</label>
-              <input
-                type="date"
-                name="endDate"
-                value={form.endDate}
-                onChange={handleInputChange}
-                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-                required
-              />
+            <div className="flex justify-end">
+              <Button 
+                type="submit" 
+                disabled={loading || totalDays === 0 || totalDays > (leaveSummary?.leavesRemaining || 0)}
+              >
+                Submit Request
+              </Button>
             </div>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Reason</label>
-            <textarea
-              name="reason"
-              value={form.reason}
-              onChange={handleInputChange}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              rows="3"
-            />
-          </div>
-          <button
-            type="submit"
-            className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
-          >
-            Submit Request
-          </button>
-        </form>
-      </div>
+          </form>
+        </CardContent>
+      </Card>
 
-      {/* Leave Requests History */}
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="text-xl font-semibold mb-4">Leave History</h3>
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dates</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Days</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {leaveRequests.map((request) => (
-                <tr key={request._id}>
-                  <td className="px-6 py-4 whitespace-nowrap">{request.leaveType}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">{request.totalDays}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
-                      ${request.status === 'Approved' ? 'bg-green-100 text-green-800' : 
-                        request.status === 'Rejected' ? 'bg-red-100 text-red-800' : 
-                        'bg-yellow-100 text-yellow-800'}`}>
-                      {request.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      {/* Leave Overview */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Leave Overview</CardTitle>
+          <CardDescription>Your leave balance and history</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-green-500/10 p-4 rounded-lg">
+              <div className="text-green-500 text-sm font-medium">Available</div>
+              <div className="text-2xl font-bold mt-1">{leaveSummary?.leavesRemaining || 0} days</div>
+            </div>
+            <div className="bg-blue-500/10 p-4 rounded-lg">
+              <div className="text-blue-500 text-sm font-medium">Taken</div>
+              <div className="text-2xl font-bold mt-1">{leaveSummary?.leavesTaken || 0} days</div>
+            </div>
+            <div className="bg-yellow-500/10 p-4 rounded-lg">
+              <div className="text-yellow-500 text-sm font-medium">Pending</div>
+              <div className="text-2xl font-bold mt-1">
+                {leaveRequests.filter(req => req.status === 'Pending').length} requests
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };
