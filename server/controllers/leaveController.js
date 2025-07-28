@@ -137,6 +137,47 @@ export const getMyLeaveRequests = async (req, res) => {
   }
 };
 
+// Get leave requests for a specific employee (admin)
+export const getEmployeeLeaveRequests = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const { year } = req.query;
+
+    // Find employee first
+    const employee = await Employee.findOne({ employeeId });
+    if (!employee) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Employee not found' 
+      });
+    }
+
+    // Build date range for filtering
+    const startDate = year ? startOfYear(new Date(year, 0)) : startOfYear(new Date());
+    const endDate = year ? endOfYear(new Date(year, 0)) : endOfYear(new Date());
+
+    const requests = await LeaveRequest.find({
+      employee: employee._id,
+      startDate: { $gte: startDate },
+      endDate: { $lte: endDate }
+    })
+    .populate('reviewedBy', 'name')
+    .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: requests
+    });
+
+  } catch (error) {
+    console.error('Error fetching employee leave requests:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || 'Error fetching employee leave requests' 
+    });
+  }
+};
+
 // Update leave request status (admin)
 export const updateLeaveStatus = async (req, res) => {
   const session = await mongoose.startSession();

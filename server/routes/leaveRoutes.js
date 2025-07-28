@@ -4,7 +4,8 @@ import {
   getMyLeaveRequests,
   getAllLeaveRequests,
   updateLeaveStatus,
-  cancelLeaveRequest
+  cancelLeaveRequest,
+  getEmployeeLeaveRequests
 } from '../controllers/leaveController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { roleMiddleware } from '../middleware/roleMiddleware.js';
@@ -21,6 +22,7 @@ router.delete('/cancel/:requestId', cancelLeaveRequest);
 
 // Admin routes
 router.get('/all', roleMiddleware(['admin']), getAllLeaveRequests);
+router.get('/employee/:employeeId', roleMiddleware(['admin']), getEmployeeLeaveRequests);
 router.put('/:requestId/status', roleMiddleware(['admin']), updateLeaveStatus);
 
 export default router; 

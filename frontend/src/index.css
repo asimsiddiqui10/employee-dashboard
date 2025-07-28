@@ -39,6 +39,11 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
+    --chart-6: 220 70% 50%;
+    --chart-7: 160 60% 45%;
+    --chart-8: 30 80% 55%;
+    --chart-9: 280 65% 60%;
+    --chart-10: 340 75% 55%;
   }
 
   .dark {
@@ -70,12 +75,16 @@
     --sidebar-accent-foreground: 240 4.8% 95.9%;
     --sidebar-border: 240 3.7% 15.9%;
     --sidebar-ring: 217.2 91.2% 59.8%;
-
     --chart-1: 220 70% 50%;
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
     --chart-5: 340 75% 55%;
+    --chart-6: 190 70% 50%;  /* Changed from 220 to 190 to differentiate from chart-1 */
+    --chart-7: 160 60% 45%;
+    --chart-8: 30 80% 55%;
+    --chart-9: 280 65% 60%;
+    --chart-10: 340 75% 55%;
   }
 }
 

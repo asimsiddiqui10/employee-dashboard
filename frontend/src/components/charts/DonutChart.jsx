@@ -1,47 +1,101 @@
 import * as React from "react"
 import { TrendingUp } from "lucide-react"
-import { Label, Pie, PieChart } from "recharts"
+import { Label, Pie, PieChart, Cell, Tooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
+import api from '@/lib/axios'
+import { handleApiError } from '@/utils/errorHandler'
+import { departments } from '@/lib/departments'
 
-const chartData = [
-  { department: "Active", value: 250, fill: "hsl(var(--chart-1))" },
-  { department: "Inactive", value: 120, fill: "hsl(var(--chart-2))" },
-  { department: "On Leave", value: 89, fill: "hsl(var(--chart-3))" },
-  { department: "Terminated", value: 60, fill: "hsl(var(--chart-4))" }
+// Color palette for departments
+const departmentColors = [
+  "hsl(var(--chart-1))",
+  "hsl(var(--chart-2))", 
+  "hsl(var(--chart-3))",
+  "hsl(var(--chart-4))",
+  "hsl(var(--chart-5))",
+  "hsl(var(--chart-6))",
+  "hsl(var(--chart-7))",
+  "hsl(var(--chart-8))",
+  "hsl(var(--chart-9))",
+  "hsl(var(--chart-10))"
 ];
 
-const chartConfig = {
-  value: {
-    label: "Employees",
-  },
-  active: {
-    label: "Active",
-    color: "hsl(var(--chart-1))",
-  },
-  inactive: {
-    label: "Inactive",
-    color: "hsl(var(--chart-2))",
-  },
-  onLeave: {
-    label: "On Leave",
-    color: "hsl(var(--chart-3))",
-  },
-  terminated: {
-    label: "Terminated",
-    color: "hsl(var(--chart-4))",
-  }
-};
-
 export function DonutChartComponent() {
-  const totalEmployees = React.useMemo(() => {
-    return chartData.reduce((acc, curr) => acc + curr.value, 0)
+  const [chartData, setChartData] = React.useState([]);
+  const [totalEmployees, setTotalEmployees] = React.useState(0);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetchDepartmentData();
   }, []);
+
+  const fetchDepartmentData = async () => {
+    try {
+      const response = await api.get('/employees/department-counts');
+      const { departments: deptCounts, total } = response.data.data;
+      
+      // Transform data for chart
+      const transformedData = deptCounts.map((dept, index) => ({
+        department: dept._id || 'Other',
+        value: dept.count,
+        fill: departmentColors[index % departmentColors.length]
+      }));
+      
+      setChartData(transformedData);
+      setTotalEmployees(total);
+    } catch (error) {
+      console.error('Error fetching department data:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const CustomTooltip = ({ active, payload }) => {
+    if (active && payload && payload.length) {
+      const data = payload[0];
+      const deptConfig = departments[data.payload.department];
+      return (
+        <div className="bg-background border rounded-lg p-3 shadow-lg">
+          <div className="flex items-center gap-2 mb-1">
+            {deptConfig && (
+              <div className={`p-1 rounded ${deptConfig.bgColor}`}>
+                <deptConfig.icon className={`h-3 w-3 ${deptConfig.color}`} />
+              </div>
+            )}
+            <span className="font-medium">{data.payload.department}</span>
+          </div>
+          <div className="text-sm text-muted-foreground">
+            {data.value} employees
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  if (loading) {
+    return (
+      <Card className="flex flex-col">
+        <CardHeader className="items-center pb-0">
+          <CardTitle>Department Distribution</CardTitle>
+          <CardDescription>Loading...</CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 pb-0">
+          <div className="mx-auto aspect-square max-h-[180px] flex items-center justify-center">
+            <div className="text-muted-foreground">Loading...</div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Employee Distribution</CardTitle>
-        <CardDescription>Current Month</CardDescription>
+        <CardTitle>Department Distribution</CardTitle>
+        <CardDescription>Employee count by department</CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <div className="mx-auto aspect-square max-h-[180px]">
@@ -55,6 +109,9 @@ export function DonutChartComponent() {
               paddingAngle={0}
               strokeWidth={0}
             >
+              {chartData.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.fill} />
+              ))}
               <Label
                 content={({ viewBox }) => {
                   const { cx, cy } = viewBox;
@@ -75,7 +132,7 @@ export function DonutChartComponent() {
                       <tspan
                         x={cx}
                         y={cy + 24}
-                        className="fill-muted-foreground"
+                        className="fill-muted-foreground text-sm"
                       >
                         Total
                       </tspan>
@@ -84,12 +141,13 @@ export function DonutChartComponent() {
                 }}
               />
             </Pie>
+            <Tooltip content={<CustomTooltip />} />
           </PieChart>
         </div>
       </CardContent>
       <CardFooter className="flex-col gap-2 text-sm">
         <div className="flex items-center gap-2 font-medium leading-none">
-          Active employees up by 5.2% <TrendingUp className="h-4 w-4" />
+          {chartData.length} departments <TrendingUp className="h-4 w-4" />
         </div>
       </CardFooter>
     </Card>

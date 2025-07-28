@@ -317,6 +317,37 @@ export const getEmployee = async (req, res) => {
   }
 };
 
+// Get employee counts by department
+export const getEmployeeCountsByDepartment = async (req, res) => {
+  try {
+    const departmentCounts = await Employee.aggregate([
+      {
+        $group: {
+          _id: '$department',
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { count: -1 }
+      }
+    ]);
+
+    // Get total count
+    const totalEmployees = await Employee.countDocuments();
+
+    res.json({
+      success: true,
+      data: {
+        departments: departmentCounts,
+        total: totalEmployees
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching employee counts by department:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Get my details
 export const getMyDetails = async (req, res) => {
   try {

@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 import { getDepartmentConfig, departments } from "@/lib/departments";
 import ChangePasswordModal from './ChangePasswordModal';
 import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 const EmployeeDetails = () => {
   const { employeeId } = useParams();
@@ -35,12 +36,20 @@ const EmployeeDetails = () => {
   const [showSSN, setShowSSN] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [leaveLoading, setLeaveLoading] = useState(false);
 
   useEffect(() => {
     fetchEmployeeDetails();
     fetchAllDocuments();
     fetchEmployees();
   }, [employeeId]);
+
+  useEffect(() => {
+    if (activeTab === 'leave') {
+      fetchLeaveRequests();
+    }
+  }, [activeTab, employeeId]);
 
   useEffect(() => {
     // When employment status changes to Terminated, set termination date
@@ -122,6 +131,20 @@ const EmployeeDetails = () => {
       setEmployees(response.data);
     } catch (error) {
       console.error('Error fetching employees:', error.response || error);
+    }
+  };
+
+  const fetchLeaveRequests = async () => {
+    try {
+      setLeaveLoading(true);
+      const response = await api.get(`/leaves/employee/${employeeId}`);
+      setLeaveRequests(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error.response || error);
+      const { message } = handleApiError(error);
+      console.error(message);
+    } finally {
+      setLeaveLoading(false);
     }
   };
 
@@ -733,6 +756,70 @@ const EmployeeDetails = () => {
                   <InfoField label="Work Phone Number" value={form?.workPhoneNumber} />
                   <InfoField label="Job Description" value={form?.jobDescription} />
                 </>
+              )}
+            </div>
+          </div>
+        );
+      case 'leave':
+        return (
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-semibold">Leave History</h3>
+            </div>
+            <Separator className="my-4" />
+            <div className="space-y-6">
+              {leaveLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">Loading leave history...</div>
+                </div>
+              ) : leaveRequests.length === 0 ? (
+                <p className="text-sm text-muted-foreground">No leave requests found</p>
+              ) : (
+                <div className="grid gap-3">
+                  {leaveRequests.map((request) => (
+                    <div key={request._id} className="flex justify-between items-center p-4 rounded-lg border bg-card text-card-foreground">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-2">
+                          <Badge 
+                            variant={
+                              request.status === 'Approved' 
+                                ? 'default' 
+                                : request.status === 'Rejected' 
+                                ? 'destructive' 
+                                : 'secondary'
+                            }
+                            className={
+                              request.status === 'Approved' 
+                                ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' 
+                                : request.status === 'Rejected' 
+                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                                : 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20'
+                            }
+                          >
+                            {request.status}
+                          </Badge>
+                          <span className="text-sm font-medium">{request.leaveType}</span>
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {request.totalDays} days • Requested on {new Date(request.createdAt).toLocaleDateString()}
+                        </div>
+                        {request.description && (
+                          <div className="text-sm text-muted-foreground mt-2">
+                            {request.description}
+                          </div>
+                        )}
+                        {request.reviewNotes && (
+                          <div className="text-sm text-muted-foreground mt-2">
+                            <span className="font-medium">Review Notes:</span> {request.reviewNotes}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>

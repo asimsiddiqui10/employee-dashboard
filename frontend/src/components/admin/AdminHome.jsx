@@ -1,12 +1,16 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building, Bell } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building, Bell, Calendar, Clock } from "lucide-react";
 import { DonutChartComponent } from '../charts/DonutChart';
 import { RevenueBarChart } from '../charts/BarChart';
 import { VisitorsAreaChart } from '../charts/AreaChart';
 import { ScrollArea } from "../ui/scroll-area";
 import { cn } from "@/lib/utils";
+import api from '@/lib/axios';
+import { handleApiError } from '@/utils/errorHandler';
+import { format } from 'date-fns';
 
 // Add this notification data
 const notifications = [
@@ -41,6 +45,38 @@ const notifications = [
 ];
 
 const AdminHome = () => {
+  const [leaveRequests, setLeaveRequests] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchLeaveRequests();
+  }, []);
+
+  const fetchLeaveRequests = async () => {
+    try {
+      const response = await api.get('/leaves/all', { 
+        params: { status: 'Pending' } 
+      });
+      setLeaveRequests(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching leave requests:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = (status) => {
+    const styles = {
+      Pending: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+      Approved: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+      Rejected: "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+    };
+    return <Badge className={styles[status]}>{status}</Badge>;
+  };
+
   // Sample data for charts
   const chartdata = [
     { date: "Apr 1", Visitors: 2890, Revenue: 2400 },
@@ -116,19 +152,21 @@ const AdminHome = () => {
             </CardContent>
           </Card>
 
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow" onClick={() => navigate('/admin-dashboard/leave')}>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Growth Rate</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">Leave Requests</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
+                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 dark:bg-yellow-500/20 dark:text-yellow-400"
               )}>
-                <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
-                +4.5%
+                <Clock className="mr-1 h-2.5 w-2.5" />
+                Pending
               </Badge>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold tracking-tight">4.5%</div>
+              <div className="text-2xl font-bold tracking-tight">
+                {loading ? '...' : leaveRequests.length}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -149,6 +187,67 @@ const AdminHome = () => {
             <VisitorsAreaChart />
           </div>
         </div>
+
+        {/* Leave Requests Section */}
+        {leaveRequests.length > 0 && (
+          <div className="grid gap-4">
+            <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/20" onClick={() => navigate('/admin-dashboard/leave')}>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-xl font-semibold">Pending Leave Requests</CardTitle>
+                    <CardDescription>Recent leave requests awaiting approval</CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="font-normal">
+                      {leaveRequests.length} Pending
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      Click to view all
+                    </Badge>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-64 pr-4">
+                  <div className="flex flex-col gap-3">
+                    {leaveRequests.map((request) => (
+                      <div
+                        key={request._id}
+                        className="flex items-center justify-between p-4 rounded-lg border bg-card text-card-foreground shadow-sm"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <div>
+                              <div className="font-medium text-sm">
+                                {request.employee?.name || 'Unknown Employee'}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                {request.employee?.employeeId || 'No ID'} • {request.leaveType}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-sm font-medium">
+                              {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d, yyyy')}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {request.totalDays} days
+                            </div>
+                          </div>
+                          {getStatusBadge(request.status)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       {/* Notifications Card */}
