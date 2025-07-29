@@ -656,9 +656,37 @@ const EmployeeDetails = () => {
                         <SelectItem value="Full-time">Full-time</SelectItem>
                         <SelectItem value="Part-time">Part-time</SelectItem>
                         <SelectItem value="Contract">Contract</SelectItem>
+                        <SelectItem value="Hourly">Hourly</SelectItem>
                         <SelectItem value="Consultant">Consultant</SelectItem>
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="compensationType">Compensation Type</Label>
+                    <Select
+                      value={form?.compensationType || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'compensationType', value } })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select compensation type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Monthly Salary">Monthly Salary</SelectItem>
+                        <SelectItem value="Hourly Rate">Hourly Rate</SelectItem>
+                        <SelectItem value="Total Compensation">Total Compensation</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="compensationValue">Compensation Value</Label>
+                    <Input
+                      id="compensationValue"
+                      name="compensationValue"
+                      type="number"
+                      value={form?.compensationValue || ''}
+                      onChange={handleInputChange}
+                      placeholder="Enter compensation value"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="employmentStatus">Employment Status</Label>
@@ -750,6 +778,8 @@ const EmployeeDetails = () => {
                   <InfoField label="Job Title" value={form?.jobTitle} />
                   <InfoField label="Employment Type" value={form?.employmentType} />
                   <InfoField label="Employment Status" value={form?.employmentStatus} />
+                  <InfoField label="Compensation Type" value={form?.compensationType} />
+                  <InfoField label="Compensation Value" value={form?.compensationValue ? `$${form.compensationValue.toLocaleString()}` : 'Not provided'} />
                   <InfoField label="Date of Hire" value={form?.dateOfHire ? new Date(form.dateOfHire).toLocaleDateString() : 'Not provided'} />
                   <InfoField label="Termination Date" value={form?.terminationDate ? new Date(form.terminationDate).toLocaleDateString() : 'Not provided'} />
                   <InfoField label="Work Email" value={form?.workEmail} />
