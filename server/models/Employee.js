@@ -29,7 +29,7 @@ const employeeSchema = new mongoose.Schema({
   // Work Information
   department: { 
     type: String,
-    enum: ['Engineering', 'Production', 'Administration', 'Management', 'Sales', 'Warehouse', 'Other'],
+    enum: ['Engineering', 'Production', 'Administration', 'Management', 'Sales', 'Warehouse', 'Manufacturing', 'WellServices', 'Operations', 'Other'],
     required: true 
   },
   position: { type: String },

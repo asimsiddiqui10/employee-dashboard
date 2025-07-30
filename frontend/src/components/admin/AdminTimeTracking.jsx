@@ -75,12 +75,37 @@ export default function AdminTimeTracking() {
       );
       const completed = entries.filter(entry => entry.status === 'completed');
 
-      console.log('Active employees:', active); // Debug log
-      console.log('On break employees:', onBreak); // Debug log
-      console.log('Completed entries:', completed); // Debug log
+      // Deduplicate active employees by name (handle multiple employee records for same person)
+      const uniqueActiveEmployees = [];
+      const activeEmployeeNames = new Set();
+      
+      active.forEach(entry => {
+        const employeeName = entry.employee?.name;
+        if (employeeName && !activeEmployeeNames.has(employeeName)) {
+          activeEmployeeNames.add(employeeName);
+          uniqueActiveEmployees.push(entry);
+        }
+      });
 
-      setActiveEmployees(active);
-      setOnBreakEmployees(onBreak);
+      // Deduplicate on break employees by name
+      const uniqueOnBreakEmployees = [];
+      const onBreakEmployeeNames = new Set();
+      
+      onBreak.forEach(entry => {
+        const employeeName = entry.employee?.name;
+        if (employeeName && !onBreakEmployeeNames.has(employeeName)) {
+          onBreakEmployeeNames.add(employeeName);
+          uniqueOnBreakEmployees.push(entry);
+        }
+      });
+
+      console.log('Active employees (before dedup):', active.length);
+      console.log('Active employees (after dedup):', uniqueActiveEmployees.length);
+      console.log('On break employees (before dedup):', onBreak.length);
+      console.log('On break employees (after dedup):', uniqueOnBreakEmployees.length);
+
+      setActiveEmployees(uniqueActiveEmployees);
+      setOnBreakEmployees(uniqueOnBreakEmployees);
       setTimeEntries(completed);
       setLoading(false);
     } catch (error) {

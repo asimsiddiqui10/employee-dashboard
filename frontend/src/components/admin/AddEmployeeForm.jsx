@@ -124,7 +124,7 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
       }
 
       // Validate employment type
-      const validEmploymentTypes = ['Full-time', 'Part-time', 'Contract', 'Consultant'];
+      const validEmploymentTypes = ['Full-time', 'Part-time', 'Contract', 'Hourly', 'Consultant'];
       if (!validEmploymentTypes.includes(form.employmentType)) {
         setError('Please select a valid employment type');
         return false;

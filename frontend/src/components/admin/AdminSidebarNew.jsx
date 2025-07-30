@@ -15,12 +15,12 @@ import {
   FolderClosed,
   GraduationCap,
   Gift,
-  LineChart,
   MessageSquare,
   Settings,
   HelpCircle,
   LogOut,
-  Menu
+  Menu,
+  CheckCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 import { useSidebar } from '../ui/sidebar';
@@ -75,6 +75,11 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/time-tracking"
     },
     {
+      title: "Attendance",
+      icon: CheckCircle,
+      path: "/admin-dashboard/attendance"
+    },
+    {
       title: "Departments",
       icon: Building2,
       path: "/admin-dashboard/departments"
@@ -118,11 +123,6 @@ export function AdminSidebarNew() {
       title: "Benefits",
       icon: Gift,
       path: "/admin-dashboard/benefits"
-    },
-    {
-      title: "Insights & Analysis",
-      icon: LineChart,
-      path: "/admin-dashboard/insights"
     },
   ];
 

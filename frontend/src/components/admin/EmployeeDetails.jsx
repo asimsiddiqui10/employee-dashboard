@@ -43,10 +43,11 @@ const EmployeeDetails = () => {
     fetchEmployeeDetails();
     fetchAllDocuments();
     fetchEmployees();
+    fetchLeaveRequests(); // Pre-load leave data to prevent layout shifts
   }, [employeeId]);
 
   useEffect(() => {
-    if (activeTab === 'leave') {
+    if (activeTab === 'leave' && leaveRequests.length === 0 && !leaveLoading) {
       fetchLeaveRequests();
     }
   }, [activeTab, employeeId]);
@@ -434,6 +435,41 @@ const EmployeeDetails = () => {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label htmlFor="gender">Gender</Label>
+                    <Select
+                      value={form?.gender || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'gender', value } })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select gender" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Male">Male</SelectItem>
+                        <SelectItem value="Female">Female</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="maritalStatus">Marital Status</Label>
+                    <Select
+                      value={form?.maritalStatus || ''}
+                      onValueChange={(value) => handleInputChange({ target: { name: 'maritalStatus', value } })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select marital status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Single">Single</SelectItem>
+                        <SelectItem value="Married">Married</SelectItem>
+                        <SelectItem value="Divorced">Divorced</SelectItem>
+                        <SelectItem value="Widowed">Widowed</SelectItem>
+                        <SelectItem value="Separated">Separated</SelectItem>
+                        <SelectItem value="Other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label htmlFor="dateOfBirth" className="text-sm">Date of Birth</Label>
                     <Input
                       id="dateOfBirth"
@@ -797,13 +833,15 @@ const EmployeeDetails = () => {
               <h3 className="text-lg font-semibold">Leave History</h3>
             </div>
             <Separator className="my-4" />
-            <div className="space-y-6">
+            <div className="space-y-6 min-h-[200px]">
               {leaveLoading ? (
-                <div className="flex items-center justify-center py-8">
+                <div className="flex items-center justify-center h-[200px]">
                   <div className="text-muted-foreground">Loading leave history...</div>
                 </div>
               ) : leaveRequests.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No leave requests found</p>
+                <div className="flex items-center justify-center h-[200px]">
+                  <p className="text-sm text-muted-foreground">No leave requests found</p>
+                </div>
               ) : (
                 <div className="grid gap-3">
                   {leaveRequests.map((request) => (
@@ -865,8 +903,8 @@ const EmployeeDetails = () => {
       const isVisible = isPassword ? showPassword : showSSN;
       const toggleVisibility = isPassword ? () => setShowPassword(!showPassword) : () => setShowSSN(!showSSN);
       return (
-        <div className="space-y-1.5">
-          <Label>{label}</Label>
+        <div className="space-y-2">
+          <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{label}</Label>
           <div className="flex items-center gap-2">
             <div className="flex-1">
               {isEditing ? (
@@ -875,15 +913,18 @@ const EmployeeDetails = () => {
                   value={value || ''}
                   onChange={handleInputChange}
                   type={isVisible ? "text" : "password"}
+                  className="bg-background border-border"
                 />
               ) : (
-                <p className="text-sm">{isVisible ? value : '••••••••'}</p>
+                <div className="px-3 py-2 bg-muted/50 rounded-md border">
+                  <p className="text-sm font-medium">{isVisible ? value : '••••••••'}</p>
+                </div>
               )}
             </div>
             <Button 
               variant="ghost" 
               size="sm"
-              className="h-8 w-8 p-0"
+              className="h-8 w-8 p-0 hover:bg-muted"
               onClick={toggleVisibility}
               type="button"
             >
@@ -894,16 +935,19 @@ const EmployeeDetails = () => {
       );
     }
     return (
-      <div className="space-y-1.5">
-        <Label>{label}</Label>
+      <div className="space-y-2">
+        <Label className="text-sm font-medium text-muted-foreground uppercase tracking-wide">{label}</Label>
         {isEditing ? (
           <Input
             name={label.toLowerCase()}
             value={value || ''}
             onChange={handleInputChange}
+            className="bg-background border-border"
           />
         ) : (
-          <p className="text-sm">{value || 'Not provided'}</p>
+          <div className="px-3 py-2 bg-muted/50 rounded-md border min-h-[40px] flex items-center">
+            <p className="text-sm font-medium text-foreground">{value || 'Not provided'}</p>
+          </div>
         )}
       </div>
     );
