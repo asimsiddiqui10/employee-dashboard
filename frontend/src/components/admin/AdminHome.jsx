@@ -106,49 +106,49 @@ const AdminHome = () => {
         <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Total Revenue</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">Currently Working</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
+                "bg-green-500/10 text-green-500 hover:bg-green-500/20 dark:bg-green-500/20 dark:text-green-400"
               )}>
-                <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
-                +12.5%
+                <Users className="mr-1 h-2.5 w-2.5" />
+                Active
               </Badge>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold tracking-tight">$1,250.00</div>
+              <div className="text-2xl font-bold tracking-tight">20</div>
             </CardContent>
           </Card>
 
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">New Customers</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">Pending Requests</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-red-500/10 text-red-500 hover:bg-red-500/20 dark:bg-red-500/20 dark:text-red-400"
+                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20 dark:bg-yellow-500/20 dark:text-yellow-400"
               )}>
-                <ArrowDownIcon className="mr-1 h-2.5 w-2.5" />
-                -20%
+                <Bell className="mr-1 h-2.5 w-2.5" />
+                Awaiting
               </Badge>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold tracking-tight">1,234</div>
+              <div className="text-2xl font-bold tracking-tight">11</div>
             </CardContent>
           </Card>
 
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Accounts</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">Overtime Approvals</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 dark:bg-emerald-500/20 dark:text-emerald-400"
+                "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400"
               )}>
-                <ArrowUpIcon className="mr-1 h-2.5 w-2.5" />
-                +12.5%
+                <Clock className="mr-1 h-2.5 w-2.5" />
+                Pending
               </Badge>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold tracking-tight">45,678</div>
+              <div className="text-2xl font-bold tracking-tight">15</div>
             </CardContent>
           </Card>
 
@@ -254,7 +254,7 @@ const AdminHome = () => {
       <Card className="w-full lg:w-1/4 min-w-0">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-semibold">Notifications</CardTitle>
+            <CardTitle className="text-xl font-semibold">Requests</CardTitle>
             <Badge variant="secondary" className="font-normal">
               {notifications.length} New
             </Badge>
