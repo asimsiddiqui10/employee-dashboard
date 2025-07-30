@@ -70,14 +70,9 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/payroll"
     },
     {
-      title: "Time Tracking",
+      title: "Hours",
       icon: Clock,
       path: "/admin-dashboard/time-tracking"
-    },
-    {
-      title: "Attendance",
-      icon: CheckCircle,
-      path: "/admin-dashboard/attendance"
     },
     {
       title: "Departments",

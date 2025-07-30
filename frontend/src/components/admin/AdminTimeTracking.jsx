@@ -171,7 +171,7 @@ export default function AdminTimeTracking() {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Time Tracking Overview</h1>
+        <h1 className="text-3xl font-bold">Hours Overview</h1>
         <div className="flex gap-4">
           <Select value={period} onValueChange={setPeriod}>
             <SelectTrigger className="w-[180px]">
@@ -259,7 +259,7 @@ export default function AdminTimeTracking() {
           <CardTitle>Employee Time Entries</CardTitle>
           <CardDescription>
             {period === 'today' 
-              ? "Real-time tracking data for today" 
+              ? "Real-time hours data for today" 
               : period === 'week' 
                 ? "This week's time entries" 
                 : "This month's time entries"}

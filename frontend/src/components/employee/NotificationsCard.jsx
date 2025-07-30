@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
+import { useNavigate } from 'react-router-dom';
+import api from '@/lib/axios';
+import { toast } from '@/hooks/use-toast';
 
 const getNotificationIcon = (type) => {
   switch (type) {
@@ -30,60 +33,105 @@ const getNotificationStyle = (type) => {
 };
 
 const NotificationsCard = () => {
-  // Example notifications with new type-based structure
-  const notifications = [
-    {
-      id: 1,
-      type: 'payroll',
-      title: "New payroll document available",
-      timeAgo: "2 hours ago",
-    },
-    {
-      id: 2,
-      type: 'policy',
-      title: "Updated workplace safety guidelines",
-      timeAgo: "1 day ago",
-    },
-    {
-      id: 3,
-      type: 'announcement',
-      title: "Company town hall next week",
-      timeAgo: "2 days ago",
-    },
-    {
-      id: 4,
-      type: 'company',
-      title: "New benefits package announcement",
-      timeAgo: "3 days ago",
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await api.get('/notifications');
+      setNotifications(response.data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      // Don't show toast for card component to avoid spam
+    } finally {
+      setLoading(false);
     }
-  ];
+  };
+
+  const markAsRead = async (notificationId) => {
+    try {
+      await api.patch(`/notifications/${notificationId}/read`);
+      setNotifications(notifications.map(n => 
+        n._id === notificationId ? { ...n, isRead: true } : n
+      ));
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
+  };
+
+  // Get the latest 4 notifications
+  const latestNotifications = notifications.slice(0, 4);
+
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const notificationDate = new Date(date);
+    const diffInHours = Math.floor((now - notificationDate) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    
+    const diffInDays = Math.floor(diffInHours / 24);
+    if (diffInDays < 7) return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    
+    const diffInWeeks = Math.floor(diffInDays / 7);
+    return `${diffInWeeks} week${diffInWeeks > 1 ? 's' : ''} ago`;
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+        <CardTitle 
+          className="text-lg font-semibold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors" 
+          onClick={() => navigate('/employee-dashboard/notifications')}
+        >
           <Bell className="h-5 w-5" />
-          What's happening at ACT
+          Notifications
         </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {notifications.map((notification) => (
-            <div key={notification.id} className="flex items-start gap-3">
-              <div className={`mt-1 rounded-full p-1.5 ${getNotificationStyle(notification.type)}`}>
-                {getNotificationIcon(notification.type)}
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium">{notification.title}</p>
-                  <Badge variant="outline" className={getNotificationStyle(notification.type)}>
-                    {notification.type}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">{notification.timeAgo}</p>
-              </div>
+          {loading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
             </div>
-          ))}
+          ) : latestNotifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No notifications</p>
+          ) : (
+            latestNotifications.map((notification) => (
+              <div 
+                key={notification._id} 
+                className={`flex items-start gap-3 p-1.5 rounded-md transition-colors cursor-pointer hover:bg-muted/50 ${
+                  !notification.isRead ? 'bg-primary/5' : ''
+                }`}
+                onClick={() => {
+                  if (!notification.isRead) {
+                    markAsRead(notification._id);
+                  }
+                  navigate('/employee-dashboard/notifications');
+                }}
+              >
+                <div className={`mt-0.5 rounded-full p-1.5 ${getNotificationStyle(notification.type)}`}>
+                  {getNotificationIcon(notification.type)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium truncate">{notification.title}</p>
+                    <Badge variant="outline" className={`text-xs ${getNotificationStyle(notification.type)}`}>
+                      {notification.type}
+                    </Badge>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {formatTimeAgo(notification.createdAt)}
+                  </p>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </CardContent>
     </Card>

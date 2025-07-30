@@ -369,6 +369,39 @@ export const getMyDetails = async (req, res) => {
   }
 };
 
+// Get employees by department
+export const getEmployeesByDepartment = async (req, res) => {
+  try {
+    const { department } = req.params;
+    
+    if (!department) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Department parameter is required' 
+      });
+    }
+
+    const employees = await Employee.find({ 
+      department: department,
+      employmentStatus: 'Active' // Only show active employees
+    })
+    .populate('user', 'name email')
+    .select('name employeeId position profilePic department employmentType')
+    .sort({ name: 1 });
+
+    res.json({
+      success: true,
+      data: employees
+    });
+  } catch (error) {
+    console.error('Error fetching employees by department:', error);
+    res.status(500).json({ 
+      success: false,
+      message: 'Server error' 
+    });
+  }
+};
+
 // Add this new controller function
 export const uploadProfilePic = async (req, res) => {
   try {

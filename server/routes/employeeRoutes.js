@@ -1,6 +1,6 @@
 // routes/employeeRoutes.js
 import express from 'express';
-import { addEmployee, editEmployee, deleteEmployee, getEmployees, getMyDetails, getEmployee, uploadProfilePic, changeEmployeePassword, getEmployeeCountsByDepartment } from '../controllers/employeeController.js';
+import { addEmployee, editEmployee, deleteEmployee, getEmployees, getMyDetails, getEmployee, uploadProfilePic, changeEmployeePassword, getEmployeeCountsByDepartment, getEmployeesByDepartment } from '../controllers/employeeController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import upload from '../middleware/uploadMiddleware.js';
 
@@ -8,6 +8,7 @@ const router = express.Router();
 
 // Employee routes
 router.get('/me', authMiddleware, getMyDetails);
+router.get('/department/:department', authMiddleware, getEmployeesByDepartment);
 
 // Admin routes (protected by role middleware)
 router.post('/', authMiddleware, addEmployee);

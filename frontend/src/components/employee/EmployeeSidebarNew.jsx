@@ -57,7 +57,7 @@ const sidebarData = [
     path: "/employee-dashboard/notifications"
   },
   {
-    title: "Time Tracking",
+    title: "Hours",
     icon: Clock,
     path: "/employee-dashboard/time-tracking"
   },
