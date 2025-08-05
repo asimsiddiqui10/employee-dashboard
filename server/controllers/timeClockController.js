@@ -64,6 +64,7 @@ export const clockIn = async (req, res) => {
 export const clockOut = async (req, res) => {
   try {
     const employeeId = req.user.employee;
+    const { jobCode, rate, timesheetNotes } = req.body;
     
     // Find active session
     const session = activeSessions.get(employeeId.toString());
@@ -72,6 +73,14 @@ export const clockOut = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'No active clock-in found'
+      });
+    }
+
+    // Validate required fields
+    if (!jobCode || !rate) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please provide jobCode and rate'
       });
     }
 
@@ -84,11 +93,20 @@ export const clockOut = async (req, res) => {
       });
     }
 
-    // Update the time entry
+    // Update the time entry with form data
     timeEntry.clockOut = new Date();
     timeEntry.status = 'completed';
     timeEntry.breaks = session.breaks;
     timeEntry.totalBreakTime = session.totalBreakTime;
+    timeEntry.jobCode = jobCode;
+    timeEntry.rate = rate;
+    timeEntry.timesheetNotes = timesheetNotes;
+    timeEntry.managerApproval = {
+      status: 'pending',
+      approvedBy: null,
+      approvalDate: null,
+      approvalNotes: null
+    };
 
     // Calculate total work time
     timeEntry.calculateTotalTime();
@@ -114,6 +132,60 @@ export const clockOut = async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error clocking out',
+      error: error.message
+    });
+  }
+};
+
+// Manager Approval
+export const managerApprove = async (req, res) => {
+  try {
+    const { timeEntryId } = req.params;
+    const { status, notes } = req.body;
+    const managerId = req.user.employee;
+
+    // Verify manager role
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only managers can approve timesheets'
+      });
+    }
+
+    // Find the time entry
+    const timeEntry = await TimeEntry.findById(timeEntryId);
+    if (!timeEntry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Time entry not found'
+      });
+    }
+
+    // Update approval status
+    timeEntry.managerApproval = {
+      status: status,
+      approvedBy: managerId,
+      approvalDate: new Date(),
+      approvalNotes: notes
+    };
+
+    // Save changes
+    await timeEntry.save();
+
+    // Populate and return updated entry
+    const populatedEntry = await TimeEntry.findById(timeEntry._id)
+      .populate('employee', 'name employeeId profilePic department position')
+      .populate('managerApproval.approvedBy', 'name employeeId');
+
+    res.json({
+      success: true,
+      data: populatedEntry
+    });
+  } catch (error) {
+    console.error('Error updating approval status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error updating approval status',
       error: error.message
     });
   }
@@ -430,7 +502,9 @@ export const getTimeEntriesByPeriod = async (req, res) => {
         $gte: startDate,
         $lt: endDate
       }
-    }).populate('employee', 'name employeeId profilePic department position');
+    })
+    .populate('employee', 'name employeeId profilePic department position')
+    .populate('managerApproval.approvedBy', 'name employeeId');
 
     // Update any active entries with the latest data from memory
     const updatedEntries = timeEntries.map(entry => {
@@ -445,11 +519,15 @@ export const getTimeEntriesByPeriod = async (req, res) => {
       return entry;
     });
 
-    console.log('Sending time entries to admin:', {
+    // Count entries by status
+    const stats = {
       total: updatedEntries.length,
       active: updatedEntries.filter(e => e.status === 'active').length,
-      completed: updatedEntries.filter(e => e.status === 'completed').length
-    });
+      completed: updatedEntries.filter(e => e.status === 'completed').length,
+      pending: updatedEntries.filter(e => e.managerApproval?.status === 'pending').length
+    };
+
+    console.log('Sending time entries to admin:', stats);
 
     res.json(updatedEntries);
 

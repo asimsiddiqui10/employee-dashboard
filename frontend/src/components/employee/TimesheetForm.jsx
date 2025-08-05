@@ -9,13 +9,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
@@ -29,7 +22,6 @@ const TimesheetForm = ({
   const [formData, setFormData] = React.useState({
     jobCode: '',
     rate: '',
-    shift: 'Morning',
     timesheetNotes: '',
     employeeApproval: false
   });
@@ -40,7 +32,6 @@ const TimesheetForm = ({
       setFormData({
         jobCode: '',
         rate: '',
-        shift: 'Morning',
         timesheetNotes: '',
         employeeApproval: false
       });
@@ -57,7 +48,7 @@ const TimesheetForm = ({
     };
 
     // Validate required fields
-    if (!submissionData.jobCode || !submissionData.rate || !submissionData.shift) {
+    if (!submissionData.jobCode || !submissionData.rate) {
       return;
     }
 
@@ -69,13 +60,6 @@ const TimesheetForm = ({
     setFormData(prev => ({
       ...prev,
       [name]: value
-    }));
-  };
-
-  const handleShiftChange = (value) => {
-    setFormData(prev => ({
-      ...prev,
-      shift: value
     }));
   };
 
@@ -124,25 +108,6 @@ const TimesheetForm = ({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="shift">Shift *</Label>
-            <Select
-              value={formData.shift}
-              onValueChange={handleShiftChange}
-              required
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select shift" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Morning">Morning</SelectItem>
-                <SelectItem value="Afternoon">Afternoon</SelectItem>
-                <SelectItem value="Night">Night</SelectItem>
-                <SelectItem value="Custom">Custom</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="timesheetNotes">Notes (optional)</Label>
             <Textarea
               id="timesheetNotes"
@@ -176,7 +141,7 @@ const TimesheetForm = ({
             </Button>
             <Button
               type="submit"
-              disabled={loading || !formData.jobCode || !formData.rate || !formData.shift}
+              disabled={loading || !formData.jobCode || !formData.rate}
             >
               {loading ? "Submitting..." : "Submit Timesheet"}
             </Button>

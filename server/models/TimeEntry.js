@@ -43,11 +43,37 @@ const timeEntrySchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['active', 'completed'],
+    enum: ['active', 'completed', 'pending_approval', 'approved', 'rejected'],
     default: 'active'
   },
-  notes: {
-    type: String
+  jobCode: {
+    type: String,
+    required: function() {
+      return this.status !== 'active'; // Required when clocking out
+    }
+  },
+  rate: {
+    type: Number,
+    required: function() {
+      return this.status !== 'active'; // Required when clocking out
+    }
+  },
+  timesheetNotes: {
+    type: String,
+    maxLength: 500
+  },
+  managerApproval: {
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected'],
+      default: 'pending'
+    },
+    approvedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Employee'
+    },
+    approvalDate: Date,
+    approvalNotes: String
   }
 }, {
   timestamps: true
@@ -55,6 +81,8 @@ const timeEntrySchema = new mongoose.Schema({
 
 // Add index for efficient queries
 timeEntrySchema.index({ employee: 1, date: 1 });
+timeEntrySchema.index({ status: 1 });
+timeEntrySchema.index({ 'managerApproval.status': 1 });
 
 // Method to calculate total work time
 timeEntrySchema.methods.calculateTotalTime = function() {

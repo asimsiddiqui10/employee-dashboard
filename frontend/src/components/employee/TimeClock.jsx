@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import TimesheetForm from './TimesheetForm';
 import {
   Clock,
   PlayCircle,
@@ -37,16 +38,6 @@ import {
   getSortedRowModel,
   getFilteredRowModel,
 } from "@tanstack/react-table";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 
 const TimeClock = () => {
   const { user } = useAuth();
@@ -58,7 +49,8 @@ const TimeClock = () => {
   const [timeEntries, setTimeEntries] = useState([]);
   const [sorting, setSorting] = useState([]);
   const [globalFilter, setGlobalFilter] = useState('');
-  const [showClockOutDialog, setShowClockOutDialog] = useState(false);
+  const [showTimesheetForm, setShowTimesheetForm] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [timeSummary, setTimeSummary] = useState({
     today: 0,
     week: 0,
@@ -197,15 +189,16 @@ const TimeClock = () => {
   };
 
   const handleClockOut = async () => {
-    setShowClockOutDialog(true);
+    setShowTimesheetForm(true);
   };
 
-  const confirmClockOut = async () => {
+  const handleTimesheetSubmit = async (formData) => {
     try {
-      const response = await api.post('/time-clock/clock-out');
+      setSubmitting(true);
+      const response = await api.post('/time-clock/clock-out', formData);
       setTimeEntry(response.data.data);
       setElapsedTime(0);
-      setShowClockOutDialog(false);
+      setShowTimesheetForm(false);
       fetchTimeEntries();
       fetchTimeSummary();
       toast({
@@ -219,6 +212,8 @@ const TimeClock = () => {
         description: message,
         variant: "destructive",
       });
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -320,6 +315,45 @@ const TimeClock = () => {
         const hours = Math.floor(minutes / 60);
         const mins = minutes % 60;
         return `${hours}h ${mins}m`;
+      }
+    },
+    {
+      accessorKey: "jobCode",
+      header: "Job Code",
+      cell: ({ row }) => row.getValue("jobCode") || '-'
+    },
+    {
+      accessorKey: "rate",
+      header: "Rate",
+      cell: ({ row }) => {
+        const rate = row.getValue("rate");
+        return rate ? `$${rate.toFixed(2)}` : '-';
+      }
+    },
+    {
+      accessorKey: "managerApproval.status",
+      header: "Status",
+      cell: ({ row }) => {
+        const entry = row.original;
+        if (entry.status === 'active') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              Active
+            </span>
+          );
+        }
+        
+        const status = entry.managerApproval?.status || 'pending';
+        const statusStyles = {
+          pending: "bg-yellow-100 text-yellow-800",
+          approved: "bg-green-100 text-green-800",
+          rejected: "bg-red-100 text-red-800"
+        };
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[status]}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
       }
     },
     {
@@ -624,22 +658,14 @@ const TimeClock = () => {
         </CardContent>
       </Card>
 
-      <AlertDialog open={showClockOutDialog} onOpenChange={setShowClockOutDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Clock Out Confirmation</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to clock out? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmClockOut}>
-              Clock Out
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {/* Timesheet Form */}
+      <TimesheetForm
+        isOpen={showTimesheetForm}
+        onClose={() => setShowTimesheetForm(false)}
+        onSubmit={handleTimesheetSubmit}
+        timeEntry={timeEntry}
+        loading={submitting}
+      />
     </div>
   );
 };

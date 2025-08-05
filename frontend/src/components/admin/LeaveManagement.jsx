@@ -91,12 +91,12 @@ const LeaveManagement = () => {
       setShowReviewDialog(false);
       setReviewNotes('');
       setSelectedRequest(null);
-      fetchLeaveRequests();
+        fetchLeaveRequests();
 
-      toast({
-        title: "Success",
-        description: `Leave request ${status.toLowerCase()} successfully`,
-      });
+        toast({
+          title: "Success",
+          description: `Leave request ${status.toLowerCase()} successfully`,
+        });
     } catch (error) {
       const { message } = handleApiError(error);
       toast({
@@ -317,7 +317,7 @@ const LeaveManagement = () => {
 
       {/* Leave Requests Table */}
       <Card>
-        <CardHeader>
+      <CardHeader>
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
               <CardTitle>Leave Requests</CardTitle>
@@ -382,11 +382,11 @@ const LeaveManagement = () => {
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+      </CardHeader>
+      <CardContent>
           <div className="rounded-md border overflow-x-auto">
-            <Table>
-              <TableHeader>
+          <Table>
+            <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
@@ -399,10 +399,10 @@ const LeaveManagement = () => {
                             )}
                       </TableHead>
                     ))}
-                  </TableRow>
+              </TableRow>
                 ))}
-              </TableHeader>
-              <TableBody>
+            </TableHeader>
+            <TableBody>
                 {table.getRowModel().rows?.length ? (
                   table.getRowModel().rows.map((row) => (
                     <TableRow key={row.id}>
@@ -412,7 +412,7 @@ const LeaveManagement = () => {
                             cell.column.columnDef.cell,
                             cell.getContext()
                           )}
-                        </TableCell>
+                  </TableCell>
                       ))}
                     </TableRow>
                   ))
@@ -423,7 +423,7 @@ const LeaveManagement = () => {
                       className="h-24 text-center"
                     >
                       No leave requests found
-                    </TableCell>
+                  </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -479,19 +479,19 @@ const LeaveManagement = () => {
           )}
 
           <DialogFooter className="flex space-x-2">
-            <Button
+                        <Button
               variant="outline"
               onClick={() => {
                 setShowReviewDialog(false);
                 setReviewNotes('');
               }}
-            >
+                        >
               Cancel
-            </Button>
-            <Button
-              variant="destructive"
+                        </Button>
+                        <Button
+                          variant="destructive"
               onClick={() => handleStatusUpdate('Rejected')}
-            >
+                        >
               Reject
             </Button>
             <Button
@@ -500,11 +500,11 @@ const LeaveManagement = () => {
               onClick={() => handleStatusUpdate('Approved')}
             >
               Approve
-            </Button>
+                        </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+                      </div>
   );
 };
 

@@ -27,17 +27,34 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "../../hooks/use-toast";
 import api from '../../lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
-import { Users, Coffee } from 'lucide-react';
+import { Users, Coffee, Search, Filter } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Input } from "@/components/ui/input";
+import {
+  flexRender,
+  getCoreRowModel,
+  useReactTable,
+  getPaginationRowModel,
+  getSortedRowModel,
+  getFilteredRowModel,
+} from "@tanstack/react-table";
 
 export default function AdminTimeTracking() {
   const [timeEntries, setTimeEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, active, break
   const [period, setPeriod] = useState('today'); // today, week, month
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showPendingOnly, setShowPendingOnly] = useState(false);
   const { toast } = useToast();
   const [activeEmployees, setActiveEmployees] = useState([]);
   const [onBreakEmployees, setOnBreakEmployees] = useState([]);
+  const [stats, setStats] = useState({
+    pendingRequests: 0,
+    overtimeApprovals: 0,
+    currentlyWorking: 0
+  });
 
   useEffect(() => {
     fetchTimeEntries();
@@ -49,21 +66,11 @@ export default function AdminTimeTracking() {
   const fetchTimeEntries = async () => {
     try {
       const response = await api.get(`/time-clock/${period}/all`);
-      console.log('Time entries response:', response.data); // Debug log
+      console.log('Time entries response:', response.data);
       
       const entries = response.data;
       
-      // Debug log each entry's structure
-      entries.forEach((entry, index) => {
-        console.log(`Entry ${index + 1}:`, {
-          id: entry._id,
-          status: entry.status,
-          employee: entry.employee,
-          breaks: entry.breaks
-        });
-      });
-      
-      // Separate active and completed entries
+      // Separate entries by status
       const active = entries.filter(entry => 
         entry.status === 'active' && 
         (!entry.breaks || !entry.breaks.some(b => !b.endTime))
@@ -73,9 +80,12 @@ export default function AdminTimeTracking() {
         entry.breaks && 
         entry.breaks.some(b => !b.endTime)
       );
-      const completed = entries.filter(entry => entry.status === 'completed');
+      const pendingAndCompleted = entries.filter(entry => 
+        entry.status === 'completed' || 
+        entry.managerApproval?.status === 'pending'
+      );
 
-      // Deduplicate active employees by name (handle multiple employee records for same person)
+      // Deduplicate active employees
       const uniqueActiveEmployees = [];
       const activeEmployeeNames = new Set();
       
@@ -87,7 +97,7 @@ export default function AdminTimeTracking() {
         }
       });
 
-      // Deduplicate on break employees by name
+      // Deduplicate on break employees
       const uniqueOnBreakEmployees = [];
       const onBreakEmployeeNames = new Set();
       
@@ -99,23 +109,55 @@ export default function AdminTimeTracking() {
         }
       });
 
-      console.log('Active employees (before dedup):', active.length);
-      console.log('Active employees (after dedup):', uniqueActiveEmployees.length);
-      console.log('On break employees (before dedup):', onBreak.length);
-      console.log('On break employees (after dedup):', uniqueOnBreakEmployees.length);
+      // Count pending approval requests
+      const pendingRequests = entries.filter(entry => 
+        entry.managerApproval?.status === 'pending'
+      ).length;
 
       setActiveEmployees(uniqueActiveEmployees);
       setOnBreakEmployees(uniqueOnBreakEmployees);
-      setTimeEntries(completed);
+      setTimeEntries(pendingAndCompleted); // Show both pending and completed entries
+      setStats({
+        pendingRequests,
+        overtimeApprovals: 0, // You can implement this later if needed
+        currentlyWorking: uniqueActiveEmployees.length + uniqueOnBreakEmployees.length
+      });
       setLoading(false);
     } catch (error) {
       const { message } = handleApiError(error);
-      console.error('Error fetching time entries:', error); // Debug log
+      console.error('Error fetching time entries:', error);
       toast({
         title: "Error",
         description: `Failed to fetch time entries: ${message}`,
         variant: "destructive",
       });
+    }
+  };
+
+  const handleApprove = async (timeEntryId, status) => {
+    try {
+      setLoading(true);
+      await api.put(`/time-clock/${timeEntryId}/approve`, {
+        status,
+        notes: '' // Optional notes
+      });
+      
+      toast({
+        title: "Success",
+        description: `Timesheet ${status} successfully`,
+      });
+      
+      // Refresh the data
+      fetchTimeEntries();
+    } catch (error) {
+      const { message } = handleApiError(error);
+      toast({
+        title: "Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -167,36 +209,200 @@ export default function AdminTimeTracking() {
     return timeEntries.filter(entry => entry.status === status).length;
   };
 
+  const columns = [
+    {
+      accessorKey: "employee.name",
+      header: "Employee",
+      cell: ({ row }) => {
+        const employee = row.original.employee;
+        return (
+          <div className="flex items-center gap-2">
+            {employee?.profilePic && (
+              <Avatar className="h-8 w-8"> 
+                <AvatarImage src={employee.profilePic} alt={employee.name} />
+                <AvatarFallback>{employee?.name?.[0]}</AvatarFallback>
+              </Avatar>
+            )}
+            <div>
+              <div className="font-medium">{employee?.name}</div>
+              <div className="text-sm text-muted-foreground">{employee?.employeeId}</div>
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      accessorKey: "date",
+      header: "Date",
+      cell: ({ row }) => format(new Date(row.getValue("date")), 'MMM d, yyyy')
+    },
+    {
+      accessorKey: "clockIn",
+      header: "Clock In",
+      cell: ({ row }) => format(new Date(row.getValue("clockIn")), 'HH:mm:ss')
+    },
+    {
+      accessorKey: "clockOut",
+      header: "Clock Out",
+      cell: ({ row }) => row.getValue("clockOut") ? format(new Date(row.getValue("clockOut")), 'HH:mm:ss') : '-'
+    },
+    {
+      accessorKey: "totalWorkTime",
+      header: "Duration",
+      cell: ({ row }) => {
+        const minutes = row.getValue("totalWorkTime");
+        if (!minutes) return '-';
+        const hours = Math.floor(minutes / 60);
+        const mins = minutes % 60;
+        return `${hours}h ${mins}m`;
+      }
+    },
+    {
+      accessorKey: "jobCode",
+      header: "Job Code",
+      cell: ({ row }) => row.getValue("jobCode") || '-'
+    },
+    {
+      accessorKey: "rate",
+      header: "Rate",
+      cell: ({ row }) => {
+        const rate = row.getValue("rate");
+        return rate ? `$${rate.toFixed(2)}` : '-';
+      }
+    },
+    {
+      accessorKey: "managerApproval.status",
+      header: "Status",
+      cell: ({ row }) => {
+        const entry = row.original;
+        if (entry.status === 'active') {
+          return (
+            <span className="px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              Active
+            </span>
+          );
+        }
+        
+        const status = entry.managerApproval?.status || 'pending';
+        const statusStyles = {
+          pending: "bg-yellow-100 text-yellow-800",
+          approved: "bg-green-100 text-green-800",
+          rejected: "bg-red-100 text-red-800"
+        };
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusStyles[status]}`}>
+            {status.charAt(0).toUpperCase() + status.slice(1)}
+          </span>
+        );
+      }
+    },
+    {
+      id: "actions",
+      header: "Actions",
+      cell: ({ row }) => {
+        const entry = row.original;
+        
+        // Only show buttons for completed entries with pending approval
+        if (entry.status === 'completed' && entry.managerApproval?.status === 'pending') {
+          return (
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                className="bg-green-50 hover:bg-green-100 text-green-600"
+                onClick={() => handleApprove(entry._id, 'approved')}
+                disabled={loading}
+              >
+                Approve
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="bg-red-50 hover:bg-red-100 text-red-600"
+                onClick={() => handleApprove(entry._id, 'rejected')}
+                disabled={loading}
+              >
+                Reject
+              </Button>
+            </div>
+          );
+        }
+        return null;
+      }
+    }
+  ];
+
+  // Filter entries based on pending status and search query
+  const filteredData = React.useMemo(() => {
+    return timeEntries.filter(entry => {
+      // First apply pending filter if active
+      if (showPendingOnly) {
+        if (!(entry.status === 'completed' && entry.managerApproval?.status === 'pending')) {
+          return false;
+        }
+      }
+
+      // Then apply search filter if there's a search query
+      if (searchQuery) {
+        const searchValue = searchQuery.toLowerCase();
+        return (
+          (entry.employee?.name || '').toLowerCase().includes(searchValue) ||
+          (entry.employee?.employeeId || '').toLowerCase().includes(searchValue) ||
+          (entry.jobCode || '').toLowerCase().includes(searchValue)
+        );
+      }
+
+      return true;
+    });
+  }, [timeEntries, showPendingOnly, searchQuery]);
+
+  const table = useReactTable({
+    data: filteredData,
+    columns,
+    getCoreRowModel: getCoreRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    initialState: {
+      pagination: {
+        pageSize: 10,
+      },
+    },
+  });
+
   // Update the summary card section
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Hours Overview</h1>
-        <div className="flex gap-4">
-          <Select value={period} onValueChange={setPeriod}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Select period" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="today">Today</SelectItem>
-              <SelectItem value="week">This Week</SelectItem>
-              <SelectItem value="month">This Month</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Filter by status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Employees</SelectItem>
-              <SelectItem value="active">Currently Working</SelectItem>
-              <SelectItem value="break">On Break</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
+    <div className="space-y-4">
+      {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Pending Requests
+            </CardTitle>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              className="h-4 w-4 text-muted-foreground"
+            >
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+              <circle cx="9" cy="7" r="4" />
+              <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+              <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.pendingRequests}</div>
+            <p className="text-xs text-muted-foreground">
+              Timesheets awaiting approval
+            </p>
+          </CardContent>
+        </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -205,26 +411,12 @@ export default function AdminTimeTracking() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{activeEmployees.length}</div>
-            <div className="text-xs text-muted-foreground">
-              Active Employees
-            </div>
-            <ScrollArea className="h-[100px] mt-2">
-              {activeEmployees.map(entry => (
-                <div key={entry._id || entry.employee?._id} className="flex items-center space-x-2 text-sm py-1">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={entry.employee?.profilePic} />
-                    <AvatarFallback>
-                      {entry.employee?.name ? entry.employee.name.split(' ').map(n => n[0]).join('') : 'N/A'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>{entry.employee?.name || 'N/A'}</span>
-                </div>
-              ))}
-            </ScrollArea>
+            <div className="text-2xl font-bold">{stats.currentlyWorking}</div>
+            <p className="text-xs text-muted-foreground">
+              Employees clocked in
+            </p>
           </CardContent>
         </Card>
-
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
@@ -234,104 +426,118 @@ export default function AdminTimeTracking() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{onBreakEmployees.length}</div>
-            <div className="text-xs text-muted-foreground">
-              Employees on Break
-            </div>
-            <ScrollArea className="h-[100px] mt-2">
-              {onBreakEmployees.map(entry => (
-                <div key={entry._id || entry.employee?._id} className="flex items-center space-x-2 text-sm py-1">
-                  <Avatar className="h-6 w-6">
-                    <AvatarImage src={entry.employee?.profilePic} />
-                    <AvatarFallback>
-                      {entry.employee?.name ? entry.employee.name.split(' ').map(n => n[0]).join('') : 'N/A'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <span>{entry.employee?.name || 'N/A'}</span>
-                </div>
-              ))}
-            </ScrollArea>
+            <p className="text-xs text-muted-foreground">
+              Employees on break
+            </p>
           </CardContent>
         </Card>
       </div>
 
+      {/* Time Entries Table */}
       <Card>
         <CardHeader>
           <CardTitle>Employee Time Entries</CardTitle>
           <CardDescription>
-            {period === 'today' 
-              ? "Real-time hours data for today" 
-              : period === 'week' 
-                ? "This week's time entries" 
-                : "This month's time entries"}
+            Manage and approve employee timesheets
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Employee</TableHead>
-                <TableHead>Clock In</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Current Break</TableHead>
-                <TableHead>Total Time</TableHead>
-                <TableHead>Total Breaks</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {loading ? (
+          <div className="flex items-center justify-between pb-4">
+            <div className="flex w-full max-w-sm items-center space-x-2">
+              <Input
+                placeholder="Search employee, ID, or job code..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-8"
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                className={`${
+                  showPendingOnly 
+                    ? 'bg-yellow-100 text-yellow-900 hover:bg-yellow-200' 
+                    : ''
+                }`}
+                onClick={() => setShowPendingOnly(!showPendingOnly)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Pending
+              </Button>
+            </div>
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              {table.getFilteredRowModel().rows.length} entries
+            </div>
+          </div>
+
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center">Loading...</TableCell>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    headerGroup.headers.map((header) => (
+                      <TableHead 
+                        key={header.id}
+                        onClick={header.column.getToggleSortingHandler()}
+                        className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
+                      </TableHead>
+                    ))
+                  ))}
                 </TableRow>
-              ) : filteredEntries.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center">No time entries found</TableCell>
-                </TableRow>
-              ) : (
-                filteredEntries.map((entry) => (
-                  <TableRow key={entry._id}>
-                    <TableCell className="flex items-center gap-2">
-                      <Avatar>
-                        <AvatarImage src={entry.employee?.profilePic} />
-                        <AvatarFallback>
-                          {entry.employee?.name ? entry.employee.name.split(' ').map(n => n[0]).join('') : 'N/A'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <div className="font-medium">{entry.employee?.name || 'N/A'}</div>
-                        <div className="text-sm text-muted-foreground">
-                          {entry.employee?.employeeId || 'N/A'}
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{format(new Date(entry.clockIn), 'hh:mm a')}</p>
-                        <p className="text-sm text-gray-500">
-                          {formatDistanceToNow(new Date(entry.clockIn), { addSuffix: true })}
-                        </p>
-                      </div>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(entry.status)}</TableCell>
-                    <TableCell>
-                      {entry.breaks && entry.breaks.length > 0 && !entry.breaks[entry.breaks.length - 1].endTime ? (
-                        <p className="text-yellow-600">
-                          {formatDistanceToNow(new Date(entry.breaks[entry.breaks.length - 1].startTime), { addSuffix: false })}
-                        </p>
-                      ) : (
-                        <p className="text-gray-500">-</p>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{calculateElapsedTime(entry.clockIn, entry.clockOut, entry.breaks)}</p>
-                    </TableCell>
-                    <TableCell>
-                      <p className="font-medium">{entry.breaks?.length || 0} breaks</p>
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} className="text-center">
+                      No time entries found
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow key={row.id}>
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between py-4">
+            <span className="text-sm text-muted-foreground">
+              Page {table.getState().pagination.pageIndex + 1} of{" "}
+              {table.getPageCount()}
+            </span>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.previousPage()}
+                disabled={!table.getCanPreviousPage()}
+              >
+                Previous
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => table.nextPage()}
+                disabled={!table.getCanNextPage()}
+              >
+                Next
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
