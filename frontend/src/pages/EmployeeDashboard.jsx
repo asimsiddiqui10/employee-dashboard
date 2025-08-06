@@ -100,9 +100,9 @@ const EmployeeDashboard = () => {
             </div>
             <div className="grid gap-6">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <NotificationsCard />
                 <TimeOffCard />
                 <TasksCard />
-                <NotificationsCard />
               </div>
               <MyTeamCard />
             </div>

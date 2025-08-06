@@ -27,7 +27,8 @@ import DepartmentDetails from './components/admin/DepartmentDetails'
 import TimeTrackingWrapper from './components/employee/TimeTrackingWrapper'
 import AdminTimeTracking from './components/admin/AdminTimeTracking'
 import MyTeam from './components/employee/MyTeam'
-
+import Requests from './components/employee/Requests';
+import RequestManagement from './components/admin/RequestManagement';
 
 
 // Error Boundary Component
@@ -85,7 +86,7 @@ function App() {
               <Route path="attendance" element={<UnderProgress/>}></Route>
               <Route path="teams" element={<UnderProgress/>}></Route>
               <Route path="announcements" element={<UnderProgress/>}></Route>
-              <Route path="requests" element={<UnderProgress/>}></Route>
+              <Route path="requests" element={<RequestManagement />} />
               <Route path="tasks" element={<UnderProgress/>}></Route>
               <Route path="expenses" element={<UnderProgress/>}></Route>
               <Route path="documents" element={<DocumentUpload />} />
@@ -111,7 +112,7 @@ function App() {
               <Route path="time-tracking" element={<TimeTrackingWrapper />} />
               <Route path="leave" element={<LeaveRequest />} />
               <Route path="announcements" element={<UnderProgress />} />
-              <Route path="requests" element={<UnderProgress />} />
+              <Route path="requests" element={<Requests />} />
               <Route path="tasks" element={<UnderProgress />} />
               <Route path="reimbursements" element={<UnderProgress />} />
               <Route path="documents" element={<MyDocuments />} />

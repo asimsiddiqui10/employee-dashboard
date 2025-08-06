@@ -20,7 +20,8 @@ import {
   HelpCircle,
   LogOut,
   Menu,
-  CheckCircle
+  CheckCircle,
+  FileText
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 import { useSidebar } from '../ui/sidebar';
@@ -96,7 +97,7 @@ export function AdminSidebarNew() {
     },
     {
       title: "Requests",
-      icon: InboxIcon,
+      icon: FileText,
       path: "/admin-dashboard/requests"
     },
     {
