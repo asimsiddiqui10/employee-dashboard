@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle } from 'lucide-react';
+import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle, Clock } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import api from '@/lib/axios';
 import { toast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 
 const getNotificationIcon = (type) => {
   switch (type) {
@@ -91,60 +93,112 @@ const EmployeeNotifications = () => {
   }
 
   return (
-    <div className="p-6">
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold">My Notifications</h2>
-        <div className="flex gap-2">
-          {notificationTypes.map(type => (
-            <Button
-              key={type.value}
-              variant={selectedType === type.value ? "default" : "outline"}
-              onClick={() => setSelectedType(type.value)}
-              className="flex items-center gap-2"
-            >
-              <type.icon className="h-4 w-4" />
-              {type.label}
-            </Button>
-          ))}
-        </div>
+    <div className="container mx-auto p-6">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold mb-2">Notifications</h1>
+        <p className="text-muted-foreground">Stay updated with company announcements and important information</p>
       </div>
-      
+
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {notificationTypes.map((type) => {
+          const Icon = type.icon;
+          return (
+            <button
+              key={type.value}
+              onClick={() => setSelectedType(type.value)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                selectedType === type.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted hover:bg-muted/80'
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {type.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Notifications List */}
       <div className="space-y-4">
         {filteredNotifications.length === 0 ? (
-          <p className="text-muted-foreground text-center py-8">No notifications found</p>
-        ) : (
-          filteredNotifications.map(notification => (
-            <div 
-              key={notification._id} 
-              className={`p-4 border rounded-lg ${
-                notification.isRead ? 'bg-card' : 'bg-primary/5 border-primary/20'
-              }`}
-              onClick={() => !notification.isRead && markAsRead(notification._id)}
-            >
-              <div className="flex items-start gap-3">
-                <div className={`shrink-0 rounded-full p-1.5 ${getNotificationStyle(notification.type)}`}>
-                  {getNotificationIcon(notification.type)}
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-lg">{notification.title}</h3>
-                    <Badge variant="outline" className={getNotificationStyle(notification.type)}>
-                      {notification.type}
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    From: {notification.sender?.name || 'System'} • 
-                    {new Date(notification.createdAt).toLocaleString()}
-                  </p>
-                  <p className="mt-2">{notification.message}</p>
-                  {notification.link && (
-                    <Button variant="link" className="mt-2 p-0" asChild>
-                      <a href={notification.link}>View Details</a>
-                    </Button>
-                  )}
-                </div>
+          <Card>
+            <CardContent className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-medium mb-2">No notifications</h3>
+                <p className="text-muted-foreground">
+                  {selectedType === 'all' 
+                    ? 'You have no notifications at this time.'
+                    : `You have no ${selectedType} notifications.`
+                  }
+                </p>
               </div>
-            </div>
+            </CardContent>
+          </Card>
+        ) : (
+          filteredNotifications.map((notification) => (
+            <Card 
+              key={notification._id}
+              className={`cursor-pointer transition-all hover:shadow-md ${
+                !notification.isRead ? 'border-primary/50 bg-primary/5' : ''
+              }`}
+              onClick={() => markAsRead(notification._id)}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <div className={`p-2 rounded-lg ${
+                    notification.type === 'payroll' ? 'bg-blue-100 text-blue-600' :
+                    notification.type === 'company' ? 'bg-purple-100 text-purple-600' :
+                    notification.type === 'announcement' ? 'bg-yellow-100 text-yellow-600' :
+                    notification.type === 'policy' ? 'bg-red-100 text-red-600' :
+                    'bg-gray-100 text-gray-600'
+                  }`}>
+                    {notification.type === 'payroll' && <DollarSign className="h-5 w-5" />}
+                    {notification.type === 'company' && <Building2 className="h-5 w-5" />}
+                    {notification.type === 'announcement' && <Megaphone className="h-5 w-5" />}
+                    {notification.type === 'policy' && <FileText className="h-5 w-5" />}
+                    {!['payroll', 'company', 'announcement', 'policy'].includes(notification.type) && 
+                      <Bell className="h-5 w-5" />
+                    }
+                  </div>
+                  
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between mb-2">
+                      <h3 className="font-semibold text-lg">{notification.title}</h3>
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="text-xs">
+                          {notification.type}
+                        </Badge>
+                        {!notification.isRead && (
+                          <div className="w-2 h-2 bg-primary rounded-full"></div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <p className="text-muted-foreground mb-3">
+                      {notification.message}
+                    </p>
+                    
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {format(new Date(notification.createdAt), 'MMM d, yyyy h:mm a')}
+                      </span>
+                      {notification.priority && (
+                        <Badge 
+                          variant={notification.priority === 'high' ? 'destructive' : 'secondary'}
+                          className="text-xs"
+                        >
+                          {notification.priority} priority
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))
         )}
       </div>

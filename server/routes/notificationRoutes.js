@@ -1,32 +1,23 @@
-import { Router } from 'express';
-import {
-  createNotification,
-  getMyNotifications,
-  markAsRead,
+import express from 'express';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { roleMiddleware } from '../middleware/roleMiddleware.js';
+import { 
+  createNotification, 
+  getNotifications, 
+  markAsRead, 
   getUnreadCount,
   getAllNotifications
 } from '../controllers/notificationController.js';
-import authMiddleware from '../middleware/authMiddleware.js';
-import { roleMiddleware } from '../middleware/roleMiddleware.js';
 
-const router = Router();
+const router = express.Router();
 
-// Protected routes
-router.use(authMiddleware);
+// Employee routes
+router.get('/', authMiddleware, getNotifications);
+router.patch('/:notificationId/read', authMiddleware, markAsRead);
+router.get('/unread-count', authMiddleware, getUnreadCount);
 
-// Get all notifications (admin only)
-router.get('/all', roleMiddleware(['admin']), getAllNotifications);
-
-// Get my notifications
-router.get('/', getMyNotifications);
-
-// Get unread notifications count
-router.get('/unread', getUnreadCount);
-
-// Mark notification as read
-router.patch('/:id/read', markAsRead);
-
-// Create notification (admin only)
-router.post('/', roleMiddleware(['admin']), createNotification);
+// Admin routes
+router.post('/', authMiddleware, roleMiddleware(['admin']), createNotification);
+router.get('/all', authMiddleware, roleMiddleware(['admin']), getAllNotifications);
 
 export default router;

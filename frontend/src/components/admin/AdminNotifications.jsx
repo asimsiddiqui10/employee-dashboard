@@ -203,6 +203,10 @@ const AdminNotifications = () => {
       });
       setSelectedEmployees([]);
       setSelectedDepartments([]);
+      
+      // Refresh notifications list
+      fetchNotifications();
+      
     } catch (error) {
       const { message } = handleApiError(error);
       setStatus({ type: 'error', message });

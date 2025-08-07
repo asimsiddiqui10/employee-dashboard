@@ -8,6 +8,27 @@ const notificationTypes = {
   OTHER: 'other'
 };
 
+const recipientSchema = new mongoose.Schema({
+  employeeId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
+    required: true
+  },
+  read: {
+    type: Boolean,
+    default: false
+  },
+  readAt: {
+    type: Date,
+    default: null
+  },
+  readBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Employee',
+    default: null
+  }
+}, { _id: false });
+
 const notificationSchema = new mongoose.Schema({
   type: {
     type: String,
@@ -28,18 +49,7 @@ const notificationSchema = new mongoose.Schema({
     ref: 'User',
     required: true
   },
-  recipients: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User'
-  }],
-  isRead: {
-    type: Boolean,
-    default: false
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  },
+  recipients: [recipientSchema],
   priority: {
     type: String,
     enum: ['low', 'medium', 'high'],
@@ -49,8 +59,34 @@ const notificationSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  metadata: {}
+  metadata: {},
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
 });
+
+// Index for efficient queries
+notificationSchema.index({ 'recipients.employeeId': 1, createdAt: -1 });
+notificationSchema.index({ 'recipients.employeeId': 1, 'recipients.read': 1 });
+
+// Virtual to check if notification is read by specific employee
+notificationSchema.methods.isReadByEmployee = function(employeeId) {
+  const recipient = this.recipients.find(r => r.employeeId.toString() === employeeId.toString());
+  return recipient ? recipient.read : false;
+};
+
+// Method to mark as read by specific employee
+notificationSchema.methods.markAsReadByEmployee = function(employeeId) {
+  const recipient = this.recipients.find(r => r.employeeId.toString() === employeeId.toString());
+  if (recipient && !recipient.read) {
+    recipient.read = true;
+    recipient.readAt = new Date();
+    recipient.readBy = employeeId;
+    return true;
+  }
+  return false;
+};
 
 const Notification = mongoose.model('Notification', notificationSchema);
 export default Notification; 
