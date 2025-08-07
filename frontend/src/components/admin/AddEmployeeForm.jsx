@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { departments } from '@/lib/departments';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 const AddEmployeeForm = ({ onClose, onSubmit }) => {
   const [error, setError] = useState('');
@@ -26,6 +28,15 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
     // Flag for admin creation
     isAdmin: false,
 
+    // Leave configuration
+    leaveSummary: {
+      totalLeaves: 20,
+      leavesTaken: 0,
+      leavesApproved: 0,
+      leavesRejected: 0,
+      leavesRemaining: 20
+    },
+
     // Optional fields
     phoneNumber: '',
     dateOfBirth: '',
@@ -49,6 +60,7 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
     if (name === 'isAdmin') {
       setIsAdmin(checked);
       setForm(prev => ({ 
@@ -65,6 +77,41 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
           compensationValue: ''
         })
       }));
+      return;
+    }
+
+    if (name.includes('leaveSummary')) {
+      const field = name.split('.')[1];
+      const numValue = parseInt(value) || 0;
+
+      setForm(prev => {
+        const newLeaveSummary = { ...prev.leaveSummary };
+
+        switch (field) {
+          case 'totalLeaves':
+            // When total leaves changes, adjust remaining leaves
+            newLeaveSummary.totalLeaves = numValue;
+            newLeaveSummary.leavesRemaining = numValue - newLeaveSummary.leavesTaken;
+            break;
+          case 'leavesTaken':
+            // When taken leaves changes, adjust remaining leaves
+            newLeaveSummary.leavesTaken = numValue;
+            newLeaveSummary.leavesRemaining = newLeaveSummary.totalLeaves - numValue;
+            break;
+          case 'leavesRemaining':
+            // When remaining leaves changes, adjust taken leaves
+            newLeaveSummary.leavesRemaining = numValue;
+            newLeaveSummary.leavesTaken = newLeaveSummary.totalLeaves - numValue;
+            break;
+        }
+
+        // Ensure no negative values
+        newLeaveSummary.leavesRemaining = Math.max(0, newLeaveSummary.leavesRemaining);
+        newLeaveSummary.leavesTaken = Math.max(0, newLeaveSummary.leavesTaken);
+        newLeaveSummary.totalLeaves = Math.max(newLeaveSummary.leavesTaken, newLeaveSummary.totalLeaves);
+
+        return { ...prev, leaveSummary: newLeaveSummary };
+      });
       return;
     }
 
@@ -366,6 +413,37 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
                   className="p-2 border rounded col-span-2"
                   rows="3"
                 />
+
+                {/* Add Leave Configuration */}
+                <div className="col-span-2">
+                  <h4 className="text-sm font-medium text-gray-700 mb-2">Leave Configuration</h4>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="totalLeaves">Total Leave Days (Per Year)</Label>
+                      <Input
+                        id="totalLeaves"
+                        name="leaveSummary.totalLeaves"
+                        type="number"
+                        value={form.leaveSummary.totalLeaves}
+                        onChange={handleChange}
+                        className="p-2 border rounded"
+                        min="0"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="leavesRemaining">Initial Available Days</Label>
+                      <Input
+                        id="leavesRemaining"
+                        name="leaveSummary.leavesRemaining"
+                        type="number"
+                        value={form.leaveSummary.leavesRemaining}
+                        onChange={handleChange}
+                        className="p-2 border rounded"
+                        min="0"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 

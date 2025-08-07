@@ -151,6 +151,42 @@ const EmployeeDetails = () => {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    
+    if (name.includes('leaveSummary')) {
+      const field = name.split('.')[1];
+      const numValue = parseInt(value) || 0;
+
+      setForm(prev => {
+        const newLeaveSummary = { ...prev.leaveSummary };
+
+        switch (field) {
+          case 'totalLeaves':
+            // When total leaves changes, adjust remaining leaves
+            newLeaveSummary.totalLeaves = numValue;
+            newLeaveSummary.leavesRemaining = numValue - newLeaveSummary.leavesTaken;
+            break;
+          case 'leavesTaken':
+            // When taken leaves changes, adjust remaining leaves
+            newLeaveSummary.leavesTaken = numValue;
+            newLeaveSummary.leavesRemaining = newLeaveSummary.totalLeaves - numValue;
+            break;
+          case 'leavesRemaining':
+            // When remaining leaves changes, adjust taken leaves
+            newLeaveSummary.leavesRemaining = numValue;
+            newLeaveSummary.leavesTaken = newLeaveSummary.totalLeaves - numValue;
+            break;
+        }
+
+        // Ensure no negative values
+        newLeaveSummary.leavesRemaining = Math.max(0, newLeaveSummary.leavesRemaining);
+        newLeaveSummary.leavesTaken = Math.max(0, newLeaveSummary.leavesTaken);
+        newLeaveSummary.totalLeaves = Math.max(newLeaveSummary.leavesTaken, newLeaveSummary.totalLeaves);
+
+        return { ...prev, leaveSummary: newLeaveSummary };
+      });
+      return;
+    }
+
     if (name.includes('.')) {
       const [parent, child] = name.split('.');
       setForm(prev => ({
@@ -830,66 +866,165 @@ const EmployeeDetails = () => {
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Leave History</h3>
+              <h3 className="text-lg font-semibold">Leave Management</h3>
             </div>
             <Separator className="my-4" />
-            <div className="space-y-6 min-h-[200px]">
-              {leaveLoading ? (
-                <div className="flex items-center justify-center h-[200px]">
-                  <div className="text-muted-foreground">Loading leave history...</div>
+
+            {/* Leave Configuration */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-semibold">Leave Configuration</h4>
+                  {!isEditing && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setIsEditing(true)}
+                      className="h-8"
+                    >
+                      <Pencil className="h-4 w-4 mr-2" />
+                      Edit
+                    </Button>
+                  )}
                 </div>
-              ) : leaveRequests.length === 0 ? (
-                <div className="flex items-center justify-center h-[200px]">
-                  <p className="text-sm text-muted-foreground">No leave requests found</p>
-                </div>
-              ) : (
-                <div className="grid gap-3">
-                  {leaveRequests.map((request) => (
-                    <div key={request._id} className="flex justify-between items-center p-4 rounded-lg border bg-card text-card-foreground">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <Badge 
-                            variant={
-                              request.status === 'Approved' 
-                                ? 'default' 
-                                : request.status === 'Rejected' 
-                                ? 'destructive' 
-                                : 'secondary'
-                            }
-                            className={
-                              request.status === 'Approved' 
-                                ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' 
-                                : request.status === 'Rejected' 
-                                ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
-                                : 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20'
-                            }
-                          >
-                            {request.status}
-                          </Badge>
-                          <span className="text-sm font-medium">{request.leaveType}</span>
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {request.totalDays} days • Requested on {new Date(request.createdAt).toLocaleDateString()}
-                        </div>
-                        {request.description && (
-                          <div className="text-sm text-muted-foreground mt-2">
-                            {request.description}
-                          </div>
-                        )}
-                        {request.reviewNotes && (
-                          <div className="text-sm text-muted-foreground mt-2">
-                            <span className="font-medium">Review Notes:</span> {request.reviewNotes}
-                          </div>
-                        )}
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {isEditing ? (
+                    <>
+                      <div className="space-y-2">
+                        <Label>Total Leave Days (Per Year)</Label>
+                        <Input
+                          type="number"
+                          name="leaveSummary.totalLeaves"
+                          value={form.leaveSummary?.totalLeaves || 0}
+                          onChange={handleInputChange}
+                          min="0"
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Total days allocated for the year
+                        </p>
                       </div>
-                    </div>
-                  ))}
+                      <div className="space-y-2">
+                        <Label>Leaves Remaining</Label>
+                        <Input
+                          type="number"
+                          name="leaveSummary.leavesRemaining"
+                          value={form.leaveSummary?.leavesRemaining || 0}
+                          onChange={handleInputChange}
+                          min="0"
+                          max={form.leaveSummary?.totalLeaves || 0}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Available days = Total - Taken
+                        </p>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Leaves Taken</Label>
+                        <Input
+                          type="number"
+                          name="leaveSummary.leavesTaken"
+                          value={form.leaveSummary?.leavesTaken || 0}
+                          onChange={handleInputChange}
+                          min="0"
+                          max={form.leaveSummary?.totalLeaves || 0}
+                        />
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Used days = Total - Remaining
+                        </p>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="p-4 bg-green-50 rounded-lg">
+                        <div className="text-sm text-green-600 font-medium">Total Leave Days</div>
+                        <div className="text-2xl font-bold text-green-600 mt-1">
+                          {form.leaveSummary?.totalLeaves || 0}
+                        </div>
+                      </div>
+                      <div className="p-4 bg-blue-50 rounded-lg">
+                        <div className="text-sm text-blue-600 font-medium">Leaves Remaining</div>
+                        <div className="text-2xl font-bold text-blue-600 mt-1">
+                          {form.leaveSummary?.leavesRemaining || 0}
+                        </div>
+                      </div>
+                      <div className="p-4 bg-orange-50 rounded-lg">
+                        <div className="text-sm text-orange-600 font-medium">Leaves Taken</div>
+                        <div className="text-2xl font-bold text-orange-600 mt-1">
+                          {form.leaveSummary?.leavesTaken || 0}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
+
+            {/* Leave History */}
+            <Card>
+              <CardHeader>
+                <h4 className="text-base font-semibold">Leave History</h4>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6 min-h-[200px]">
+                  {leaveLoading ? (
+                    <div className="flex items-center justify-center h-[200px]">
+                      <div className="text-muted-foreground">Loading leave history...</div>
+                    </div>
+                  ) : leaveRequests.length === 0 ? (
+                    <div className="flex items-center justify-center h-[200px]">
+                      <p className="text-sm text-muted-foreground">No leave requests found</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {leaveRequests.map((request) => (
+                        <div key={request._id} className="flex justify-between items-center p-4 rounded-lg border bg-card text-card-foreground">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-3 mb-2">
+                              <Badge 
+                                variant={
+                                  request.status === 'Approved' 
+                                    ? 'default' 
+                                    : request.status === 'Rejected' 
+                                    ? 'destructive' 
+                                    : 'secondary'
+                                }
+                                className={
+                                  request.status === 'Approved' 
+                                    ? 'bg-green-500/10 text-green-500 hover:bg-green-500/20' 
+                                    : request.status === 'Rejected' 
+                                    ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20' 
+                                    : 'bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20'
+                                }
+                              >
+                                {request.status}
+                              </Badge>
+                              <span className="text-sm font-medium">{request.leaveType}</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {new Date(request.startDate).toLocaleDateString()} - {new Date(request.endDate).toLocaleDateString()}
+                            </div>
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {request.totalDays} days • Requested on {new Date(request.createdAt).toLocaleDateString()}
+                            </div>
+                            {request.description && (
+                              <div className="text-sm text-muted-foreground mt-2">
+                                {request.description}
+                              </div>
+                            )}
+                            {request.reviewNotes && (
+                              <div className="text-sm text-muted-foreground mt-2">
+                                <span className="font-medium">Review Notes:</span> {request.reviewNotes}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         );
       default:

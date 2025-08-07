@@ -33,14 +33,15 @@ export const requestLeave = async (req, res) => {
       });
     }
 
-    // Create leave request
+    // Create leave request without updating leave summary
     const leaveRequest = new LeaveRequest({
       employee: employeeId,
       leaveType,
       startDate,
       endDate,
       totalDays,
-      description
+      description,
+      status: 'Pending' // Explicitly set status
     });
 
     await leaveRequest.save({ session });
@@ -199,6 +200,16 @@ export const updateLeaveStatus = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Leave request not found' });
     }
 
+    // If request was already approved/rejected, don't allow changes
+    if (leaveRequest.status !== 'Pending') {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ 
+        success: false, 
+        message: `Leave request has already been ${leaveRequest.status.toLowerCase()}` 
+      });
+    }
+
     // Update request status
     leaveRequest.status = status;
     leaveRequest.reviewedBy = adminId;
@@ -219,7 +230,7 @@ export const updateLeaveStatus = async (req, res) => {
         });
       }
 
-      // Update leave summary
+      // Update leave summary only on approval
       await Employee.findByIdAndUpdate(
         employee._id,
         {
@@ -227,6 +238,17 @@ export const updateLeaveStatus = async (req, res) => {
             'leaveSummary.leavesApproved': leaveRequest.totalDays,
             'leaveSummary.leavesTaken': leaveRequest.totalDays,
             'leaveSummary.leavesRemaining': -leaveRequest.totalDays
+          }
+        },
+        { session, new: true }
+      );
+    } else if (status === 'Rejected') {
+      // Update rejected count
+      await Employee.findByIdAndUpdate(
+        employee._id,
+        {
+          $inc: {
+            'leaveSummary.leavesRejected': leaveRequest.totalDays
           }
         },
         { session, new: true }
