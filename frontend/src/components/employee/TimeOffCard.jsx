@@ -7,6 +7,54 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, AlertCircle, Plus } from 'lucide-react';
+import { format } from 'date-fns';
+
+// Custom Semi-Circle Progress Component
+const SemiCircularProgress = ({ value, total, size = 120, strokeWidth = 12 }) => {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = radius * Math.PI; // Half circle
+  const offset = circumference - (value / total) * circumference;
+
+  return (
+    <div className="relative flex items-center justify-center">
+      <svg
+        width={size}
+        height={size / 2 + strokeWidth / 2}
+        viewBox={`0 0 ${size} ${size / 2 + strokeWidth / 2}`}
+      >
+        {/* Background semi-circle */}
+        <path
+          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          className="text-muted-foreground/20"
+          strokeLinecap="round"
+        />
+        {/* Progress semi-circle */}
+        <path
+          d={`M ${strokeWidth / 2} ${size / 2} A ${radius} ${radius} 0 0 1 ${size - strokeWidth / 2} ${size / 2}`}
+          stroke="currentColor"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          className="text-primary transition-all duration-500 ease-in-out"
+        />
+      </svg>
+      {/* Center text */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ marginTop: '15px' }}>
+        <div className="text-2xl font-bold text-primary">
+          {value}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          OUT OF {total}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const TimeOffCard = () => {
   const navigate = useNavigate();
@@ -44,11 +92,11 @@ const TimeOffCard = () => {
 
   const getStatusBadge = (status) => {
     const styles = {
-      Pending: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
-      Approved: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
-      Rejected: "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+      Pending: "bg-yellow-500/10 text-yellow-600 hover:bg-yellow-500/20 border-yellow-500/20 dark:text-yellow-400 dark:border-yellow-400/30",
+      Approved: "bg-green-500/10 text-green-600 hover:bg-green-500/20 border-green-500/20 dark:text-green-400 dark:border-green-400/30", 
+      Rejected: "bg-red-500/10 text-red-600 hover:bg-red-500/20 border-red-500/20 dark:text-red-400 dark:border-red-400/30"
     };
-    return <Badge className={styles[status]}>{status}</Badge>;
+    return <Badge className={styles[status]} variant="outline">{status}</Badge>;
   };
 
   const handleRequestLeave = () => {
@@ -57,12 +105,23 @@ const TimeOffCard = () => {
 
   if (loading) {
     return (
-      <Card className="h-full">
+      <Card className="h-80">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <Calendar className="h-5 w-5" />
-            Time Off
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-base font-semibold flex items-center gap-2">
+              <Calendar className="h-5 w-5" />
+              Leaves
+            </CardTitle>
+            <Button 
+              size="sm"
+              onClick={handleRequestLeave}
+              className="h-7 px-2 text-xs bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
+              variant="secondary"
+            >
+              <Plus className="h-3 w-3 mr-1" />
+              Request Time-Off
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center h-32">
@@ -73,34 +132,42 @@ const TimeOffCard = () => {
     );
   }
 
+  const totalLeaves = leaveSummary?.totalLeaves || 20;
+  const leavesTaken = leaveSummary?.leavesTaken || 0;
+
   return (
-    <Card className="h-full">
+    <Card className="h-80">
       <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold flex items-center gap-2">
-          <Calendar className="h-5 w-5" />
-          Time Off
-        </CardTitle>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <Calendar className="h-5 w-5" />
+            Leaves
+          </CardTitle>
+          <Button 
+            size="sm"
+            onClick={handleRequestLeave}
+            className="h-7 px-2 text-xs bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
+            variant="secondary"
+          >
+            <Plus className="h-3 w-3 mr-1" />
+            Request Time-Off
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
-          {/* Leave Summary */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center p-3 bg-green-50 rounded-lg">
-              <div className="text-2xl font-bold text-green-600">
-                {leaveSummary?.leavesRemaining || 0}
-              </div>
-              <div className="text-xs text-muted-foreground">Available Days</div>
-            </div>
-            <div className="text-center p-3 bg-blue-50 rounded-lg">
-              <div className="text-2xl font-bold text-blue-600">
-                {leaveSummary?.leavesTaken || 0}
-              </div>
-              <div className="text-xs text-muted-foreground">Days Taken</div>
-            </div>
+      <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-2">
+        <div className="space-y-4 flex-1 overflow-y-auto">
+          {/* Semi-Circular Progress Chart */}
+          <div className="flex justify-center pt-2">
+            <SemiCircularProgress 
+              value={leavesTaken} 
+              total={totalLeaves}
+              size={120}
+              strokeWidth={12}
+            />
           </div>
 
           {/* Recent Requests */}
-          <div className="space-y-2">
+          <div className="space-y-2 pt-1">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Recent Requests</span>
               <span className="text-xs text-muted-foreground">
@@ -109,19 +176,28 @@ const TimeOffCard = () => {
             </div>
             
             {recentRequests.length > 0 ? (
-              <div className="space-y-2 max-h-24 overflow-y-auto">
-                {recentRequests.slice(0, 2).map((request) => (
-                  <div key={request._id} className="flex items-center justify-between p-2 bg-muted/50 rounded text-xs">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
-                      <span className="font-medium">{request.leaveType}</span>
+              <div className="space-y-1 max-h-24 overflow-y-auto">
+                {recentRequests.slice(0, 3).map((request) => (
+                  <div key={request._id} className="flex items-center justify-between p-1.5 rounded-md text-xs border border-border/50 bg-card">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <Calendar className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-foreground text-xs">{request.leaveType}</span>
+                        <span className="text-muted-foreground ml-1.5 text-xs">
+                          {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d')}
+                        </span>
+                      </div>
                     </div>
-                    {getStatusBadge(request.status)}
+                    <div className="flex-shrink-0">
+                      <Badge className={`${getStatusBadge(request.status).props.className} text-xs px-1 py-0 h-4`} variant="outline">
+                        {request.status}
+                      </Badge>
+                    </div>
                   </div>
                 ))}
-                {recentRequests.length > 2 && (
-                  <div className="text-xs text-muted-foreground text-center">
-                    +{recentRequests.length - 2} more requests
+                {recentRequests.length > 3 && (
+                  <div className="text-xs text-muted-foreground text-center pt-0.5">
+                    +{recentRequests.length - 3} more requests
                   </div>
                 )}
               </div>
@@ -131,42 +207,23 @@ const TimeOffCard = () => {
               </div>
             )}
           </div>
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
-            <Button 
-              className="flex-1" 
-              onClick={handleRequestLeave}
-              size="sm"
-            >
-              <Plus className="h-4 w-4 mr-1" />
-              Request Leave
-            </Button>
-            <Button 
-              variant="outline" 
-              size="sm"
-              onClick={() => navigate('/employee-dashboard/leave')}
-            >
-              <Clock className="h-4 w-4" />
-            </Button>
-          </div>
-
-          {/* Warning if low balance */}
-          {leaveSummary?.leavesRemaining <= 5 && leaveSummary?.leavesRemaining > 0 && (
-            <div className="flex items-center gap-2 p-2 bg-yellow-50 rounded text-xs text-yellow-700">
-              <AlertCircle className="h-3 w-3" />
-              <span>Low leave balance remaining</span>
-            </div>
-          )}
-
-          {/* Warning if no balance */}
-          {leaveSummary?.leavesRemaining === 0 && (
-            <div className="flex items-center gap-2 p-2 bg-red-50 rounded text-xs text-red-700">
-              <AlertCircle className="h-3 w-3" />
-              <span>No leave balance available</span>
-            </div>
-          )}
         </div>
+
+        {/* Warning if low balance */}
+        {leaveSummary?.leavesRemaining <= 5 && leaveSummary?.leavesRemaining > 0 && (
+          <div className="flex items-center gap-2 p-2 rounded-md text-xs text-yellow-700 dark:text-yellow-400 mt-2 border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20">
+            <AlertCircle className="h-3 w-3" />
+            <span>Low leave balance remaining</span>
+          </div>
+        )}
+
+        {/* Warning if no balance */}
+        {leaveSummary?.leavesRemaining === 0 && (
+          <div className="flex items-center gap-2 p-2 rounded-md text-xs text-red-700 dark:text-red-400 mt-2 border border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+            <AlertCircle className="h-3 w-3" />
+            <span>No leave balance available</span>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

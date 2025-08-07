@@ -18,7 +18,8 @@ import {
   LineChart,
   MessageSquare,
   LogOut,
-  Menu
+  Menu,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 import { useSidebar } from '../ui/sidebar';
@@ -46,11 +47,7 @@ const sidebarData = [
     icon: User,
     path: "/employee-dashboard/my-details"
   },
-  {
-    title: "Payroll",
-    icon: DollarSign,
-    path: "/employee-dashboard/payroll"
-  },
+ 
   {
     title: "Notifications",
     icon: Bell,
@@ -61,20 +58,29 @@ const sidebarData = [
     icon: Clock,
     path: "/employee-dashboard/time-tracking"
   },
+
+  {
+    title: "Payroll",
+    icon: DollarSign,
+    path: "/employee-dashboard/payroll"
+  },
+
+  {
+    title: "Leave",
+    icon: CalendarDays,
+    path: "/employee-dashboard/leave"
+  },
+
   {
     title: "Documents",
     icon: FileText,
     path: "/employee-dashboard/documents"
   },
+  
   {
-    title: "Time Off",
-    icon: CalendarDays,
-    path: "/employee-dashboard/leave"
-  },
-  {
-    title: "Announcements",
-    icon: Megaphone,
-    path: "/employee-dashboard/announcements"
+    title: "Meetings",
+    icon: Calendar,
+    path: "/employee-dashboard/meetings"
   },
   {
     title: "Requests",

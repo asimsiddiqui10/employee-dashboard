@@ -527,3 +527,17 @@ export const changeEmployeePassword = async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 };
+
+// Get unique departments
+export const getDepartments = async (req, res) => {
+  try {
+    const departments = await Employee.distinct('department');
+    res.json(departments.filter(dept => dept)); // Filter out null/empty values
+  } catch (error) {
+    console.error('Error fetching departments:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error fetching departments' 
+    });
+  }
+};

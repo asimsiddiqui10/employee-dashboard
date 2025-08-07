@@ -134,10 +134,10 @@ export default function AdminTimeTracking() {
     }
   };
 
-  const handleApprove = async (timeEntryId, status) => {
+  const handleApprove = async (timeEntry, status = 'approved') => {
     try {
       setLoading(true);
-      await api.put(`/time-clock/${timeEntryId}/approve`, {
+      await api.put(`/time-clock/${timeEntry._id}/approve`, {
         status,
         notes: '' // Optional notes
       });
@@ -310,7 +310,7 @@ export default function AdminTimeTracking() {
                 size="sm"
                 variant="outline"
                 className="bg-green-50 hover:bg-green-100 text-green-600"
-                onClick={() => handleApprove(entry._id, 'approved')}
+                onClick={() => handleApprove(entry)}
                 disabled={loading}
               >
                 Approve
@@ -319,7 +319,7 @@ export default function AdminTimeTracking() {
                 size="sm"
                 variant="outline"
                 className="bg-red-50 hover:bg-red-100 text-red-600"
-                onClick={() => handleApprove(entry._id, 'rejected')}
+                onClick={() => handleApprove(entry, 'rejected')}
                 disabled={loading}
               >
                 Reject

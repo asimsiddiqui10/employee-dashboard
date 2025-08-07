@@ -21,7 +21,8 @@ import {
   LogOut,
   Menu,
   CheckCircle,
-  FileText
+  FileText,
+  Calendar
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 import { useSidebar } from '../ui/sidebar';
@@ -91,9 +92,9 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/leave"
     },
     {
-      title: "Announcements",
-      icon: Megaphone,
-      path: "/admin-dashboard/announcements"
+      title: "Meetings",
+      icon: Calendar,
+      path: "/admin-dashboard/meetings"
     },
     {
       title: "Requests",

@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Notification from '../models/Notification.js';
 import Employee from '../models/Employee.js';
 
@@ -68,8 +69,15 @@ export const createNotification = async (req, res) => {
 // Get notifications for current user
 export const getNotifications = async (req, res) => {
   try {
-    const employeeId = req.user.employee;
+    const employeeId = req.user.employee?._id || req.user.employee;
     const { timeFilter } = req.query;
+
+    if (!employeeId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Employee ID not found' 
+      });
+    }
 
     // Build date filter
     let dateFilter = {};
@@ -133,21 +141,56 @@ export const getNotifications = async (req, res) => {
 export const markAsRead = async (req, res) => {
   try {
     const { notificationId } = req.params;
-    const employeeId = req.user.employee;
+    const employeeId = req.user.employee?._id || req.user.employee;
+
+    console.log('User object:', {
+      userId: req.user._id,
+      userEmployee: req.user.employee,
+      employeeId: employeeId
+    });
+
+    if (!employeeId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Employee ID not found' 
+      });
+    }
+
+    // Validate ObjectId format
+    if (!mongoose.Types.ObjectId.isValid(notificationId)) {
+      console.log('Invalid notification ID format:', notificationId);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid notification ID format' 
+      });
+    }
+
+    console.log('Mark as read - Employee ID:', employeeId, 'Notification ID:', notificationId);
 
     const notification = await Notification.findById(notificationId);
     
     if (!notification) {
+      console.log('Notification not found:', notificationId);
       return res.status(404).json({ 
         success: false, 
         message: 'Notification not found' 
       });
     }
 
+    console.log('Found notification:', {
+      id: notification._id,
+      title: notification.title,
+      recipientsCount: notification.recipients.length
+    });
+
     // Check if current employee is a recipient
     const recipientIndex = notification.recipients.findIndex(r => 
       r.employeeId.toString() === employeeId.toString()
     );
+
+    console.log('Recipient index:', recipientIndex);
+    console.log('Employee ID looking for:', employeeId.toString());
+    console.log('Recipients employee IDs:', notification.recipients.map(r => r.employeeId.toString()));
 
     if (recipientIndex === -1) {
       return res.status(403).json({ 
@@ -163,6 +206,9 @@ export const markAsRead = async (req, res) => {
       notification.recipients[recipientIndex].readBy = employeeId;
       
       await notification.save();
+      console.log('Notification marked as read successfully');
+    } else {
+      console.log('Notification was already read');
     }
 
     res.json({ 
@@ -174,7 +220,8 @@ export const markAsRead = async (req, res) => {
     console.error('Error marking notification as read:', error);
     res.status(500).json({ 
       success: false, 
-      message: 'Error marking notification as read' 
+      message: 'Error marking notification as read',
+      error: error.message
     });
   }
 };
@@ -238,7 +285,15 @@ export const getAllNotifications = async (req, res) => {
 
 export const getUnreadCount = async (req, res) => {
   try {
-    const employeeId = req.user.employee;
+    const employeeId = req.user.employee?._id || req.user.employee;
+    
+    if (!employeeId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Employee ID not found' 
+      });
+    }
+
     const count = await Notification.countDocuments({
       'recipients.employeeId': employeeId,
       'recipients.read': false
@@ -247,7 +302,10 @@ export const getUnreadCount = async (req, res) => {
     res.json({ count });
   } catch (error) {
     console.error('Error getting unread count:', error);
-    res.status(500).json({ message: 'Failed to get unread count' });
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error getting unread count' 
+    });
   }
 };
 

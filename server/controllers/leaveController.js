@@ -9,7 +9,7 @@ export const requestLeave = async (req, res) => {
   session.startTransaction();
 
   try {
-    const { leaveType, startDate, endDate, description } = req.body;
+    const { leaveType, startDate, endDate, description, manualDays } = req.body;
     const employeeId = req.user.employee;
 
     // Find employee and their current leave balance
@@ -20,8 +20,14 @@ export const requestLeave = async (req, res) => {
       return res.status(404).json({ success: false, message: 'Employee not found' });
     }
 
-    // Calculate total days (excluding weekends)
-    const totalDays = differenceInBusinessDays(new Date(endDate), new Date(startDate)) + 1;
+    // Calculate total days - use manualDays if provided, otherwise calculate from dates
+    let totalDays;
+    if (manualDays && manualDays > 0) {
+      totalDays = manualDays;
+    } else {
+      // Calculate total days (excluding weekends)
+      totalDays = differenceInBusinessDays(new Date(endDate), new Date(startDate)) + 1;
+    }
     
     // Validate leave balance
     if (employee.leaveSummary.leavesRemaining < totalDays) {

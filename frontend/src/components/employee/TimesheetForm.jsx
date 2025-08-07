@@ -16,6 +16,7 @@ const TimesheetForm = ({
   isOpen, 
   onClose, 
   onSubmit, 
+  onCancel,
   timeEntry,
   loading 
 }) => {
@@ -134,7 +135,7 @@ const TimesheetForm = ({
             <Button
               type="button"
               variant="outline"
-              onClick={onClose}
+              onClick={onCancel}
               disabled={loading}
             >
               Cancel

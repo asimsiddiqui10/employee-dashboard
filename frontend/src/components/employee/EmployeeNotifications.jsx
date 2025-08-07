@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle, Clock } from 'lucide-react';
+import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle, Clock, Check } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -42,7 +42,7 @@ const EmployeeNotifications = () => {
     { value: 'all', label: 'All', icon: Bell },
     { value: 'payroll', label: 'Payroll', icon: DollarSign },
     { value: 'company', label: 'Company', icon: Building2 },
-    { value: 'announcement', label: 'Announcements', icon: Megaphone },
+    { value: 'announcement', label: 'Company Updates', icon: Megaphone },
     { value: 'policy', label: 'Policy', icon: FileText }
   ];
 
@@ -65,16 +65,30 @@ const EmployeeNotifications = () => {
     }
   };
 
-  const markAsRead = async (notificationId) => {
+  const markAsRead = async (notificationId, e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     try {
-      await api.patch(`/notifications/${notificationId}/read`);
-      setNotifications(notifications.map(n => 
-        n._id === notificationId ? { ...n, isRead: true } : n
+      console.log('Marking notification as read:', notificationId);
+      const response = await api.patch(`/notifications/${notificationId}/read`);
+      console.log('Mark as read response:', response.data);
+      
+      setNotifications(prev => prev.map(n => 
+        n._id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n
       ));
+      
+      toast({
+        title: "Success",
+        description: "Notification marked as read",
+      });
     } catch (error) {
+      console.error('Error marking notification as read:', error);
       toast({
         title: "Error",
-        description: "Failed to mark notification as read",
+        description: error.response?.data?.message || "Failed to mark notification as read",
         variant: "destructive",
       });
     }
@@ -96,7 +110,7 @@ const EmployeeNotifications = () => {
     <div className="container mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">Notifications</h1>
-        <p className="text-muted-foreground">Stay updated with company announcements and important information</p>
+        <p className="text-muted-foreground">Stay updated with company news and important information</p>
       </div>
 
       {/* Filter Tabs */}
@@ -120,8 +134,8 @@ const EmployeeNotifications = () => {
         })}
       </div>
 
-      {/* Notifications List */}
-      <div className="space-y-4">
+      {/* Notifications List - Compact Layout */}
+      <div className="space-y-2">
         {filteredNotifications.length === 0 ? (
           <Card>
             <CardContent className="flex items-center justify-center py-12">
@@ -141,33 +155,32 @@ const EmployeeNotifications = () => {
           filteredNotifications.map((notification) => (
             <Card 
               key={notification._id}
-              className={`cursor-pointer transition-all hover:shadow-md ${
+              className={`transition-all hover:shadow-sm ${
                 !notification.isRead ? 'border-primary/50 bg-primary/5' : ''
               }`}
-              onClick={() => markAsRead(notification._id)}
             >
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <div className={`p-2 rounded-lg ${
+              <CardContent className="p-4">
+                <div className="flex items-start gap-3">
+                  <div className={`p-2 rounded-lg flex-shrink-0 ${
                     notification.type === 'payroll' ? 'bg-blue-100 text-blue-600' :
                     notification.type === 'company' ? 'bg-purple-100 text-purple-600' :
                     notification.type === 'announcement' ? 'bg-yellow-100 text-yellow-600' :
                     notification.type === 'policy' ? 'bg-red-100 text-red-600' :
                     'bg-gray-100 text-gray-600'
                   }`}>
-                    {notification.type === 'payroll' && <DollarSign className="h-5 w-5" />}
-                    {notification.type === 'company' && <Building2 className="h-5 w-5" />}
-                    {notification.type === 'announcement' && <Megaphone className="h-5 w-5" />}
-                    {notification.type === 'policy' && <FileText className="h-5 w-5" />}
+                    {notification.type === 'payroll' && <DollarSign className="h-4 w-4" />}
+                    {notification.type === 'company' && <Building2 className="h-4 w-4" />}
+                    {notification.type === 'announcement' && <Megaphone className="h-4 w-4" />}
+                    {notification.type === 'policy' && <FileText className="h-4 w-4" />}
                     {!['payroll', 'company', 'announcement', 'policy'].includes(notification.type) && 
-                      <Bell className="h-5 w-5" />
+                      <Bell className="h-4 w-4" />
                     }
                   </div>
                   
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold text-lg">{notification.title}</h3>
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-start justify-between gap-3 mb-1">
+                      <h3 className="font-semibold text-base leading-tight">{notification.title}</h3>
+                      <div className="flex items-center gap-2 flex-shrink-0">
                         <Badge variant="outline" className="text-xs">
                           {notification.type}
                         </Badge>
@@ -177,22 +190,39 @@ const EmployeeNotifications = () => {
                       </div>
                     </div>
                     
-                    <p className="text-muted-foreground mb-3">
+                    <p className="text-sm text-muted-foreground mb-2 line-clamp-2">
                       {notification.message}
                     </p>
                     
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {format(new Date(notification.createdAt), 'MMM d, yyyy h:mm a')}
-                      </span>
-                      {notification.priority && (
-                        <Badge 
-                          variant={notification.priority === 'high' ? 'destructive' : 'secondary'}
-                          className="text-xs"
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {format(new Date(notification.createdAt), 'MMM d, yyyy h:mm a')}
+                        </span>
+                        {notification.priority && (
+                          <Badge 
+                            variant={notification.priority === 'high' ? 'destructive' : 'secondary'}
+                            className="text-xs"
+                          >
+                            {notification.priority} priority
+                          </Badge>
+                        )}
+                      </div>
+                      
+                      {!notification.isRead && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 px-3 text-xs"
+                          onClick={(e) => {
+                            console.log('Mark as read button clicked!', notification._id);
+                            markAsRead(notification._id, e);
+                          }}
                         >
-                          {notification.priority} priority
-                        </Badge>
+                          <Check className="h-3 w-3 mr-1" />
+                          Mark as Read
+                        </Button>
                       )}
                     </div>
                   </div>

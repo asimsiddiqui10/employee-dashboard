@@ -85,7 +85,7 @@ function App() {
               <Route path="leave" element={<LeaveManagement />} />
               <Route path="attendance" element={<UnderProgress/>}></Route>
               <Route path="teams" element={<UnderProgress/>}></Route>
-              <Route path="announcements" element={<UnderProgress/>}></Route>
+              <Route path="meetings" element={<UnderProgress/>}></Route>
               <Route path="requests" element={<RequestManagement />} />
               <Route path="tasks" element={<UnderProgress/>}></Route>
               <Route path="expenses" element={<UnderProgress/>}></Route>
@@ -106,12 +106,12 @@ function App() {
               </PrivateRoutes>
             }>
               <Route index element={<EmployeeHome />} />
-              <Route path="my-details" element={<MyDetails />} />
               <Route path="notifications" element={<EmployeeNotifications />} />
+              <Route path="my-details" element={<MyDetails />} />
               <Route path="payroll" element={<PayrollDocuments />} />
               <Route path="time-tracking" element={<TimeTrackingWrapper />} />
               <Route path="leave" element={<LeaveRequest />} />
-              <Route path="announcements" element={<UnderProgress />} />
+              <Route path="meetings" element={<UnderProgress />} />
               <Route path="requests" element={<Requests />} />
               <Route path="tasks" element={<UnderProgress />} />
               <Route path="reimbursements" element={<UnderProgress />} />

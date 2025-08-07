@@ -56,15 +56,42 @@ const NotificationsCard = () => {
   };
 
   const markAsRead = async (notificationId, e) => {
-    e?.stopPropagation(); // Prevent navigation when clicking mark as read
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     try {
-      await api.patch(`/notifications/${notificationId}/read`);
-      setNotifications(notifications.map(n => 
-        n._id === notificationId ? { ...n, isRead: true } : n
+      console.log('Marking notification as read:', notificationId);
+      const response = await api.patch(`/notifications/${notificationId}/read`);
+      console.log('Mark as read response:', response.data);
+      
+      setNotifications(prev => prev.map(n => 
+        n._id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n
       ));
+      
+      // Show success feedback
+      toast({
+        title: "Success",
+        description: "Notification marked as read",
+      });
     } catch (error) {
       console.error('Error marking notification as read:', error);
+      toast({
+        title: "Error",
+        description: error.response?.data?.message || "Failed to mark notification as read",
+        variant: "destructive",
+      });
     }
+  };
+
+  const handleNotificationClick = (notificationId) => {
+    // Mark as read if it's unread, then navigate
+    const notification = notifications.find(n => n._id === notificationId);
+    if (notification && !notification.isRead) {
+      markAsRead(notificationId);
+    }
+    navigate('/employee-dashboard/notifications');
   };
 
   // Get the latest 4 notifications
@@ -86,7 +113,7 @@ const NotificationsCard = () => {
   };
 
   return (
-    <Card>
+    <Card className="h-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle 
@@ -101,63 +128,70 @@ const NotificationsCard = () => {
           </Badge>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {loading ? (
-          <div className="flex items-center justify-center py-4">
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
-          </div>
-        ) : latestNotifications.length === 0 ? (
-          <p className="text-sm text-muted-foreground text-center py-4">No notifications</p>
-        ) : (
-          latestNotifications.map((notification) => (
-            <div 
-              key={notification._id} 
-              className={cn(
-                "flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer hover:bg-muted/50",
-                !notification.isRead && "bg-primary/5 border border-primary/20"
-              )}
-              onClick={() => navigate('/employee-dashboard/notifications')}
-            >
-              <div className={cn("p-1 rounded", getNotificationStyle(notification.type))}>
-                {getNotificationIcon(notification.type)}
-              </div>
-              
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium truncate">{notification.title}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground">
-                    {formatTimeAgo(notification.createdAt)}
-                  </span>
-                  <Badge variant="outline" className="text-xs h-4 px-1">
-                    {notification.type}
-                  </Badge>
-                </div>
-              </div>
-
-              {!notification.isRead && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600"
-                  onClick={(e) => markAsRead(notification._id, e)}
-                >
-                  <Check className="h-3 w-3" />
-                </Button>
-              )}
+      
+      <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-0.5">
+        <div className="space-y-2 flex-1 overflow-y-auto">
+          {loading ? (
+            <div className="flex items-center justify-center py-4">
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
             </div>
-          ))
-        )}
+          ) : latestNotifications.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No notifications</p>
+          ) : (
+            latestNotifications.map((notification) => (
+              <div 
+                key={notification._id} 
+                className={cn(
+                  "flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer hover:bg-muted/50",
+                  !notification.isRead && "bg-primary/5 border border-primary/20"
+                )}
+                onClick={() => handleNotificationClick(notification._id)}
+              >
+                <div className={cn("p-1 rounded", getNotificationStyle(notification.type))}>
+                  {getNotificationIcon(notification.type)}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{notification.title}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-muted-foreground">
+                      {formatTimeAgo(notification.createdAt)}
+                    </span>
+                    <Badge variant="outline" className="text-xs h-4 px-1">
+                      {notification.type}
+                    </Badge>
+                  </div>
+                </div>
+
+                {!notification.isRead && (
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600 relative z-10"
+                    onClick={(e) => {
+                      console.log('Button clicked!', notification._id, e);
+                      markAsRead(notification._id, e);
+                    }}
+                  >
+                    <Check className="h-3 w-3" />
+                  </Button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
         
-        {latestNotifications.length > 0 && (
+        {/* View All Button - Always at bottom */}
+        <div className="pt-2">
           <Button
             variant="ghost"
             size="sm"
-            className="w-full mt-2 h-8 text-xs"
+            className="w-full h-8 text-xs"
             onClick={() => navigate('/employee-dashboard/notifications')}
           >
             View All ({notifications.length})
           </Button>
-        )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -192,6 +192,14 @@ const TimeClock = () => {
     setShowTimesheetForm(true);
   };
 
+  const handleTimesheetCancel = () => {
+    setShowTimesheetForm(false);
+    toast({
+      title: "Clock out cancelled",
+      description: "You remain clocked in. You can try to clock out again when ready.",
+    });
+  };
+
   const handleTimesheetSubmit = async (formData) => {
     try {
       setSubmitting(true);
@@ -663,6 +671,7 @@ const TimeClock = () => {
         isOpen={showTimesheetForm}
         onClose={() => setShowTimesheetForm(false)}
         onSubmit={handleTimesheetSubmit}
+        onCancel={handleTimesheetCancel}
         timeEntry={timeEntry}
         loading={submitting}
       />
