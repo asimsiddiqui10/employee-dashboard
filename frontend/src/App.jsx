@@ -29,6 +29,8 @@ import AdminTimeTracking from './components/admin/AdminTimeTracking'
 import MyTeam from './components/employee/MyTeam'
 import Requests from './components/employee/Requests';
 import RequestManagement from './components/admin/RequestManagement';
+import Reimbursements from './components/employee/Reimbursements';
+import ReimbursementManagement from './components/admin/ReimbursementManagement';
 
 
 // Error Boundary Component
@@ -87,6 +89,7 @@ function App() {
               <Route path="teams" element={<UnderProgress/>}></Route>
               <Route path="meetings" element={<UnderProgress/>}></Route>
               <Route path="requests" element={<RequestManagement />} />
+              <Route path="reimbursements" element={<ReimbursementManagement />} />
               <Route path="tasks" element={<UnderProgress/>}></Route>
               <Route path="expenses" element={<UnderProgress/>}></Route>
               <Route path="documents" element={<DocumentUpload />} />
@@ -114,7 +117,7 @@ function App() {
               <Route path="meetings" element={<UnderProgress />} />
               <Route path="requests" element={<Requests />} />
               <Route path="tasks" element={<UnderProgress />} />
-              <Route path="reimbursements" element={<UnderProgress />} />
+              <Route path="reimbursements" element={<Reimbursements />} />
               <Route path="documents" element={<MyDocuments />} />
               <Route path="team" element={<MyTeam />} />
               <Route path="training" element={<UnderProgress />} />

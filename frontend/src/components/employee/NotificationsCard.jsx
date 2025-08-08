@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle, Check } from 'lucide-react';
+import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle, Check, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import api from '@/lib/axios';
 import { toast } from '@/hooks/use-toast';
@@ -19,7 +19,7 @@ const getNotificationIcon = (type) => {
     case 'policy':
       return <FileText className="h-4 w-4" />;
     default:
-      return <AlertCircle className="h-4 w-4" />;
+      return <Info className="h-4 w-4" />;
   }
 };
 
@@ -94,8 +94,10 @@ const NotificationsCard = () => {
     navigate('/employee-dashboard/notifications');
   };
 
-  // Get the latest 4 notifications
-  const latestNotifications = notifications.slice(0, 4);
+  // Get the latest 4 notifications, sorted by createdAt (latest first)
+  const latestNotifications = notifications
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+    .slice(0, 4);
 
   const formatTimeAgo = (date) => {
     const now = new Date();
@@ -113,7 +115,7 @@ const NotificationsCard = () => {
   };
 
   return (
-    <Card className="h-full">
+    <Card className="h-96">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle 
@@ -129,8 +131,8 @@ const NotificationsCard = () => {
         </div>
       </CardHeader>
       
-      <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-0.5">
-        <div className="space-y-2 flex-1 overflow-y-auto">
+      <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-1">
+        <div className="space-y-3 flex-1">
           {loading ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -142,39 +144,37 @@ const NotificationsCard = () => {
               <div 
                 key={notification._id} 
                 className={cn(
-                  "flex items-center gap-2 p-2 rounded-md transition-colors cursor-pointer hover:bg-muted/50",
-                  !notification.isRead && "bg-primary/5 border border-primary/20"
+                  "flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer hover:bg-muted/50",
+                  !notification.isRead && "bg-orange-50 dark:bg-blue-950/20"
                 )}
                 onClick={() => handleNotificationClick(notification._id)}
               >
-                <div className={cn("p-1 rounded", getNotificationStyle(notification.type))}>
+                <div className={cn("p-1.5 rounded-full", getNotificationStyle(notification.type))}>
                   {getNotificationIcon(notification.type)}
                 </div>
                 
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium truncate">{notification.title}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">
-                      {formatTimeAgo(notification.createdAt)}
-                    </span>
-                    <Badge variant="outline" className="text-xs h-4 px-1">
-                      {notification.type}
-                    </Badge>
-                  </div>
+                  <span className="text-xs text-muted-foreground">
+                    {formatTimeAgo(notification.createdAt)}
+                  </span>
                 </div>
 
                 {!notification.isRead && (
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600 relative z-10"
-                    onClick={(e) => {
-                      console.log('Button clicked!', notification._id, e);
-                      markAsRead(notification._id, e);
-                    }}
-                  >
-                    <Check className="h-3 w-3" />
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600 relative z-10"
+                      onClick={(e) => {
+                        console.log('Button clicked!', notification._id, e);
+                        markAsRead(notification._id, e);
+                      }}
+                    >
+                      <Check className="h-3 w-3" />
+                    </Button>
+                  </div>
                 )}
               </div>
             ))
@@ -186,7 +186,7 @@ const NotificationsCard = () => {
           <Button
             variant="ghost"
             size="sm"
-            className="w-full h-8 text-xs"
+            className="w-full h-8 text-xs hover:bg-transparent cursor-pointer"
             onClick={() => navigate('/employee-dashboard/notifications')}
           >
             View All ({notifications.length})

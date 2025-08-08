@@ -180,23 +180,20 @@ const TimeClockCard = () => {
 
   return (
     <>
-      <Card className="h-80">
+      <Card className="h-96">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg font-bold flex items-center gap-2">
+          <CardTitle 
+            className="text-lg font-bold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+            onClick={() => navigate('/employee-dashboard/time-tracking')}
+          >
             <Clock className="h-5 w-5" />
             Time Clock
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Today's Total and Current Time - Side by Side */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="text-center">
-              <div className="text-sm font-medium text-muted-foreground mb-1">Today's Total</div>
-              <div className="text-xl font-bold font-mono">
-                {calculateTotalHoursToday()}
-              </div>
-            </div>
-            <div className="text-center">
+        <CardContent className="flex flex-col h-[calc(100%-5rem)]">
+          {/* Current Time and Today's Total - Centered */}
+          <div className="text-center space-y-3 mb-4">
+            <div>
               <div className="text-sm font-medium text-muted-foreground mb-1">Current Time</div>
               <div className="text-xl font-bold font-mono">
                 {format(currentTime, 'HH:mm:ss')}
@@ -205,29 +202,37 @@ const TimeClockCard = () => {
                 {format(currentTime, 'EEE, MMM d')}
               </div>
             </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground mb-1">Today's Total</div>
+              <div className="text-2xl font-bold font-mono">
+                {calculateTotalHoursToday()}
+              </div>
+            </div>
           </div>
 
-          {/* Status */}
-          {timeEntry && (
-            <div className="text-center">
-              <Badge 
-                variant={activeBreak ? 'outline' : (timeEntry.status === 'active' ? 'default' : 'secondary')} 
-                className={`text-sm px-4 py-2 ${activeBreak ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400' : ''}`}
-              >
-                {activeBreak ? 'On Break' : (timeEntry.status === 'active' ? 'Clocked In' : 'Clocked Out')}
-              </Badge>
+          {/* Spacer to push content to bottom */}
+          <div className="flex-1 flex flex-col justify-end">
+            {/* Status - Only show for active states */}
+            <div className="text-center mb-4" style={{ minHeight: '40px' }}>
+              {timeEntry && timeEntry.status === 'active' && (
+                <Badge 
+                  variant={activeBreak ? 'outline' : 'default'} 
+                  className={`text-sm px-4 py-2 ${activeBreak ? 'border-yellow-500 text-yellow-600 dark:text-yellow-400' : ''}`}
+                >
+                  {activeBreak ? 'On Break' : 'Clocked In'}
+                </Badge>
+              )}
             </div>
-          )}
 
-          {/* Controls */}
-          <div className="flex flex-col gap-2">
+            {/* Controls */}
+            <div className="flex flex-col gap-2 pb-3">
             {!timeEntry || timeEntry.status === 'completed' ? (
               <>
                 <Button
                   size="sm"
                   onClick={handleClockIn}
-                  className="w-full bg-green-500/10 text-green-600 hover:bg-green-500/20 dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30"
-                  variant="secondary"
+                  className="w-full"
+                  variant="outline"
                 >
                   <PlayCircle className="mr-2 h-4 w-4" />
                   Clock In
@@ -276,6 +281,7 @@ const TimeClockCard = () => {
                 )}
               </>
             )}
+            </div>
           </div>
         </CardContent>
       </Card>

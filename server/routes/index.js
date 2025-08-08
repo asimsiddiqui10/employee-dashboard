@@ -7,6 +7,7 @@ import leaveRoutes from './leaveRoutes.js';
 import notificationRoutes from './notificationRoutes.js';
 import payrollRoutes from './payrollRoutes.js';
 import requestRoutes from './requestRoutes.js';
+import reimbursementRoutes from './reimbursementRoutes.js';
 
 const router = express.Router();
 
@@ -18,5 +19,6 @@ router.use('/leaves', leaveRoutes);
 router.use('/notifications', notificationRoutes);
 router.use('/payroll', payrollRoutes);
 router.use('/requests', requestRoutes);
+router.use('/reimbursements', reimbursementRoutes);
 
 export default router; 

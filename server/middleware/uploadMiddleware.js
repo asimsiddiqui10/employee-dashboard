@@ -10,19 +10,22 @@ const fileFilter = (req, file, cb) => {
     return;
   }
   
-  // Accept documents (PDF, Word, Excel)
+  // Accept documents (PDF, Word, Excel, Text)
   if (
     file.mimetype === 'application/pdf' ||
     file.mimetype === 'application/msword' ||
     file.mimetype === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
     file.mimetype === 'application/vnd.ms-excel' ||
-    file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    file.mimetype === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' ||
+    file.mimetype === 'text/plain' ||
+    file.mimetype === 'text/csv' ||
+    file.mimetype === 'application/json'
   ) {
     cb(null, true);
     return;
   }
 
-  cb(new Error('Invalid file type! Please upload an image or document (PDF, Word, Excel).'));
+  cb(new Error('Invalid file type! Please upload an image or document (PDF, Word, Excel, Text, CSV).'));
 };
 
 const upload = multer({

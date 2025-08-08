@@ -105,10 +105,13 @@ const TimeOffCard = () => {
 
   if (loading) {
     return (
-      <Card className="h-80">
+      <Card className="h-96">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <CardTitle 
+              className="text-base font-semibold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+              onClick={() => navigate('/employee-dashboard/leave')}
+            >
               <Calendar className="h-5 w-5" />
               Leaves
             </CardTitle>
@@ -136,10 +139,13 @@ const TimeOffCard = () => {
   const leavesTaken = leaveSummary?.leavesTaken || 0;
 
   return (
-    <Card className="h-80">
+    <Card className="h-96">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <CardTitle 
+            className="text-base font-semibold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+            onClick={() => navigate('/employee-dashboard/leave')}
+          >
             <Calendar className="h-5 w-5" />
             Leaves
           </CardTitle>
@@ -154,20 +160,20 @@ const TimeOffCard = () => {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-2">
-        <div className="space-y-4 flex-1 overflow-y-auto">
+      <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-3">
+        <div className="space-y-4 flex-1">
           {/* Semi-Circular Progress Chart */}
           <div className="flex justify-center pt-2">
             <SemiCircularProgress 
               value={leavesTaken} 
               total={totalLeaves}
-              size={120}
+              size={144}
               strokeWidth={12}
             />
           </div>
 
           {/* Recent Requests */}
-          <div className="space-y-2 pt-1">
+          <div className="space-y-2 pt-4">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">Recent Requests</span>
               <span className="text-xs text-muted-foreground">
@@ -176,14 +182,18 @@ const TimeOffCard = () => {
             </div>
             
             {recentRequests.length > 0 ? (
-              <div className="space-y-1 max-h-24 overflow-y-auto">
+              <div className="space-y-2">
                 {recentRequests.slice(0, 3).map((request) => (
-                  <div key={request._id} className="flex items-center justify-between p-1.5 rounded-md text-xs border border-border/50 bg-card">
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <Calendar className="h-2.5 w-2.5 text-muted-foreground flex-shrink-0" />
+                  <div 
+                    key={request._id} 
+                    className="flex items-center justify-between p-2 rounded-md text-xs hover:bg-muted/50 cursor-pointer transition-colors"
+                    onClick={() => navigate('/employee-dashboard/leave')}
+                  >
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      <Calendar className="h-3 w-3 text-muted-foreground flex-shrink-0" />
                       <div className="flex-1 min-w-0">
                         <span className="font-medium text-foreground text-xs">{request.leaveType}</span>
-                        <span className="text-muted-foreground ml-1.5 text-xs">
+                        <span className="text-muted-foreground ml-2 text-xs">
                           {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d')}
                         </span>
                       </div>

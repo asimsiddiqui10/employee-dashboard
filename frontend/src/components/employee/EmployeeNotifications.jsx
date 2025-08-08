@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle, Clock, Check } from 'lucide-react';
+import { Bell, DollarSign, Building2, Megaphone, FileText, AlertCircle, Clock, Check, Info } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -18,7 +18,7 @@ const getNotificationIcon = (type) => {
     case 'policy':
       return <FileText className="h-5 w-5" />;
     default:
-      return <AlertCircle className="h-5 w-5" />;
+      return <Info className="h-5 w-5" />;
   }
 };
 

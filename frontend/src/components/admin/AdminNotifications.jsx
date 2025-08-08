@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Bell, MoreVertical, Users, Eye, Clock, DollarSign, Building2, Megaphone, FileText, AlertCircle } from 'lucide-react';
+import { Bell, MoreVertical, Users, Eye, Clock, DollarSign, Building2, Megaphone, FileText, AlertCircle, Info } from 'lucide-react';
 import { format } from 'date-fns';
 import api from '@/lib/axios';
 import { toast } from '@/hooks/use-toast';
@@ -22,7 +22,7 @@ const getNotificationIcon = (type) => {
     case 'policy':
       return <FileText className="h-4 w-4" />;
     default:
-      return <AlertCircle className="h-4 w-4" />;
+      return <Info className="h-4 w-4" />;
   }
 };
 

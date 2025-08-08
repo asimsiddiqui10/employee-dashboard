@@ -102,13 +102,18 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/requests"
     },
     {
+      title: "Reimbursements",
+      icon: Receipt,
+      path: "/admin-dashboard/reimbursements"
+    },
+    {
       title: "Tasks & Projects",
       icon: CheckSquare,
       path: "/admin-dashboard/tasks"
     },
     {
       title: "Expenses",
-      icon: Receipt,
+      icon: DollarSign,
       path: "/admin-dashboard/expenses"
     },
     {

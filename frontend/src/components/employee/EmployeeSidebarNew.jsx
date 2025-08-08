@@ -77,30 +77,34 @@ const sidebarData = [
     path: "/employee-dashboard/documents"
   },
   
+  
+  {
+    title: "Requests",
+    icon: InboxIcon,
+    path: "/employee-dashboard/requests"
+  },
+  
+  {
+    title: "Reimbursements",
+    icon: Receipt,
+    path: "/employee-dashboard/reimbursements"
+  },
+  
+  {
+    title: "My Team",
+    icon: Users2,
+    path: "/employee-dashboard/team"
+  },
+
   {
     title: "Meetings",
     icon: Calendar,
     path: "/employee-dashboard/meetings"
   },
   {
-    title: "Requests",
-    icon: InboxIcon,
-    path: "/employee-dashboard/requests"
-  },
-  {
     title: "Tasks & Projects",
     icon: CheckSquare,
     path: "/employee-dashboard/tasks"
-  },
-  {
-    title: "Reimbursements",
-    icon: Receipt,
-    path: "/employee-dashboard/reimbursements"
-  },
-  {
-    title: "My Team",
-    icon: Users2,
-    path: "/employee-dashboard/team"
   },
   {
     title: "Training",
