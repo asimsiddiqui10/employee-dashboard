@@ -8,12 +8,14 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { getDepartmentConfig } from '@/lib/departments';
+import { cn } from "@/lib/utils";
 
 const MyDetails = () => {
   const [employeeDetails, setEmployeeDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showSSN, setShowSSN] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [activeTab, setActiveTab] = useState('personal');
   const { user } = useAuth();
 
   useEffect(() => {
@@ -75,6 +77,82 @@ const MyDetails = () => {
     }).format(value);
   };
 
+  const tabs = [
+    'personal',
+    'work', 
+    'compensation',
+    'contact',
+    'emergency'
+  ];
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case 'personal':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InfoItem label="Full Name" value={employeeDetails.name} />
+            <InfoItem label="SSN" value={employeeDetails.ssn || 'Not provided'} isSSN />
+            <InfoItem label="Email" value={employeeDetails.email} />
+            <InfoItem label="Password" value={employeeDetails.password || 'Not provided'} isPassword />
+            <InfoItem label="Phone Number" value={employeeDetails.phoneNumber || 'Not provided'} />
+            <InfoItem label="Date of Birth" value={formatDate(employeeDetails.dateOfBirth)} />
+            <InfoItem label="Gender" value={employeeDetails.gender || 'Not provided'} />
+            <InfoItem label="Marital Status" value={employeeDetails.maritalStatus || 'Not provided'} />
+            <InfoItem label="Nationality" value={employeeDetails.nationality || 'Not provided'} />
+          </div>
+        );
+
+      case 'work':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InfoItem label="Position" value={employeeDetails.position} />
+            <InfoItem label="Department" value={employeeDetails.department} />
+            <InfoItem label="Employment Type" value={employeeDetails.employmentType || 'Not specified'} />
+            <InfoItem label="Role" value={employeeDetails.role} />
+            <InfoItem label="Status" value={employeeDetails.active ? 'Active' : 'Inactive'} />
+            <InfoItem label="Date of Hire" value={formatDate(employeeDetails.dateOfHire)} />
+            <InfoItem label="Manager" value={employeeDetails.manager?.name || 'Not assigned'} />
+            <InfoItem label="Work Phone" value={employeeDetails.workPhoneNumber || 'Not provided'} />
+          </div>
+        );
+
+      case 'compensation':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InfoItem label="Compensation Type" value={employeeDetails.compensationType || 'Not specified'} />
+            <InfoItem 
+              label="Compensation Value" 
+              value={employeeDetails.compensationValue ? formatCurrency(employeeDetails.compensationValue) : 'Not specified'} 
+            />
+          </div>
+        );
+
+      case 'contact':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InfoItem label="Address" value={employeeDetails.address || 'Not provided'} />
+            <InfoItem label="City" value={employeeDetails.city || 'Not provided'} />
+            <InfoItem label="State" value={employeeDetails.state || 'Not provided'} />
+            <InfoItem label="Postal Code" value={employeeDetails.postalCode || 'Not provided'} />
+            <InfoItem label="Country" value={employeeDetails.country || 'Not provided'} />
+          </div>
+        );
+
+      case 'emergency':
+        return (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <InfoItem label="Name" value={employeeDetails.emergencyContact?.name || 'Not provided'} />
+            <InfoItem label="Relationship" value={employeeDetails.emergencyContact?.relationship || 'Not provided'} />
+            <InfoItem label="Phone" value={employeeDetails.emergencyContact?.phone || 'Not provided'} />
+            <InfoItem label="Email" value={employeeDetails.emergencyContact?.email || 'Not provided'} />
+          </div>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   const InfoItem = ({ label, value, isPassword, isSSN }) => {
     if (label === "Department" && value) {
       const deptConfig = getDepartmentConfig(value);
@@ -86,7 +164,7 @@ const MyDetails = () => {
             <div className={`p-1.5 rounded-md ${deptConfig.bgColor}`}>
               <Icon className={`h-4 w-4 ${deptConfig.color}`} />
             </div>
-            <p className={`font-medium ${deptConfig.color}`}>{value}</p>
+            <p className={`text-base font-medium ${deptConfig.color}`}>{value}</p>
           </div>
         </div>
       );
@@ -99,7 +177,7 @@ const MyDetails = () => {
         <div>
           <p className="text-sm text-muted-foreground">{label}</p>
           <div className="flex items-center gap-2">
-            <p className="font-medium text-foreground">
+            <p className="text-base font-medium text-foreground">
               {isVisible ? value : '••••••••'}
             </p>
             <Button 
@@ -118,131 +196,96 @@ const MyDetails = () => {
     return (
       <div>
         <p className="text-sm text-muted-foreground">{label}</p>
-        <p className="font-medium text-foreground">{value}</p>
+        <p className="text-base font-medium text-foreground">{value}</p>
       </div>
     );
   };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <Card>
-        <CardHeader className="bg-background p-6">
-          <div className="flex justify-between items-start">
-            <div className="flex items-center gap-6">
-              <div className="relative">
-                {employeeDetails.profilePic ? (
-                  <img
-                    src={employeeDetails.profilePic}
-                    alt={employeeDetails.name}
-                    className="w-24 h-24 rounded-lg object-cover ring-2 ring-muted"
-                  />
-                ) : (
-                  <div className="w-24 h-24 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
-                    <User className="h-12 w-12 text-muted-foreground" />
-                  </div>
-                )}
-              </div>
+    <div className="container mx-auto p-4 space-y-4">
+      <Card className="border-none">
+        {/* Header Section */}
+        <CardHeader className="px-6 pb-0">
+          <div className="flex flex-col lg:flex-row items-start gap-6 pb-6">
+            {/* Profile Picture */}
+            <div className="relative shrink-0">
+              {employeeDetails.profilePic ? (
+                <img
+                  src={employeeDetails.profilePic}
+                  alt={employeeDetails.name}
+                  className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg object-cover ring-2 ring-muted"
+                />
+              ) : (
+                <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
+                  <User className="h-12 w-12 lg:h-16 lg:w-16 text-muted-foreground" />
+                </div>
+              )}
+            </div>
 
-              <div>
-                <h2 className="text-2xl font-semibold text-foreground">{employeeDetails.name}</h2>
-                <div className="flex items-center gap-2 mt-1 text-muted-foreground">
+            {/* Employee Info */}
+            <div className="flex-1 min-w-0 w-full">
+              <div className="space-y-4">
+                {/* Name */}
+                <div>
+                  <h2 className="text-xl lg:text-2xl font-semibold text-foreground">{employeeDetails.name}</h2>
+                </div>
+
+                {/* Position, Department and ID */}
+                <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
                   <span>{employeeDetails.position}</span>
                   {employeeDetails.department && (
                     <>
-                      <span>•</span>
+                      <span className="hidden sm:inline">•</span>
                       <div className="flex items-center gap-1">
                         {(() => {
                           const deptConfig = getDepartmentConfig(employeeDetails.department);
                           const Icon = deptConfig.icon;
                           return (
                             <>
-                              <Icon className={`h-4 w-4 ${deptConfig.color}`} />
-                              <span className={deptConfig.color}>{employeeDetails.department}</span>
+                              <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
+                                <Icon className={`h-3.5 w-3.5 transition-colors ${deptConfig.color}`} />
+                              </div>
+                              <span className={`transition-colors ${deptConfig.color}`}>
+                                {employeeDetails.department}
+                              </span>
                             </>
                           );
                         })()}
                       </div>
                     </>
                   )}
+                  <span className="hidden sm:inline">•</span>
+                  <span>ID: {employeeDetails.employeeId}</span>
                 </div>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Employee ID: {employeeDetails.employeeId}
-                </p>
+              </div>
+
+              {/* Tabs Navigation */}
+              <div className="mt-6 overflow-x-auto pb-2">
+                <div className="flex space-x-1 bg-accent p-1 rounded-lg min-w-max">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={cn(
+                        "px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
+                        activeTab === tab
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-accent-foreground/80 hover:text-accent-foreground hover:bg-accent-foreground/10"
+                      )}
+                    >
+                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </CardHeader>
 
-        <CardContent className="p-6 space-y-8">
-          {/* Personal Information */}
-          <div>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Personal Information</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoItem label="Full Name" value={employeeDetails.name} />
-              <InfoItem label="SSN" value={employeeDetails.ssn || 'Not provided'} isSSN />
-              <InfoItem label="Email" value={employeeDetails.email} />
-              <InfoItem label="Password" value={employeeDetails.password || 'Not provided'} isPassword />
-              <InfoItem label="Phone Number" value={employeeDetails.phoneNumber || 'Not provided'} />
-              <InfoItem label="Work Phone" value={employeeDetails.workPhoneNumber || 'Not provided'} />
-              <InfoItem label="Date of Birth" value={formatDate(employeeDetails.dateOfBirth)} />
-              <InfoItem label="Gender" value={employeeDetails.gender || 'Not provided'} />
-              <InfoItem label="Marital Status" value={employeeDetails.maritalStatus || 'Not provided'} />
-              <InfoItem label="Nationality" value={employeeDetails.nationality || 'Not provided'} />
-            </div>
-          </div>
-
-          {/* Work Information */}
-          <div>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Work Information</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoItem label="Position" value={employeeDetails.position} />
-              <InfoItem label="Department" value={employeeDetails.department} />
-              <InfoItem label="Employment Type" value={employeeDetails.employmentType || 'Not specified'} />
-              <InfoItem label="Role" value={employeeDetails.role} />
-              <InfoItem label="Status" value={employeeDetails.active ? 'Active' : 'Inactive'} />
-              <InfoItem label="Date of Hire" value={formatDate(employeeDetails.dateOfHire)} />
-              <InfoItem label="Manager" value={employeeDetails.manager?.name || 'Not assigned'} />
-            </div>
-          </div>
-
-          {/* Compensation Information */}
-          <div>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Compensation Information</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoItem label="Compensation Type" value={employeeDetails.compensationType || 'Not specified'} />
-              <InfoItem 
-                label="Compensation Value" 
-                value={employeeDetails.compensationValue ? formatCurrency(employeeDetails.compensationValue) : 'Not specified'} 
-              />
-            </div>
-          </div>
-
-          {/* Contact Information */}
-          <div>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Contact Information</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoItem label="Address" value={employeeDetails.address || 'Not provided'} />
-              <InfoItem label="City" value={employeeDetails.city || 'Not provided'} />
-              <InfoItem label="State" value={employeeDetails.state || 'Not provided'} />
-              <InfoItem label="Postal Code" value={employeeDetails.postalCode || 'Not provided'} />
-              <InfoItem label="Country" value={employeeDetails.country || 'Not provided'} />
-            </div>
-          </div>
-
-          {/* Emergency Contact */}
-          <div>
-            <h2 className="text-xl font-semibold text-foreground mb-4">Emergency Contact</h2>
-            <Separator className="mb-4" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <InfoItem label="Name" value={employeeDetails.emergencyContact?.name || 'Not provided'} />
-              <InfoItem label="Relationship" value={employeeDetails.emergencyContact?.relationship || 'Not provided'} />
-              <InfoItem label="Phone" value={employeeDetails.emergencyContact?.phone || 'Not provided'} />
-              <InfoItem label="Email" value={employeeDetails.emergencyContact?.email || 'Not provided'} />
-            </div>
+        {/* Content Section */}
+        <CardContent className="px-4 sm:px-6 pt-6">
+          <div className="max-w-full overflow-x-auto">
+            {renderTabContent()}
           </div>
         </CardContent>
       </Card>

@@ -13,7 +13,7 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 import TimeOffCard from '../components/employee/TimeOffCard';
 import NotificationsCard from '../components/employee/NotificationsCard';
 import MyTeamCard from '../components/employee/MyTeamCard';
-import TasksCard from '../components/employee/TasksCard';
+import TimeClockCard from '../components/employee/TimeClockCard';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -102,7 +102,7 @@ const EmployeeDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <NotificationsCard />
                 <TimeOffCard />
-                <TasksCard />
+                <TimeClockCard />
               </div>
               <MyTeamCard />
             </div>
