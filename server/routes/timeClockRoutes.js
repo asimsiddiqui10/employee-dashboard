@@ -9,7 +9,8 @@ import {
   getTimeSummary,
   getAllTodayEntries,
   getTimeEntriesByPeriod,
-  managerApprove
+  managerApprove,
+  cleanupOrphanedEntries
 } from '../controllers/timeClockController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { roleMiddleware } from '../middleware/roleMiddleware.js';
@@ -27,6 +28,7 @@ router.post('/break/end', endBreak);
 router.get('/today', getTodayTimeEntry);
 router.get('/', getTimeEntries);
 router.get('/summary', getTimeSummary);
+router.post('/cleanup', cleanupOrphanedEntries);
 
 // Admin routes
 router.get('/today/all', roleMiddleware(['admin']), getAllTodayEntries);

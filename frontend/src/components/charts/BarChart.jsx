@@ -44,7 +44,11 @@ export function RevenueBarChart() {
                 bottom: 5,
               }}
             >
-              <CartesianGrid vertical={false} />
+              <CartesianGrid 
+                vertical={false} 
+                stroke="hsl(var(--border))"
+                strokeOpacity={0.85}
+              />
               <XAxis
                 dataKey="month"
                 tickLine={false}

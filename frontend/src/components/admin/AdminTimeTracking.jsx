@@ -45,6 +45,7 @@ export default function AdminTimeTracking() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, active, break
   const [period, setPeriod] = useState('today'); // today, week, month
+  const [timeFilter, setTimeFilter] = useState('all'); // all, today, week, month
   const [searchQuery, setSearchQuery] = useState('');
   const [showPendingOnly, setShowPendingOnly] = useState(false);
   const { toast } = useToast();
@@ -61,11 +62,12 @@ export default function AdminTimeTracking() {
     // Refresh data every minute
     const interval = setInterval(fetchTimeEntries, 60000);
     return () => clearInterval(interval);
-  }, [period]); // Re-fetch when period changes
+  }, [period, timeFilter]); // Re-fetch when period or timeFilter changes
 
   const fetchTimeEntries = async () => {
     try {
-      const response = await api.get(`/time-clock/${period}/all`);
+      // Use timeFilter for the API call
+      const response = await api.get(`/time-clock/${timeFilter}/all`);
       console.log('Time entries response:', response.data);
       
       const entries = response.data;
@@ -442,7 +444,22 @@ export default function AdminTimeTracking() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center justify-between pb-4">
+          {/* Filters Section */}
+          <div className="flex items-center gap-4 pb-4 border-b">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium">Time Filter:</span>
+              <Select value={timeFilter} onValueChange={setTimeFilter}>
+                <SelectTrigger className="w-32">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Time</SelectItem>
+                  <SelectItem value="today">Today</SelectItem>
+                  <SelectItem value="week">This Week</SelectItem>
+                  <SelectItem value="month">This Month</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex w-full max-w-sm items-center space-x-2">
               <Input
                 placeholder="Search employee, ID, or job code..."
@@ -464,8 +481,16 @@ export default function AdminTimeTracking() {
                 Pending
               </Button>
             </div>
+          </div>
+          
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 text-sm text-muted-foreground">
               {table.getFilteredRowModel().rows.length} entries
+              {timeFilter !== 'all' && (
+                <Badge variant="secondary" className="ml-2">
+                  {timeFilter === 'today' ? 'Today' : timeFilter === 'week' ? 'This Week' : 'This Month'}
+                </Badge>
+              )}
             </div>
           </div>
 

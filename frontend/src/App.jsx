@@ -91,7 +91,7 @@ function App() {
               <Route path="requests" element={<RequestManagement />} />
               <Route path="reimbursements" element={<ReimbursementManagement />} />
               <Route path="tasks" element={<UnderProgress/>}></Route>
-              <Route path="expenses" element={<UnderProgress/>}></Route>
+
               <Route path="documents" element={<DocumentUpload />} />
               <Route path="training" element={<UnderProgress/>}></Route>
               <Route path="benefits" element={<UnderProgress/>}></Route>

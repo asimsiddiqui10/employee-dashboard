@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Clock, PlayCircle, StopCircle, PauseCircle, PlayCircleIcon, History } from 'lucide-react';
+import { Clock, PlayCircle, StopCircle, PauseCircle, PlayCircleIcon, History, AlertCircle } from 'lucide-react';
 import { useToast } from "../../hooks/use-toast";
 import api from '../../lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
@@ -113,6 +113,41 @@ const TimeClockCard = () => {
     }
   };
 
+  const handleCleanupOrphanedEntries = async () => {
+    try {
+      const response = await api.post('/time-clock/cleanup');
+      
+      if (response.data.success) {
+        const { cleanedEntries, activeEntry } = response.data.data;
+        
+        if (cleanedEntries > 0) {
+          toast({
+            title: "Cleanup Successful",
+            description: `Cleaned up ${cleanedEntries} orphaned time entries.`,
+          });
+          
+          // Refresh the current time entry
+          setTimeEntry(activeEntry);
+        } else {
+          toast({
+            title: "No Issues Found",
+            description: "No orphaned time entries were found.",
+          });
+        }
+      }
+      
+      // Refresh data
+      fetchTimeEntry();
+    } catch (error) {
+      const { message } = handleApiError(error);
+      toast({
+        title: "Cleanup Error",
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleStartBreak = async () => {
     try {
       const response = await api.post('/time-clock/break/start');
@@ -182,13 +217,24 @@ const TimeClockCard = () => {
     <>
       <Card className="h-96">
         <CardHeader className="pb-3">
-          <CardTitle 
-            className="text-lg font-bold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
-            onClick={() => navigate('/employee-dashboard/time-tracking')}
-          >
-            <Clock className="h-5 w-5" />
-            Time Clock
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle 
+              className="text-lg font-bold flex items-center gap-2 cursor-pointer hover:text-primary transition-colors"
+              onClick={() => navigate('/employee-dashboard/time-tracking')}
+            >
+              <Clock className="h-5 w-5" />
+              Time Clock
+            </CardTitle>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleCleanupOrphanedEntries}
+              className="text-muted-foreground hover:text-foreground h-6 w-6 p-0"
+              title="Fix any orphaned time entries"
+            >
+              <AlertCircle className="h-3 w-3" />
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="flex flex-col h-[calc(100%-5rem)]">
           {/* Current Time and Today's Total - Centered */}

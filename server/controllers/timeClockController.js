@@ -10,7 +10,30 @@ export const clockIn = async (req, res) => {
   try {
     const employeeId = req.user.employee;
     
-    // Check if already clocked in
+    // First, check database for any existing active entries
+    const existingActiveEntry = await TimeEntry.findOne({
+      employee: employeeId,
+      status: 'active'
+    }).populate('employee', 'name employeeId profilePic department position');
+    
+    if (existingActiveEntry) {
+      // Restore to activeSessions if it exists in DB but not in memory
+      const session = {
+        ...existingActiveEntry.toObject(),
+        _id: existingActiveEntry._id
+      };
+      activeSessions.set(employeeId.toString(), session);
+      
+      console.log('Found existing active entry, restored to memory:', existingActiveEntry._id);
+      
+      return res.status(400).json({
+        success: false,
+        message: 'You are already clocked in',
+        data: existingActiveEntry
+      });
+    }
+    
+    // Also check in-memory sessions (backup check)
     if (activeSessions.has(employeeId.toString())) {
       return res.status(400).json({
         success: false,
@@ -40,6 +63,7 @@ export const clockIn = async (req, res) => {
     // Store in memory
     activeSessions.set(employeeId.toString(), session);
     
+    console.log('New clock-in created:', timeEntry._id);
     console.log('Active sessions after clock in:', Array.from(activeSessions.entries())); // Debug log
 
     // Populate employee details before sending response
@@ -66,14 +90,30 @@ export const clockOut = async (req, res) => {
     const employeeId = req.user.employee;
     const { jobCode, rate, timesheetNotes } = req.body;
     
-    // Find active session
-    const session = activeSessions.get(employeeId.toString());
+    // Find active session in memory
+    let session = activeSessions.get(employeeId.toString());
 
+    // If not in memory, check database for active entry
     if (!session) {
-      return res.status(400).json({
-        success: false,
-        message: 'No active clock-in found'
+      const activeEntry = await TimeEntry.findOne({
+        employee: employeeId,
+        status: 'active'
       });
+      
+      if (activeEntry) {
+        // Restore to memory for clock-out process
+        session = {
+          ...activeEntry.toObject(),
+          _id: activeEntry._id
+        };
+        activeSessions.set(employeeId.toString(), session);
+        console.log('Found active entry in DB for clock-out, restored to memory:', activeEntry._id);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'No active clock-in found'
+        });
+      }
     }
 
     // Validate required fields
@@ -322,9 +362,32 @@ export const getTodayTimeEntry = async (req, res) => {
     // For individual employee
     const employeeId = req.user.employee;
     
-    // First check for active session
-    const activeSession = activeSessions.get(employeeId.toString());
-    if (activeSession) {
+    // First check for active session in memory
+    let activeSession = activeSessions.get(employeeId.toString());
+    
+    if (!activeSession) {
+      // If not in memory, check database for active entry
+      const activeEntry = await TimeEntry.findOne({
+        employee: employeeId,
+        status: 'active'
+      }).populate('employee', 'name employeeId profilePic department position');
+      
+      if (activeEntry) {
+        // Restore to memory
+        activeSession = {
+          ...activeEntry.toObject(),
+          _id: activeEntry._id
+        };
+        activeSessions.set(employeeId.toString(), activeSession);
+        
+        console.log('Found active entry in DB, restored to memory:', activeEntry._id);
+        
+        return res.json({
+          success: true,
+          data: activeEntry
+        });
+      }
+    } else {
       return res.json({
         success: true,
         data: activeSession
@@ -489,6 +552,11 @@ export const getTimeEntriesByPeriod = async (req, res) => {
         startDate = startOfMonth(now);
         endDate = endOfMonth(now);
         break;
+      case 'all':
+        // For 'all', don't set date filters - get all entries
+        startDate = null;
+        endDate = null;
+        break;
       default:
         return res.status(400).json({
           success: false,
@@ -497,14 +565,19 @@ export const getTimeEntriesByPeriod = async (req, res) => {
     }
 
     // Get all time entries for the period (both active and completed)
-    const timeEntries = await TimeEntry.find({
-      clockIn: {
+    let query = {};
+    if (startDate && endDate) {
+      query.clockIn = {
         $gte: startDate,
         $lt: endDate
-      }
-    })
+      };
+    }
+    
+    const timeEntries = await TimeEntry.find(query)
     .populate('employee', 'name employeeId profilePic department position')
-    .populate('managerApproval.approvedBy', 'name employeeId');
+    .populate('managerApproval.approvedBy', 'name employeeId')
+    .sort({ clockIn: -1 }) // Sort by most recent first
+    .limit(1000); // Limit to prevent performance issues
 
     // Update any active entries with the latest data from memory
     const updatedEntries = timeEntries.map(entry => {
@@ -538,5 +611,117 @@ export const getTimeEntriesByPeriod = async (req, res) => {
       message: 'Error fetching time entries',
       error: error.message
     });
+  }
+};
+
+// Cleanup orphaned active entries for an employee
+export const cleanupOrphanedEntries = async (req, res) => {
+  try {
+    const employeeId = req.user.employee;
+    
+    // Find all active entries for this employee
+    const activeEntries = await TimeEntry.find({
+      employee: employeeId,
+      status: 'active'
+    }).sort({ clockIn: -1 });
+    
+    if (activeEntries.length > 1) {
+      // Keep the most recent one, mark others as completed
+      const latestEntry = activeEntries[0];
+      const orphanedEntries = activeEntries.slice(1);
+      
+      console.log(`Found ${orphanedEntries.length} orphaned entries for employee ${employeeId}`);
+      
+      // Mark orphaned entries as completed with minimal work time
+      for (const entry of orphanedEntries) {
+        entry.status = 'completed';
+        entry.clockOut = entry.clockIn; // Set clockOut to clockIn time (0 work time)
+        entry.totalWorkTime = 0;
+        entry.jobCode = 'CLEANUP';
+        entry.rate = 0;
+        entry.timesheetNotes = 'Auto-completed during cleanup - orphaned entry';
+        await entry.save();
+        console.log(`Cleaned up orphaned entry: ${entry._id}`);
+      }
+      
+      // Restore the latest entry to activeSessions
+      const session = {
+        ...latestEntry.toObject(),
+        _id: latestEntry._id
+      };
+      activeSessions.set(employeeId.toString(), session);
+      
+      res.json({
+        success: true,
+        message: `Cleaned up ${orphanedEntries.length} orphaned entries`,
+        data: {
+          cleanedEntries: orphanedEntries.length,
+          activeEntry: latestEntry
+        }
+      });
+    } else {
+      res.json({
+        success: true,
+        message: 'No orphaned entries found',
+        data: {
+          cleanedEntries: 0,
+          activeEntry: activeEntries[0] || null
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error cleaning up orphaned entries:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error cleaning up entries',
+      error: error.message
+    });
+  }
+};
+
+// Server startup recovery function - recover active sessions from database
+export const recoverActiveSessions = async () => {
+  try {
+    console.log('Recovering active sessions from database...');
+    
+    const activeEntries = await TimeEntry.find({ status: 'active' })
+      .populate('employee', 'name employeeId');
+    
+    let recoveredCount = 0;
+    
+    for (const entry of activeEntries) {
+      if (entry.employee) {
+        const session = {
+          ...entry.toObject(),
+          _id: entry._id
+        };
+        activeSessions.set(entry.employee._id.toString(), session);
+        recoveredCount++;
+      }
+    }
+    
+    console.log(`Successfully recovered ${recoveredCount} active sessions`);
+    
+    // Also check for potential orphaned entries and log them
+    const employeeActiveCounts = {};
+    activeEntries.forEach(entry => {
+      const empId = entry.employee?._id?.toString();
+      if (empId) {
+        employeeActiveCounts[empId] = (employeeActiveCounts[empId] || 0) + 1;
+      }
+    });
+    
+    const employeesWithMultipleActive = Object.entries(employeeActiveCounts)
+      .filter(([_, count]) => count > 1);
+    
+    if (employeesWithMultipleActive.length > 0) {
+      console.warn('WARNING: Found employees with multiple active entries:', employeesWithMultipleActive);
+      console.warn('Consider running cleanup for these employees');
+    }
+    
+    return { recoveredCount, potentialOrphans: employeesWithMultipleActive.length };
+  } catch (error) {
+    console.error('Error recovering active sessions:', error);
+    return { recoveredCount: 0, error: error.message };
   }
 };

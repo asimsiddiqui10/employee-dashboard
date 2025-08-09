@@ -16,6 +16,7 @@ import documentRoutes from './routes/documentRoutes.js';
 import timeClockRoutes from './routes/timeClockRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import reimbursementRoutes from './routes/reimbursementRoutes.js';
+import { recoverActiveSessions } from './controllers/timeClockController.js';
 
 // Load environment variables
 config();
@@ -123,7 +124,10 @@ const connectDB = async (retries = 5) => {
   }
 };
 
-connectDB().then(() => {
+connectDB().then(async () => {
+  // Recover active sessions from database on server startup
+  await recoverActiveSessions();
+  
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });

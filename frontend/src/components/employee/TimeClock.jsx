@@ -200,6 +200,45 @@ const TimeClock = () => {
     });
   };
 
+  const handleCleanupOrphanedEntries = async () => {
+    try {
+      setLoading(true);
+      const response = await api.post('/time-clock/cleanup');
+      
+      if (response.data.success) {
+        const { cleanedEntries, activeEntry } = response.data.data;
+        
+        if (cleanedEntries > 0) {
+          toast({
+            title: "Cleanup Successful",
+            description: `Cleaned up ${cleanedEntries} orphaned time entries. Your active session has been restored.`,
+          });
+          
+          // Refresh the current time entry
+          setTimeEntry(activeEntry);
+        } else {
+          toast({
+            title: "No Issues Found",
+            description: "No orphaned time entries were found.",
+          });
+        }
+      }
+      
+      // Refresh all data
+      fetchTimeEntry();
+      fetchTimeEntries();
+    } catch (error) {
+      const { message } = handleApiError(error);
+      toast({
+        title: "Cleanup Error",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleTimesheetSubmit = async (formData) => {
     try {
       setSubmitting(true);
@@ -409,13 +448,27 @@ const TimeClock = () => {
         {/* Time Clock Card */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold flex items-center gap-2">
-              <Clock className="h-6 w-6" />
-              Time Clock
-            </CardTitle>
-            <CardDescription>
-              Track your work hours and breaks
-            </CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-bold flex items-center gap-2">
+                  <Clock className="h-6 w-6" />
+                  Time Clock
+                </CardTitle>
+                <CardDescription>
+                  Track your work hours and breaks
+                </CardDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleCleanupOrphanedEntries}
+                className="text-muted-foreground hover:text-foreground"
+                title="Fix any orphaned time entries"
+              >
+                <AlertCircle className="h-4 w-4 mr-1" />
+                Fix Issues
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <div className="grid gap-6">

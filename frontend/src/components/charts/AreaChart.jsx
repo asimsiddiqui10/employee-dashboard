@@ -63,12 +63,18 @@ export function VisitorsAreaChart() {
                 <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1}/>
               </linearGradient>
             </defs>
-            <CartesianGrid strokeOpacity={0.4} vertical={false} />
+            <CartesianGrid 
+              strokeOpacity={0.7} 
+              vertical={false}
+              stroke="hsl(var(--border))"
+            />
             <XAxis
               dataKey="date"
               tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short' })}
               tick={{ fontSize: 12 }}
               tickMargin={10}
+              stroke="hsl(var(--border))"
+              strokeOpacity={0.2}
             />
             <Tooltip
               formatter={(value, name) => [`${value}`, name.charAt(0).toUpperCase() + name.slice(1)]}
@@ -86,7 +92,7 @@ export function VisitorsAreaChart() {
             <Area
               type="monotone"
               dataKey="revenue"
-              stroke="hsl(var(--chart-2))"
+              stroke="hsl(var(--chart-2))" 
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#colorRevenue)"

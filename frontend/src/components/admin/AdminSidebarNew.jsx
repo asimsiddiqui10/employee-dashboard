@@ -111,11 +111,7 @@ export function AdminSidebarNew() {
       icon: CheckSquare,
       path: "/admin-dashboard/tasks"
     },
-    {
-      title: "Expenses",
-      icon: DollarSign,
-      path: "/admin-dashboard/expenses"
-    },
+    
     {
       title: "Training",
       icon: GraduationCap,
