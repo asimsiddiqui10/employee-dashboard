@@ -38,12 +38,21 @@ import { useToast } from "@/hooks/use-toast";
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import { format } from 'date-fns';
-import { FileText, UserCog, MoreHorizontal, Search } from 'lucide-react';
+import { FileText, UserCog, MoreHorizontal, Search, Calendar, DollarSign, Clock, Shield, GraduationCap, Laptop, MapPin, Users, Briefcase } from 'lucide-react';
 
 const requestTypes = [
-  { value: 'document_request', label: 'Document Request', icon: FileText },
-  { value: 'details_change', label: 'Details Change', icon: UserCog },
-  { value: 'other', label: 'Other Request', icon: MoreHorizontal }
+  { value: 'document_request', label: 'Document Request', icon: FileText, color: 'text-blue-600' },
+  { value: 'details_change', label: 'Details Change', icon: UserCog, color: 'text-purple-600' },
+  { value: 'leave_request', label: 'Leave Request', icon: Calendar, color: 'text-green-600' },
+  { value: 'payroll_inquiry', label: 'Payroll Inquiry', icon: DollarSign, color: 'text-yellow-600' },
+  { value: 'schedule_change', label: 'Schedule Change', icon: Clock, color: 'text-orange-600' },
+  { value: 'access_request', label: 'Access Request', icon: Shield, color: 'text-red-600' },
+  { value: 'training_request', label: 'Training Request', icon: GraduationCap, color: 'text-indigo-600' },
+  { value: 'equipment_request', label: 'Equipment Request', icon: Laptop, color: 'text-gray-600' },
+  { value: 'location_change', label: 'Location Change', icon: MapPin, color: 'text-pink-600' },
+  { value: 'team_request', label: 'Team Request', icon: Users, color: 'text-teal-600' },
+  { value: 'project_request', label: 'Project Request', icon: Briefcase, color: 'text-cyan-600' },
+  { value: 'other', label: 'Other Request', icon: MoreHorizontal, color: 'text-slate-600' }
 ];
 
 const RequestManagement = () => {

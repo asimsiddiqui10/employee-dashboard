@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building, Bell, Calendar, Clock } from "lucide-react";
+import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building, Bell, Calendar, Clock, FileText, UserCog, MoreHorizontal, Shield, GraduationCap, Laptop, MapPin, Briefcase } from "lucide-react";
 import { DonutChartComponent } from '../charts/DonutChart';
 import { RevenueBarChart } from '../charts/BarChart';
 import { VisitorsAreaChart } from '../charts/AreaChart';
@@ -12,47 +12,19 @@ import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import { format } from 'date-fns';
 
-// Add this notification data
-const notifications = [
-  {
-    id: 1,
-    title: "New Employee Onboarding",
-    description: "Sarah Johnson has completed onboarding process",
-    time: "2 hours ago",
-    type: "info"
-  },
-  {
-    id: 2,
-    title: "System Update",
-    description: "Critical security update scheduled for tonight",
-    time: "5 hours ago",
-    type: "warning"
-  },
-  {
-    id: 3,
-    title: "Meeting Reminder",
-    description: "Monthly review meeting in 30 minutes",
-    time: "30 minutes ago",
-    type: "alert"
-  },
-  {
-    id: 4,
-    title: "New Employee Onboarding",
-    description: "Sarah Johnson has completed onboarding process",
-    time: "2 hours ago",
-    type: "info"
-  },
-];
+
 
 const AdminHome = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [pendingTimeEntries, setPendingTimeEntries] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
     fetchLeaveRequests();
     fetchPendingTimeEntries();
+    fetchRequests();
   }, []);
 
   const fetchLeaveRequests = async () => {
@@ -86,13 +58,89 @@ const AdminHome = () => {
     }
   };
 
+  const fetchRequests = async () => {
+    try {
+      const response = await api.get('/requests/all', { 
+        params: { status: 'pending' } 
+      });
+      setRequests(response.data.data || []);
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
+    }
+  };
+
   const getStatusBadge = (status) => {
     const styles = {
       Pending: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
       Approved: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
-      Rejected: "bg-red-500/10 text-red-500 hover:bg-red-500/20"
+      Rejected: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
+      pending: "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+      processing: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
+      completed: "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+      rejected: "bg-red-500/10 text-red-500 hover:bg-red-500/20"
     };
     return <Badge className={styles[status]}>{status}</Badge>;
+  };
+
+  const getRequestTypeIcon = (type) => {
+    const iconClass = "h-4 w-4";
+    switch (type) {
+      case 'document_request':
+        return <FileText className={`${iconClass} text-blue-600`} />;
+      case 'details_change':
+        return <UserCog className={`${iconClass} text-purple-600`} />;
+      case 'leave_request':
+        return <Calendar className={`${iconClass} text-green-600`} />;
+      case 'payroll_inquiry':
+        return <DollarSign className={`${iconClass} text-yellow-600`} />;
+      case 'schedule_change':
+        return <Clock className={`${iconClass} text-orange-600`} />;
+      case 'access_request':
+        return <Shield className={`${iconClass} text-red-600`} />;
+      case 'training_request':
+        return <GraduationCap className={`${iconClass} text-indigo-600`} />;
+      case 'equipment_request':
+        return <Laptop className={`${iconClass} text-gray-600`} />;
+      case 'location_change':
+        return <MapPin className={`${iconClass} text-pink-600`} />;
+      case 'team_request':
+        return <Users className={`${iconClass} text-teal-600`} />;
+      case 'project_request':
+        return <Briefcase className={`${iconClass} text-cyan-600`} />;
+      default:
+        return <MoreHorizontal className={`${iconClass} text-slate-600`} />;
+    }
+  };
+
+  const getRequestTypeLabel = (type) => {
+    switch (type) {
+      case 'document_request':
+        return 'Document Request';
+      case 'details_change':
+        return 'Details Change';
+      case 'leave_request':
+        return 'Leave Request';
+      case 'payroll_inquiry':
+        return 'Payroll Inquiry';
+      case 'schedule_change':
+        return 'Schedule Change';
+      case 'access_request':
+        return 'Access Request';
+      case 'training_request':
+        return 'Training Request';
+      case 'equipment_request':
+        return 'Equipment Request';
+      case 'location_change':
+        return 'Location Change';
+      case 'team_request':
+        return 'Team Request';
+      case 'project_request':
+        return 'Project Request';
+      default:
+        return 'Other Request';
+    }
   };
 
   // Sample data for charts
@@ -276,50 +324,69 @@ const AdminHome = () => {
         )}
       </div>
 
-      {/* Notifications Card */}
-      <Card className="w-full lg:w-1/4 min-w-0">
+      {/* Requests Card */}
+      <Card className="w-full lg:w-1/4 min-w-0 overflow-hidden">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-semibold">Requests</CardTitle>
+            <CardTitle 
+              className="text-xl font-semibold cursor-pointer hover:text-primary transition-colors"
+              onClick={() => navigate('/admin-dashboard/requests')}
+            >
+              Requests
+            </CardTitle>
             <Badge variant="secondary" className="font-normal">
-              {notifications.length} New
+              {requests.length} Pending
             </Badge>
           </div>
-          <CardDescription>Recent updates and alerts</CardDescription>
+          <CardDescription>Pending employee requests</CardDescription>
         </CardHeader>
-        <CardContent>
-          <ScrollArea className="h-[calc(100vh-13rem)] pr-4">
-            <div className="flex flex-col gap-4">
-              {notifications.map((notification) => (
-                <div
-                  key={notification.id}
-                  className="flex flex-col gap-2 rounded-lg border p-4 shadow-sm"
-                >
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-medium truncate">{notification.title}</h4>
-                    <Badge 
-                      variant={
-                        notification.type === "warning" 
-                          ? "destructive" 
-                          : notification.type === "alert" 
-                          ? "secondary" 
-                          : "outline"
-                      }
-                      className="text-xs shrink-0 ml-2"
-                    >
-                      {notification.type}
-                    </Badge>
+        <CardContent className="p-2">
+          <div className="px-3 flex flex-col gap-3">
+            {requests.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                <p className="text-sm">No pending requests</p>
+              </div>
+            ) : (
+              <>
+                {requests.slice(0, 5).map((request) => (
+                  <div
+                    key={request._id}
+                    className="flex flex-col gap-1 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-muted/30 w-full p-3"
+                    onClick={() => navigate('/admin-dashboard/requests')}
+                  >
+                    <div className="flex items-start gap-1 w-full min-w-0">
+                      <div className="p-1.5 rounded-full bg-muted/50 flex-shrink-0">
+                        {getRequestTypeIcon(request.type)}
+                      </div>
+                      <div className="flex-1 min-w-0 overflow-hidden">
+                        <h4 className="font-medium text-sm truncate pr-1">{request.title}</h4>
+                        <p className="text-xs text-muted-foreground truncate pr-1">
+                          {request.employee?.name || 'Unknown Employee'}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground break-words overflow-hidden pr-1" 
+                      style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical'
+                      }}>
+                      {request.description}
+                    </p>
                   </div>
-                  <p className="text-sm text-muted-foreground break-words">
-                    {notification.description}
-                  </p>
-                  <span className="text-xs text-muted-foreground">
-                    {notification.time}
-                  </span>
+                ))}
+                <div className="text-center py-2">
+                  <button 
+                    className="text-xs text-primary hover:underline"
+                    onClick={() => navigate('/admin-dashboard/requests')}
+                  >
+                    View all {requests.length} requests
+                  </button>
                 </div>
-              ))}
-            </div>
-          </ScrollArea>
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

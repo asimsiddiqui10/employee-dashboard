@@ -1,5 +1,5 @@
 import * as React from "react"
-import { TrendingUp } from "lucide-react"
+import { TrendingUp, Building } from "lucide-react"
 import { Label, Pie, PieChart, Cell, Tooltip } from "recharts"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
 import api from '@/lib/axios'
@@ -94,8 +94,13 @@ export function DonutChartComponent() {
   return (
     <Card className="flex flex-col">
       <CardHeader className="items-center pb-0">
-        <CardTitle>Department Distribution</CardTitle>
-        <CardDescription>Employee count by department</CardDescription>
+        <CardTitle className="flex items-center gap-2">
+          <Building className="h-5 w-5" />
+          Department Distribution
+        </CardTitle>
+        <CardDescription className="flex items-center gap-2">
+          <span>{chartData.length} departments</span>
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex-1 pb-0">
         <div className="mx-auto aspect-square max-h-[180px]">
@@ -145,11 +150,6 @@ export function DonutChartComponent() {
           </PieChart>
         </div>
       </CardContent>
-      <CardFooter className="flex-col gap-2 text-sm">
-        <div className="flex items-center gap-2 font-medium leading-none">
-          {chartData.length} departments <TrendingUp className="h-4 w-4" />
-        </div>
-      </CardFooter>
     </Card>
   );
 } 

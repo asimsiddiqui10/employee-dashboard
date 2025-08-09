@@ -99,10 +99,16 @@ const EmployeeDashboard = () => {
               <p className="text-muted-foreground">Here's what's happening with your team today.</p>
             </div>
             <div className="grid gap-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <NotificationsCard />
-                <TimeOffCard />
-                <TimeClockCard />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
+                <div className="min-w-0">
+                  <NotificationsCard />
+                </div>
+                <div className="min-w-0">
+                  <TimeOffCard />
+                </div>
+                <div className="min-w-0">
+                  <TimeClockCard />
+                </div>
               </div>
               <MyTeamCard />
             </div>
@@ -111,15 +117,17 @@ const EmployeeDashboard = () => {
         {!showDashboard && <Outlet />}
       </SidebarInset>
 
-      <style jsx>{`
-        @keyframes waveAndGrow {
-          0% { transform: scale(1) rotate(0deg); }
-          25% { transform: scale(1.3) rotate(15deg); }
-          50% { transform: scale(1.3) rotate(30deg); }
-          75% { transform: scale(1.3) rotate(15deg); }
-          100% { transform: scale(1) rotate(0deg); }
-        }
-      `}</style>
+      <style>
+        {`
+          @keyframes waveAndGrow {
+            0% { transform: scale(1) rotate(0deg); }
+            25% { transform: scale(1.3) rotate(15deg); }
+            50% { transform: scale(1.3) rotate(30deg); }
+            75% { transform: scale(1.3) rotate(15deg); }
+            100% { transform: scale(1) rotate(0deg); }
+          }
+        `}
+      </style>
     </SidebarProvider>
   );
 };

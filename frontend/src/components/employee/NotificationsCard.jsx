@@ -49,7 +49,6 @@ const NotificationsCard = () => {
       setNotifications(response.data);
     } catch (error) {
       console.error('Error fetching notifications:', error);
-      // Don't show toast for card component to avoid spam
     } finally {
       setLoading(false);
     }
@@ -62,15 +61,10 @@ const NotificationsCard = () => {
     }
     
     try {
-      console.log('Marking notification as read:', notificationId);
-      const response = await api.patch(`/notifications/${notificationId}/read`);
-      console.log('Mark as read response:', response.data);
-      
+      await api.patch(`/notifications/${notificationId}/read`);
       setNotifications(prev => prev.map(n => 
         n._id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n
       ));
-      
-      // Show success feedback
       toast({
         title: "Success",
         description: "Notification marked as read",
@@ -86,7 +80,6 @@ const NotificationsCard = () => {
   };
 
   const handleNotificationClick = (notificationId) => {
-    // Mark as read if it's unread, then navigate
     const notification = notifications.find(n => n._id === notificationId);
     if (notification && !notification.isRead) {
       markAsRead(notificationId);
@@ -94,7 +87,6 @@ const NotificationsCard = () => {
     navigate('/employee-dashboard/notifications');
   };
 
-  // Get the latest 4 notifications, sorted by createdAt (latest first)
   const latestNotifications = notifications
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
     .slice(0, 4);
@@ -115,7 +107,7 @@ const NotificationsCard = () => {
   };
 
   return (
-    <Card className="h-96">
+    <Card className="h-96 w-full">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle 
@@ -132,7 +124,7 @@ const NotificationsCard = () => {
       </CardHeader>
       
       <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-1">
-        <div className="space-y-3 flex-1">
+        <div className="space-y-3 flex-1 overflow-hidden">
           {loading ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
@@ -144,31 +136,33 @@ const NotificationsCard = () => {
               <div 
                 key={notification._id} 
                 className={cn(
-                  "flex items-center gap-3 p-2 rounded-md transition-colors cursor-pointer hover:bg-muted/50",
+                  "flex items-start gap-3 p-3 rounded-md transition-colors cursor-pointer hover:bg-muted/50 w-full",
                   !notification.isRead && "bg-orange-50 dark:bg-blue-950/20"
                 )}
                 onClick={() => handleNotificationClick(notification._id)}
               >
-                <div className={cn("p-1.5 rounded-full", getNotificationStyle(notification.type))}>
+                <div className={cn("p-1.5 rounded-full flex-shrink-0", getNotificationStyle(notification.type))}>
                   {getNotificationIcon(notification.type)}
                 </div>
                 
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{notification.title}</p>
-                  <span className="text-xs text-muted-foreground">
-                    {formatTimeAgo(notification.createdAt)}
-                  </span>
+                <div className="flex-1 min-w-0 max-w-full">
+                  <p className="text-sm font-medium truncate pr-2">{notification.title}</p>
+                  <div className="flex items-center gap-2 pr-2 min-w-0 max-w-full">
+                    <span className="text-xs text-muted-foreground truncate min-w-0">{notification.sender?.name || 'System'}</span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">•</span>
+                    <span className="text-xs text-muted-foreground flex-shrink-0">{formatTimeAgo(notification.createdAt)}</span>
+                  </div>
                 </div>
 
                 {!notification.isRead && (
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 flex-shrink-0">
                     <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
                     <Button
                       size="sm"
                       variant="ghost"
                       className="h-6 w-6 p-0 hover:bg-green-100 hover:text-green-600 relative z-10"
                       onClick={(e) => {
-                        console.log('Button clicked!', notification._id, e);
+                        e.stopPropagation();
                         markAsRead(notification._id, e);
                       }}
                     >
@@ -181,7 +175,6 @@ const NotificationsCard = () => {
           )}
         </div>
         
-        {/* View All Button - Always at bottom */}
         <div className="pt-2">
           <Button
             variant="ghost"

@@ -30,23 +30,43 @@ import { useToast } from "@/hooks/use-toast";
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import { format } from 'date-fns';
-import { Plus, FileText, UserCog, MoreHorizontal } from 'lucide-react';
+import { Plus, FileText, UserCog, MoreHorizontal, Calendar, DollarSign, Clock, Shield, GraduationCap, Laptop, MapPin, Users, Briefcase } from 'lucide-react';
 
 const requestTypes = [
-  { value: 'document_request', label: 'Document Request', icon: FileText },
-  { value: 'details_change', label: 'Details Change', icon: UserCog },
-  { value: 'other', label: 'Other Request', icon: MoreHorizontal }
+  { value: 'document_request', label: 'Document Request', icon: FileText, color: 'text-blue-600' },
+  { value: 'details_change', label: 'Details Change', icon: UserCog, color: 'text-purple-600' },
+  { value: 'leave_request', label: 'Leave Request', icon: Calendar, color: 'text-green-600' },
+  { value: 'payroll_inquiry', label: 'Payroll Inquiry', icon: DollarSign, color: 'text-yellow-600' },
+  { value: 'schedule_change', label: 'Schedule Change', icon: Clock, color: 'text-orange-600' },
+  { value: 'access_request', label: 'Access Request', icon: Shield, color: 'text-red-600' },
+  { value: 'training_request', label: 'Training Request', icon: GraduationCap, color: 'text-indigo-600' },
+  { value: 'equipment_request', label: 'Equipment Request', icon: Laptop, color: 'text-gray-600' },
+  { value: 'location_change', label: 'Location Change', icon: MapPin, color: 'text-pink-600' },
+  { value: 'team_request', label: 'Team Request', icon: Users, color: 'text-teal-600' },
+  { value: 'project_request', label: 'Project Request', icon: Briefcase, color: 'text-cyan-600' },
+  { value: 'other', label: 'Other Request', icon: MoreHorizontal, color: 'text-slate-600' }
 ];
 
 const Requests = () => {
   const [requests, setRequests] = useState([]);
   const [showNewRequestDialog, setShowNewRequestDialog] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
     type: 'document_request', // Set a default value
     title: '',
     description: ''
   });
+
+  // Debug form state changes
+  useEffect(() => {
+    console.log('Form state changed:', form);
+  }, [form]);
+
+  // Debug loading state changes
+  useEffect(() => {
+    console.log('Loading state changed:', loading);
+  }, [loading]);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -72,8 +92,12 @@ const Requests = () => {
   };
 
   const handleSubmit = async (e) => {
+    console.log('handleSubmit called!', e);
     e.preventDefault();
+    console.log('Form submitted with data:', form);
+    
     if (!form.type || !form.title || !form.description) {
+      console.log('Validation failed:', { type: form.type, title: form.title, description: form.description });
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -83,8 +107,11 @@ const Requests = () => {
     }
 
     try {
-      setLoading(true);
-      await api.post('/requests', form);
+      console.log('Submitting request...');
+      setSubmitting(true);
+      const response = await api.post('/requests', form);
+      console.log('Request submitted successfully:', response.data);
+      
       toast({
         title: "Success",
         description: "Request submitted successfully",
@@ -93,6 +120,7 @@ const Requests = () => {
       setForm({ type: 'document_request', title: '', description: '' });
       fetchRequests();
     } catch (error) {
+      console.error('Error submitting request:', error);
       const { message } = handleApiError(error);
       toast({
         title: "Error",
@@ -100,7 +128,7 @@ const Requests = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -167,7 +195,10 @@ const Requests = () => {
                     <label className="text-sm font-medium">Title</label>
                     <Input
                       value={form.title}
-                      onChange={(e) => setForm({ ...form, title: e.target.value })}
+                      onChange={(e) => {
+                        console.log('Title changing to:', e.target.value);
+                        setForm({ ...form, title: e.target.value });
+                      }}
                       placeholder="Enter request title"
                     />
                   </div>
@@ -175,7 +206,10 @@ const Requests = () => {
                     <label className="text-sm font-medium">Description</label>
                     <Textarea
                       value={form.description}
-                      onChange={(e) => setForm({ ...form, description: e.target.value })}
+                      onChange={(e) => {
+                        console.log('Description changing to:', e.target.value);
+                        setForm({ ...form, description: e.target.value });
+                      }}
                       placeholder="Provide details about your request"
                       rows={4}
                     />
@@ -188,8 +222,11 @@ const Requests = () => {
                     >
                       Cancel
                     </Button>
-                    <Button type="submit" disabled={loading}>
-                      Submit Request
+                    <Button 
+                      type="submit" 
+                      disabled={submitting}
+                    >
+                      {submitting ? 'Submitting...' : 'Submit Request'}
                     </Button>
                   </div>
                 </form>

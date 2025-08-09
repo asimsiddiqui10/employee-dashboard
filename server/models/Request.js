@@ -8,7 +8,20 @@ const requestSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['document_request', 'details_change', 'other'],
+    enum: [
+      'document_request', 
+      'details_change', 
+      'leave_request', 
+      'payroll_inquiry', 
+      'schedule_change', 
+      'access_request', 
+      'training_request', 
+      'equipment_request', 
+      'location_change', 
+      'team_request', 
+      'project_request', 
+      'other'
+    ],
     required: true
   },
   title: {

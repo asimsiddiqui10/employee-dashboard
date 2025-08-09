@@ -27,7 +27,10 @@ export function RevenueBarChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Employee Hours and Overtime</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Employee Hours and Overtime
+          <TrendingUp className="h-5 w-5" />
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div className="h-[160px] w-full">
@@ -70,11 +73,6 @@ export function RevenueBarChart() {
           </ResponsiveContainer>
         </div>
       </CardContent>
-      <CardFooter className="flex-col items-start gap-2 text-sm">
-        <div className="flex items-center justify-center w-full gap-2 font-medium leading-none">
-          Hours up by 15.2% <TrendingUp className="h-4 w-4" />
-        </div>
-      </CardFooter>
     </Card>
   );
 } 

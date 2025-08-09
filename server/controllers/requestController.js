@@ -5,6 +5,39 @@ export const createRequest = async (req, res) => {
   try {
     const { type, title, description } = req.body;
     const employeeId = req.user.employee;  // Get employee ID from authenticated user
+    
+    console.log('Creating request with:', { type, title, description, employeeId });
+
+    // Validate required fields
+    if (!type || !title || !description) {
+      return res.status(400).json({
+        success: false,
+        message: 'Missing required fields: type, title, description'
+      });
+    }
+
+    // Validate request type
+    const validTypes = [
+      'document_request', 
+      'details_change', 
+      'leave_request', 
+      'payroll_inquiry', 
+      'schedule_change', 
+      'access_request', 
+      'training_request', 
+      'equipment_request', 
+      'location_change', 
+      'team_request', 
+      'project_request', 
+      'other'
+    ];
+    
+    if (!validTypes.includes(type)) {
+      return res.status(400).json({
+        success: false,
+        message: `Invalid request type: ${type}. Valid types are: ${validTypes.join(', ')}`
+      });
+    }
 
     const request = new Request({
       employee: employeeId,
@@ -28,7 +61,8 @@ export const createRequest = async (req, res) => {
     console.error('Error creating request:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to create request'
+      message: error.message || 'Failed to create request',
+      error: process.env.NODE_ENV === 'development' ? error : undefined
     });
   }
 };
