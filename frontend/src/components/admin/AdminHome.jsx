@@ -42,7 +42,7 @@ const AdminHome = () => {
 
   const fetchPendingTimeEntries = async () => {
     try {
-      const response = await api.get('/time-clock/today/all');
+      const response = await api.get('/time-clock/all/all');
       const entries = response.data;
       const pendingEntries = entries.filter(entry => 
         entry.status === 'completed' && 
@@ -325,7 +325,7 @@ const AdminHome = () => {
       </div>
 
       {/* Requests Card */}
-      <Card className="w-full lg:w-1/4 min-w-0 overflow-hidden">
+      <Card className="w-full lg:w-1/4 min-w-0 overflow-hidden lg:self-start">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle 

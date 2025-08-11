@@ -41,7 +41,11 @@ const employeeSchema = new mongoose.Schema({
     ref: 'Employee',
     default: null
   },
-  employmentType: { type: String, enum: ['Part-time', 'Full-time', 'Contract', 'Hourly', 'Consultant'] },
+  employmentType: { 
+    type: String, 
+    enum: ['Full-time/Part-time', 'Contract/Hourly'],
+    default: 'Full-time/Part-time' // Default for backward compatibility
+  },
   employmentStatus: { 
     type: String, 
     enum: ['Active', 'On leave', 'Terminated'], 

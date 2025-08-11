@@ -58,13 +58,16 @@ const MyTeamCard = () => {
 
   const getEmploymentTypeColor = (type) => {
     const colors = {
+      'Full-time/Part-time': 'bg-green-500/10 text-green-500',
+      'Contract/Hourly': 'bg-orange-500/10 text-orange-500',
+      // Backward compatibility for old types
       'Full-time': 'bg-green-500/10 text-green-500',
-      'Part-time': 'bg-blue-500/10 text-blue-500',
+      'Part-time': 'bg-green-500/10 text-green-500',
       'Contract': 'bg-orange-500/10 text-orange-500',
-      'Hourly': 'bg-purple-500/10 text-purple-500',
-      'Consultant': 'bg-gray-500/10 text-gray-500'
+      'Hourly': 'bg-orange-500/10 text-orange-500',
+      'Consultant': 'bg-orange-500/10 text-orange-500'
     };
-    return colors[type] || colors['Consultant'];
+    return colors[type] || colors['Full-time/Part-time'];
   };
 
   if (loading) {

@@ -65,13 +65,16 @@ const MyTeam = () => {
 
   const getEmploymentTypeColor = (type) => {
     const colors = {
+      'Full-time/Part-time': 'bg-green-500/10 text-green-500',
+      'Contract/Hourly': 'bg-orange-500/10 text-orange-500',
+      // Backward compatibility for old types
       'Full-time': 'bg-green-500/10 text-green-500',
-      'Part-time': 'bg-blue-500/10 text-blue-500',
+      'Part-time': 'bg-green-500/10 text-green-500',
       'Contract': 'bg-orange-500/10 text-orange-500',
-      'Hourly': 'bg-purple-500/10 text-purple-500',
-      'Consultant': 'bg-gray-500/10 text-gray-500'
+      'Hourly': 'bg-orange-500/10 text-orange-500',
+      'Consultant': 'bg-orange-500/10 text-orange-500'
     };
-    return colors[type] || colors['Consultant'];
+    return colors[type] || colors['Full-time/Part-time'];
   };
 
   if (loading) {
@@ -167,16 +170,25 @@ const MyTeam = () => {
               </div>
               
               <div className="bg-muted p-4 rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Full-time</div>
+                <div className="text-sm font-medium text-muted-foreground">Full-time/Part-time</div>
                 <div className="text-2xl font-bold mt-1">
-                  {teamMembers.filter(m => m.employmentType === 'Full-time').length}
+                  {teamMembers.filter(m => 
+                    m.employmentType === 'Full-time/Part-time' || 
+                    m.employmentType === 'Full-time' || 
+                    m.employmentType === 'Part-time'
+                  ).length}
                 </div>
               </div>
               
               <div className="bg-muted p-4 rounded-lg">
-                <div className="text-sm font-medium text-muted-foreground">Part-time</div>
+                <div className="text-sm font-medium text-muted-foreground">Contract/Hourly</div>
                 <div className="text-2xl font-bold mt-1">
-                  {teamMembers.filter(m => m.employmentType === 'Part-time').length}
+                  {teamMembers.filter(m => 
+                    m.employmentType === 'Contract/Hourly' || 
+                    m.employmentType === 'Contract' || 
+                    m.employmentType === 'Hourly' || 
+                    m.employmentType === 'Consultant'
+                  ).length}
                 </div>
               </div>
             </div>

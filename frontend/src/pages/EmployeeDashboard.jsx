@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/authContext';
 import { EmployeeSidebarNew } from '../components/employee/EmployeeSidebarNew';
 import { Outlet, useLocation } from 'react-router-dom';
-import { Bell, User } from 'lucide-react';
+import { User } from 'lucide-react';
 import {
   SidebarInset,
   SidebarProvider,
@@ -71,9 +71,6 @@ const EmployeeDashboard = () => {
 
           <div className="flex items-center gap-4 px-4">
             <ThemeToggle />
-            <button className="text-muted-foreground hover:text-foreground">
-              <Bell className="h-5 w-5" />
-            </button>
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
               <User className="h-5 w-5 text-muted-foreground" />
             </div>

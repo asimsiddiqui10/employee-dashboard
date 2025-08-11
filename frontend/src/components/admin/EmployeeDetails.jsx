@@ -725,11 +725,8 @@ const EmployeeDetails = () => {
                         <SelectValue placeholder="Select type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Full-time">Full-time</SelectItem>
-                        <SelectItem value="Part-time">Part-time</SelectItem>
-                        <SelectItem value="Contract">Contract</SelectItem>
-                        <SelectItem value="Hourly">Hourly</SelectItem>
-                        <SelectItem value="Consultant">Consultant</SelectItem>
+                        <SelectItem value="Full-time/Part-time">Full-time/Part-time</SelectItem>
+                        <SelectItem value="Contract/Hourly">Contract/Hourly</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

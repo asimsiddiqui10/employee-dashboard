@@ -48,6 +48,7 @@ const timeEntrySchema = new mongoose.Schema({
   },
   jobCode: {
     type: String,
+    default: 'ACT001', // Default for backward compatibility
     required: function() {
       return this.status !== 'active'; // Required when clocking out
     }
