@@ -41,7 +41,7 @@ const AdminNotifications = () => {
   const [notifications, setNotifications] = useState([]);
   const [filteredNotifications, setFilteredNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeFilter, setTimeFilter] = useState('24h');
+  const [timeFilter, setTimeFilter] = useState('all');
 
   useEffect(() => {
     fetchNotifications();
@@ -182,6 +182,7 @@ const AdminNotifications = () => {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All Time</SelectItem>
               <SelectItem value="1h">Last Hour</SelectItem>
               <SelectItem value="24h">Last 24h</SelectItem>
               <SelectItem value="7d">Last 7 days</SelectItem>
