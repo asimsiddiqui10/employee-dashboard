@@ -1,9 +1,7 @@
 import * as React from "react"
-import { TrendingUp, Building } from "lucide-react"
+import { Building } from "lucide-react"
 import { Label, Pie, PieChart, Cell, Tooltip } from "recharts"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "../ui/card"
-import api from '@/lib/axios'
-import { handleApiError } from '@/utils/errorHandler'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card"
 import { departments } from '@/lib/departments'
 
 // Color palette for departments
@@ -20,37 +18,20 @@ const departmentColors = [
   "hsl(var(--chart-10))"
 ];
 
-export function DonutChartComponent() {
+export function DonutChartComponent({ departmentData = [], totalEmployees = 0 }) {
   const [chartData, setChartData] = React.useState([]);
-  const [totalEmployees, setTotalEmployees] = React.useState(0);
-  const [loading, setLoading] = React.useState(true);
 
   React.useEffect(() => {
-    fetchDepartmentData();
-  }, []);
-
-  const fetchDepartmentData = async () => {
-    try {
-      const response = await api.get('/employees/department-counts');
-      const { departments: deptCounts, total } = response.data.data;
-      
+    if (departmentData && departmentData.length > 0) {
       // Transform data for chart
-      const transformedData = deptCounts.map((dept, index) => ({
+      const transformedData = departmentData.map((dept, index) => ({
         department: dept._id || 'Other',
         value: dept.count,
         fill: departmentColors[index % departmentColors.length]
       }));
-      
       setChartData(transformedData);
-      setTotalEmployees(total);
-    } catch (error) {
-      console.error('Error fetching department data:', error);
-      const { message } = handleApiError(error);
-      console.error(message);
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [departmentData]);
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -75,11 +56,14 @@ export function DonutChartComponent() {
     return null;
   };
 
-  if (loading) {
+  if (!chartData || chartData.length === 0) {
     return (
       <Card className="flex flex-col">
         <CardHeader className="items-center pb-0">
-          <CardTitle>Department Distribution</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Building className="h-5 w-5" />
+            Department Distribution
+          </CardTitle>
           <CardDescription>Loading...</CardDescription>
         </CardHeader>
         <CardContent className="flex-1 pb-0">
@@ -113,6 +97,8 @@ export function DonutChartComponent() {
               outerRadius={65}
               paddingAngle={0}
               strokeWidth={0}
+              animationDuration={1000}
+              animationBegin={0}
             >
               {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.fill} />

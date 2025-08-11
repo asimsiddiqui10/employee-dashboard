@@ -15,7 +15,7 @@ import api from '../../lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import TimesheetForm from './TimesheetForm';
 
-const TimeClockCard = () => {
+const TimeClockCard = ({ isLoading = false }) => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [currentTime, setCurrentTime] = useState(new Date());

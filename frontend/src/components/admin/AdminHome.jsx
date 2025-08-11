@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import { format } from 'date-fns';
+import PageLoader from '../common/PageLoader';
 
 
 
@@ -19,12 +20,30 @@ const AdminHome = () => {
   const [pendingTimeEntries, setPendingTimeEntries] = useState([]);
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingStates, setLoadingStates] = useState({
+    leaveRequests: true,
+    timeEntries: true,
+    requests: true,
+    departments: true
+  });
+  const [departmentData, setDepartmentData] = useState({ departments: [], total: 0 });
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchLeaveRequests();
-    fetchPendingTimeEntries();
-    fetchRequests();
+    const fetchAllData = async () => {
+      await Promise.all([
+        fetchLeaveRequests(),
+        fetchPendingTimeEntries(),
+        fetchRequests(),
+        fetchDepartmentData()
+      ]);
+      // Small delay to ensure animations play properly
+      setTimeout(() => {
+        setLoading(false);
+      }, 300);
+    };
+    
+    fetchAllData();
   }, []);
 
   const fetchLeaveRequests = async () => {
@@ -37,6 +56,8 @@ const AdminHome = () => {
       console.error('Error fetching leave requests:', error);
       const { message } = handleApiError(error);
       console.error(message);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, leaveRequests: false }));
     }
   };
 
@@ -54,7 +75,7 @@ const AdminHome = () => {
       const { message } = handleApiError(error);
       console.error(message);
     } finally {
-      setLoading(false);
+      setLoadingStates(prev => ({ ...prev, timeEntries: false }));
     }
   };
 
@@ -68,6 +89,22 @@ const AdminHome = () => {
       console.error('Error fetching requests:', error);
       const { message } = handleApiError(error);
       console.error(message);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, requests: false }));
+    }
+  };
+
+  const fetchDepartmentData = async () => {
+    try {
+      const response = await api.get('/employees/department-counts');
+      const { departments: deptCounts, total } = response.data.data;
+      setDepartmentData({ departments: deptCounts, total });
+    } catch (error) {
+      console.error('Error fetching department data:', error);
+      const { message } = handleApiError(error);
+      console.error(message);
+    } finally {
+      setLoadingStates(prev => ({ ...prev, departments: false }));
     }
   };
 
@@ -164,18 +201,23 @@ const AdminHome = () => {
     { name: "Terminated", value: 10 },
   ];
 
+  if (loading) {
+    return <PageLoader />;
+  }
+
   return (
-    <div className="flex flex-col-reverse gap-4 lg:flex-row min-w-0">
+    <div className="flex flex-col-reverse gap-4 lg:flex-row min-w-0 animate-in fade-in duration-500">
       {/* Main Content */}
       <div className="flex w-full flex-col gap-4 lg:w-3/4 min-w-0">
         {/* Stats Section */}
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 animate-in slide-in-from-bottom-4 duration-700">
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-medium text-muted-foreground">Currently Working</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-green-500/10 text-green-500 hover:bg-green-500/20"
+                "bg-green-500/10 text-green-500 hover:bg-green-500/20",
+                "dark:bg-green-500/20 dark:text-green-400 dark:hover:bg-green-500/30"
               )}>
                 <Users className="mr-1 h-2.5 w-2.5" />
                 Active
@@ -194,7 +236,8 @@ const AdminHome = () => {
               <CardTitle className="text-xs font-medium text-muted-foreground">Pending Timesheets</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20"
+                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+                "dark:bg-yellow-500/20 dark:text-yellow-400 dark:hover:bg-yellow-500/30"
               )}>
                 <Bell className="mr-1 h-2.5 w-2.5" />
                 Awaiting
@@ -212,7 +255,8 @@ const AdminHome = () => {
               <CardTitle className="text-xs font-medium text-muted-foreground">Overtime Approvals</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20"
+                "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
+                "dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
               )}>
                 <Clock className="mr-1 h-2.5 w-2.5" />
                 Pending
@@ -231,7 +275,8 @@ const AdminHome = () => {
               <CardTitle className="text-xs font-medium text-muted-foreground">Leave Requests</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20"
+                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+                "dark:bg-yellow-500/20 dark:text-yellow-400 dark:hover:bg-yellow-500/30"
               )}>
                 <Clock className="mr-1 h-2.5 w-2.5" />
                 Pending
@@ -246,17 +291,20 @@ const AdminHome = () => {
         </div>
 
         {/* Charts Section */}
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-7 animate-in slide-in-from-bottom-4 duration-700 delay-150">
           <div className="col-span-full lg:col-span-4 min-w-0">
             <RevenueBarChart />
           </div>
           <div className="col-span-full lg:col-span-3 min-w-0">
-            <DonutChartComponent />
+            <DonutChartComponent 
+              departmentData={departmentData.departments}
+              totalEmployees={departmentData.total}
+            />
           </div>
         </div>
 
         {/* Visitors Area Chart */}
-        <div className="grid gap-4">
+        <div className="grid gap-4 animate-in slide-in-from-bottom-4 duration-700 delay-300">
           <div className="w-full min-w-0">
             <VisitorsAreaChart />
           </div>
@@ -264,7 +312,7 @@ const AdminHome = () => {
 
         {/* Leave Requests Section */}
         {leaveRequests.length > 0 && (
-          <div className="grid gap-4">
+          <div className="grid gap-4 animate-in slide-in-from-bottom-4 duration-700 delay-500">
             <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/20" onClick={() => navigate('/admin-dashboard/leave')}>
               <CardHeader>
                 <div className="flex items-center justify-between">
@@ -325,7 +373,7 @@ const AdminHome = () => {
       </div>
 
       {/* Requests Card */}
-      <Card className="w-full lg:w-1/4 min-w-0 overflow-hidden lg:self-start">
+      <Card className="w-full lg:w-1/4 min-w-0 overflow-hidden">
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle 

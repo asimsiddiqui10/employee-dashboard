@@ -56,7 +56,7 @@ const SemiCircularProgress = ({ value, total, size = 120, strokeWidth = 12 }) =>
   );
 };
 
-const TimeOffCard = () => {
+const TimeOffCard = ({ isLoading = false }) => {
   const navigate = useNavigate();
   const [leaveSummary, setLeaveSummary] = useState(null);
   const [recentRequests, setRecentRequests] = useState([]);
@@ -103,7 +103,7 @@ const TimeOffCard = () => {
     navigate('/employee-dashboard/leave');
   };
 
-  if (loading) {
+  if (isLoading || loading) {
     return (
       <Card className="h-96">
         <CardHeader className="pb-3">

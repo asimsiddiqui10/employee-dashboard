@@ -14,12 +14,20 @@ import TimeOffCard from '../components/employee/TimeOffCard';
 import NotificationsCard from '../components/employee/NotificationsCard';
 import MyTeamCard from '../components/employee/MyTeamCard';
 import TimeClockCard from '../components/employee/TimeClockCard';
+import PageLoader from '../components/common/PageLoader';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
   const location = useLocation();
   const [displayText, setDisplayText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [loadingStates, setLoadingStates] = useState({
+    notifications: true,
+    timeOff: true,
+    timeClock: true,
+    team: true
+  });
 
   useEffect(() => {
     // Clear previous animation state
@@ -52,6 +60,19 @@ const EmployeeDashboard = () => {
     return () => timeouts.forEach(timeout => clearTimeout(timeout));
   }, [user?.name]); // Only re-run if user name changes
 
+  useEffect(() => {
+    if (user?.name) {
+      // Simulate data loading for all components
+      const loadAllData = async () => {
+        // Small delay to ensure smooth loading experience
+        await new Promise(resolve => setTimeout(resolve, 500));
+        setLoading(false);
+      };
+      
+      loadAllData();
+    }
+  }, [user?.name]);
+
   // Only show the dashboard content on the main route
   const showDashboard = location.pathname === '/employee-dashboard';
 
@@ -78,38 +99,44 @@ const EmployeeDashboard = () => {
         </nav>
 
         {showDashboard && (
-          <div className="container mx-auto p-6">
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold">
-                <span>{displayText}</span>
-                {showEmoji && (
-                  <span 
-                    className="ml-2 inline-block"
-                    style={{
-                      animation: 'waveAndGrow 1s ease-in-out'
-                    }}
-                  >
-                    👋
-                  </span>
-                )}
-              </h2>
-              <p className="text-muted-foreground">Here's what's happening with your team today.</p>
-            </div>
-            <div className="grid gap-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0">
-                <div className="min-w-0">
-                  <NotificationsCard />
+          loading ? (
+            <PageLoader />
+          ) : (
+            <div className="container mx-auto p-6 animate-in fade-in duration-500">
+              <div className="mb-6 animate-in slide-in-from-bottom-4 duration-700">
+                <h2 className="text-2xl font-semibold">
+                  <span>{displayText}</span>
+                  {showEmoji && (
+                    <span 
+                      className="ml-2 inline-block"
+                      style={{
+                        animation: 'waveAndGrow 1s ease-in-out'
+                      }}
+                    >
+                      👋
+                    </span>
+                  )}
+                </h2>
+                <p className="text-muted-foreground">Here's what's happening with your team today.</p>
+              </div>
+              <div className="grid gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0 animate-in slide-in-from-bottom-4 duration-700 delay-150">
+                  <div className="min-w-0">
+                    <NotificationsCard isLoading={loading} />
+                  </div>
+                  <div className="min-w-0">
+                    <TimeOffCard isLoading={loading} />
+                  </div>
+                  <div className="min-w-0">
+                    <TimeClockCard isLoading={loading} />
+                  </div>
                 </div>
-                <div className="min-w-0">
-                  <TimeOffCard />
-                </div>
-                <div className="min-w-0">
-                  <TimeClockCard />
+                <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
+                  <MyTeamCard isLoading={loading} />
                 </div>
               </div>
-              <MyTeamCard />
             </div>
-          </div>
+          )
         )}
         {!showDashboard && <Outlet />}
       </SidebarInset>

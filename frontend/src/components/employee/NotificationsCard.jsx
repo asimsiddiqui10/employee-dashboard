@@ -34,7 +34,7 @@ const getNotificationStyle = (type) => {
   return styles[type] || styles.other;
 };
 
-const NotificationsCard = () => {
+const NotificationsCard = ({ isLoading = false }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
@@ -125,7 +125,7 @@ const NotificationsCard = () => {
       
       <CardContent className="flex flex-col h-[calc(100%-5rem)] pb-1">
         <div className="space-y-3 flex-1 overflow-hidden">
-          {loading ? (
+          {isLoading || loading ? (
             <div className="flex items-center justify-center py-4">
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary"></div>
             </div>

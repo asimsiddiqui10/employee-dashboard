@@ -9,7 +9,7 @@ import { handleApiError } from '@/utils/errorHandler';
 import { toast } from '@/hooks/use-toast';
 import { getDepartmentConfig } from '@/lib/departments';
 
-const MyTeamCard = () => {
+const MyTeamCard = ({ isLoading = false }) => {
   const { user } = useAuth();
   const [teamMembers, setTeamMembers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -70,7 +70,7 @@ const MyTeamCard = () => {
     return colors[type] || colors['Full-time/Part-time'];
   };
 
-  if (loading) {
+  if (isLoading || loading) {
     return (
       <Card className="col-span-full">
         <CardHeader className="pb-3">
