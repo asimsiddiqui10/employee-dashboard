@@ -55,7 +55,7 @@ const EmployeeList = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
-  const [showTerminated, setShowTerminated] = useState(false);
+  const [showExEmployees, setShowExEmployees] = useState(false);
   const [filteredEmployees, setFilteredEmployees] = useState([]);
   const navigate = useNavigate();
 
@@ -64,12 +64,12 @@ const EmployeeList = () => {
   }, []);
 
   useEffect(() => {
-    // Filter employees based on showTerminated state
+    // Filter employees based on showExEmployees state
     const filtered = employees.filter(employee => 
-      showTerminated ? true : employee.employmentStatus !== 'Terminated'
+      showExEmployees ? employee.employmentStatus === 'Terminated' : employee.employmentStatus !== 'Terminated'
     );
     setFilteredEmployees(filtered);
-  }, [employees, showTerminated]);
+  }, [employees, showExEmployees]);
 
   const fetchEmployees = async () => {
     try {
@@ -95,14 +95,14 @@ const EmployeeList = () => {
       accessorKey: "name",
       header: "Name",
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("name")}</div>
+        <div className="font-medium text-xs sm:text-sm">{row.getValue("name")}</div>
       ),
     },
     {
       accessorKey: "employeeId",
       header: "Employee ID",
       cell: ({ row }) => (
-        <div className="font-medium">{row.getValue("employeeId")}</div>
+        <div className="font-medium text-xs sm:text-sm">{row.getValue("employeeId")}</div>
       ),
     },
     {
@@ -113,6 +113,9 @@ const EmployeeList = () => {
           Email
         </div>
       ),
+      meta: {
+        className: "hidden sm:table-cell"
+      }
     },
     {
       accessorKey: "phoneNumber",
@@ -122,10 +125,16 @@ const EmployeeList = () => {
           Phone
         </div>
       ),
+      meta: {
+        className: "hidden sm:table-cell"
+      }
     },
     {
       accessorKey: "position",
       header: "Position",
+      cell: ({ row }) => (
+        <div className="text-xs sm:text-sm">{row.getValue("position")}</div>
+      ),
     },
     {
       accessorKey: "employmentStatus",
@@ -143,6 +152,9 @@ const EmployeeList = () => {
           {row.getValue("employmentStatus")}
         </Badge>
       ),
+      meta: {
+        className: "hidden sm:table-cell"
+      }
     },
     {
       accessorKey: "department",
@@ -156,13 +168,14 @@ const EmployeeList = () => {
             <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
               <Icon className={`h-4 w-4 transition-colors ${deptConfig.color}`} />
             </div>
-            <span className={`font-medium transition-colors ${deptConfig.color}`}>
+            <span className={`font-medium transition-colors ${deptConfig.color} text-xs sm:text-sm`}>
               {department}
             </span>
-      </div>
+          </div>
         );
       },
     },
+
   ];
 
   const table = useReactTable({
@@ -174,7 +187,7 @@ const EmployeeList = () => {
     getFilteredRowModel: getFilteredRowModel(),
     initialState: {
       pagination: {
-        pageSize: 7,
+        pageSize: 10,
       },
     },
     state: {
@@ -210,10 +223,11 @@ const EmployeeList = () => {
             <Button 
               variant="outline"
               onClick={() => setShowAddForm(false)} 
-              className="ml-auto"
+              className="ml-auto text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2"
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to List
+              <ArrowLeft className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Back to List</span>
+              <span className="sm:hidden">Back</span>
             </Button>
           </div>
         </CardHeader>
@@ -230,31 +244,32 @@ const EmployeeList = () => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <CardTitle>Employee List</CardTitle>
-            <CardDescription className="pt-1.5">Manage your employees and their roles here.</CardDescription>
+            <CardTitle className="text-lg sm:text-xl">Employee List</CardTitle>
+            <CardDescription className="pt-1.5 text-sm">Manage your employees and their roles here.</CardDescription>
           </div>
-          <div className="flex items-center space-x-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
             <div className="flex items-center gap-2">
               <Switch
-                id="show-terminated"
-                checked={showTerminated}
-                onCheckedChange={setShowTerminated}
+                id="show-ex-employees"
+                checked={showExEmployees}
+                onCheckedChange={setShowExEmployees}
               />
-              <Label htmlFor="show-terminated" className="text-sm font-medium">
+              <Label htmlFor="show-ex-employees" className="text-xs sm:text-sm font-medium">
                 Show Ex-Employees
               </Label>
             </div>
             <Button
               onClick={() => setShowAddForm(true)}
               className={cn(
-                "ml-auto bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
-                "transition-colors font-medium"
+                "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30",
+                "transition-colors font-medium text-xs sm:text-sm px-2 sm:px-4 py-1 sm:py-2"
               )}
             >
-              <UserPlus className="mr-2 h-4 w-4" />
-              Add Employee
+              <UserPlus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">Add Employee</span>
+              <span className="sm:hidden">Add</span>
             </Button>
           </div>
         </div>
@@ -262,17 +277,18 @@ const EmployeeList = () => {
       <CardContent>
         <div className="flex items-center gap-4 pb-2">
           <div className="flex-1 flex items-center gap-4">
-            <div className="flex-1 max-w-sm">
+            <div className="flex-1 max-w-full sm:max-w-sm">
               <Input
                 placeholder="Search employees..."
                 value={globalFilter ?? ""}
                 onChange={(e) => setGlobalFilter(e.target.value)}
+                className="text-xs sm:text-sm"
               />
             </div>
           </div>
         </div>
-        <div className="rounded-md border">
-          <Table>
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="min-w-full">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow key={headerGroup.id}>
@@ -280,7 +296,11 @@ const EmployeeList = () => {
                     <TableHead 
                       key={header.id}
                       onClick={header.column.getToggleSortingHandler()}
-                      className={header.column.getCanSort() ? "cursor-pointer select-none" : ""}
+                      className={cn(
+                        header.column.getCanSort() ? "cursor-pointer select-none" : "",
+                        header.column.columnDef.meta?.className || "",
+                        "px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm"
+                      )}
                     >
                       <div className="flex items-center gap-2">
                         {header.isPlaceholder
@@ -312,7 +332,13 @@ const EmployeeList = () => {
                     onClick={() => handleViewDetails(row.original)}
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell 
+                        key={cell.id}
+                        className={cn(
+                          cell.column.columnDef.meta?.className || "",
+                          "px-2 sm:px-4 py-2 sm:py-3"
+                        )}
+                      >
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </TableCell>
                     ))}
@@ -328,27 +354,27 @@ const EmployeeList = () => {
             </TableBody>
           </Table>
         </div>
-        <div className="flex items-center justify-between py-4">
-          <span className="text-sm text-muted-foreground/70">
+        <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-2">
+          <span className="text-xs sm:text-sm text-muted-foreground/70">
             Page {table.getState().pagination.pageIndex + 1} of{" "}
             {table.getPageCount()}
           </span>
           <div className="flex items-center space-x-2">
             <Button
               variant="ghost"
-              className="h-8 w-8 p-0 opacity-70 hover:opacity-100"
+              className="h-6 w-6 sm:h-8 sm:w-8 p-0 opacity-70 hover:opacity-100"
               onClick={() => table.previousPage()}
               disabled={!table.getCanPreviousPage()}
             >
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
             <Button
               variant="ghost"
-              className="h-8 w-8 p-0 opacity-70 hover:opacity-100"
+              className="h-6 w-6 sm:h-8 sm:w-8 p-0 opacity-70 hover:opacity-100"
               onClick={() => table.nextPage()}
               disabled={!table.getCanNextPage()}
             >
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-3 w-3 sm:h-4 sm:w-4" />
             </Button>
           </div>
         </div>
