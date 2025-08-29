@@ -60,6 +60,12 @@ const scheduleSchema = new mongoose.Schema({
       min: 0,
       required: function() { return this.enabled; }
     },
+    breaks: [{
+      startTime: String, // Format: "HH:MM"
+      endTime: String,   // Format: "HH:MM"
+      duration: Number,  // Duration in minutes
+      description: String // Optional break description
+    }],
     notes: {
       type: String,
       maxLength: 500
@@ -96,6 +102,14 @@ const scheduleSchema = new mongoose.Schema({
   },
   approvalDate: Date,
   approvalNotes: String,
+  isRecurring: {
+    type: Boolean,
+    default: false
+  },
+  recurringDays: [{
+    type: String,
+    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',

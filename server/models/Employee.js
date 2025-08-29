@@ -71,6 +71,17 @@ const employeeSchema = new mongoose.Schema({
     type: Number,
     required: true 
   },
+  // Job Code Information
+  primaryJobCode: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'JobCode',
+    default: null
+  },
+  defaultHourlyRate: {
+    type: Number,
+    min: 0,
+    default: 25.00
+  },
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

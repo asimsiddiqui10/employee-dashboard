@@ -118,7 +118,9 @@ export const createSchedule = async (req, res) => {
       weekStartDate,
       schedules,
       status = 'draft',
-      notes
+      notes,
+      isRecurring,
+      recurringDays
     } = req.body;
 
     // Validate employee exists
@@ -173,6 +175,8 @@ export const createSchedule = async (req, res) => {
         date: new Date(s.date)
       })),
       status,
+      isRecurring: isRecurring || false,
+      recurringDays: recurringDays || [],
       createdBy: req.user._id,
       notes
     });
@@ -321,6 +325,95 @@ export const updateApprovalStatus = async (req, res) => {
   } catch (error) {
     console.error('Error updating approval status:', error);
     res.status(500).json({ error: error.message || 'Failed to update approval status' });
+  }
+};
+
+// Create schedule from company default
+export const createScheduleFromCompanyDefault = async (req, res) => {
+  try {
+    const { employeeId, weekStartDate, companyDefaultId } = req.body;
+
+    // Validate employee exists
+    const employee = await Employee.findOne({ employeeId });
+    if (!employee) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    // Get company default
+    const CompanyDefault = mongoose.model('CompanyDefault');
+    const companyDefault = await CompanyDefault.findById(companyDefaultId);
+    if (!companyDefault) {
+      return res.status(404).json({ error: 'Company default not found' });
+    }
+
+    // Check for schedule conflicts
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setDate(weekEndDate.getDate() + 6);
+
+    const existingSchedule = await Schedule.findOne({
+      employeeId,
+      weekStartDate: { $lte: weekEndDate },
+      weekEndDate: { $gte: new Date(weekStartDate) },
+      status: { $in: ['draft', 'active'] }
+    });
+
+    if (existingSchedule) {
+      return res.status(409).json({ 
+        error: 'Schedule conflict: Another schedule exists for this week',
+        conflictingSchedule: existingSchedule._id
+      });
+    }
+
+    // Create schedules from company default
+    const schedules = [];
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    
+    for (let i = 0; i < 7; i++) {
+      const currentDate = new Date(weekStartDate);
+      currentDate.setDate(currentDate.getDate() + i);
+      const dayName = days[i];
+      const daySchedule = companyDefault.schedule[dayName];
+
+      if (daySchedule.enabled) {
+        schedules.push({
+          date: currentDate,
+          dayOfWeek: dayName.charAt(0).toUpperCase() + dayName.slice(1),
+          enabled: true,
+          startTime: daySchedule.startTime,
+          endTime: daySchedule.endTime,
+          hours: daySchedule.hours,
+          jobCode: companyDefault.defaultJobCode,
+          rate: companyDefault.defaultRate,
+          breaks: daySchedule.breaks || [],
+          notes: ''
+        });
+      }
+    }
+
+    const schedule = new Schedule({
+      employee: employee._id,
+      employeeId,
+      weekStartDate: new Date(weekStartDate),
+      weekEndDate,
+      schedules,
+      status: 'draft',
+      createdBy: req.user._id,
+      notes: `Created from company default: ${companyDefault.name}`
+    });
+
+    await schedule.save();
+
+    const populatedSchedule = await Schedule.findById(schedule._id)
+      .populate('employee', 'name employeeId department position')
+      .populate('createdBy', 'name employeeId');
+
+    res.status(201).json({
+      message: 'Schedule created from company default successfully',
+      schedule: populatedSchedule
+    });
+  } catch (error) {
+    console.error('Error creating schedule from company default:', error);
+    res.status(500).json({ error: error.message || 'Failed to create schedule from company default' });
   }
 };
 

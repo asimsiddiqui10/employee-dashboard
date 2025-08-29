@@ -77,7 +77,7 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/time-tracking"
     },
     {
-      title: "Schedule Assignment",
+      title: "Schedules",
       icon: Calendar,
       path: "/admin-dashboard/schedule-assignment"
     },
@@ -85,6 +85,11 @@ export function AdminSidebarNew() {
       title: "Departments",
       icon: Building2,
       path: "/admin-dashboard/departments"
+    },
+    {
+      title: "Job Codes",
+      icon: GraduationCap,
+      path: "/admin-dashboard/job-codes"
     },
     {
       title: "Documents",

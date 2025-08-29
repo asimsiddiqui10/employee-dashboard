@@ -8,6 +8,7 @@ import {
   deleteSchedule,
   updateApprovalStatus,
   copyScheduleToNextWeek,
+  createScheduleFromCompanyDefault,
   getScheduleStats,
   bulkUpdateSchedules,
   exportSchedules
@@ -31,6 +32,9 @@ router.get('/employee/:employeeId', getEmployeeSchedules);
 
 // Create new schedule (admin only)
 router.post('/', roleMiddleware(['admin']), createSchedule);
+
+// Create schedule from company default (admin only)
+router.post('/from-company-default', roleMiddleware(['admin']), createScheduleFromCompanyDefault);
 
 // Update schedule (admin only)
 router.put('/:id', roleMiddleware(['admin']), updateSchedule);

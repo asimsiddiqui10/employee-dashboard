@@ -32,7 +32,8 @@ import RequestManagement from './components/admin/RequestManagement';
 import Reimbursements from './components/employee/Reimbursements';
 import ReimbursementManagement from './components/admin/ReimbursementManagement';
 import ScheduleHours from './components/employee/ScheduleHours';
-import AdminScheduleAssignment from './components/admin/AdminScheduleAssignment';
+import AdminScheduleManagement from './components/admin/AdminScheduleManagement';
+import JobCodes from './components/admin/JobCodes';
 
 
 // Error Boundary Component
@@ -86,7 +87,7 @@ function App() {
               <Route path="notifications" element={<AdminNotifications/>}></Route>
               <Route path="payroll" element={<PayrollUpload />} />
               <Route path="time-tracking" element={<AdminTimeTracking />} />
-              <Route path="schedule-assignment" element={<AdminScheduleAssignment />} />
+              <Route path="schedule-assignment" element={<AdminScheduleManagement />} />
               <Route path="leave" element={<LeaveManagement />} />
               <Route path="attendance" element={<UnderProgress/>}></Route>
               <Route path="teams" element={<UnderProgress/>}></Route>
@@ -102,6 +103,7 @@ function App() {
               <Route path="settings" element={<UnderProgress/>}></Route>
               <Route path="departments" element={<Departments />} />
               <Route path="departments/:departmentId" element={<DepartmentDetails />} />
+              <Route path="job-codes" element={<JobCodes />} />
             </Route>
 
             <Route path="/employee-dashboard" element={

@@ -1,68 +1,48 @@
 import express from 'express';
+import authMiddleware from '../middleware/authMiddleware.js';
+import { roleMiddleware } from '../middleware/roleMiddleware.js';
 import {
   getAllJobCodes,
   getJobCodeById,
   getDefaultJobCode,
-  getJobCodesByCategory,
   getActiveJobCodes,
-  searchJobCodes,
   createJobCode,
   updateJobCode,
   deleteJobCode,
+  setAsDefault,
   toggleJobCodeStatus,
-  setDefaultJobCode,
-  bulkUpdateJobCodes,
   getJobCodeStats,
-  importJobCodes
+  bulkCreateJobCodes,
+  exportJobCodes,
+  debugJobCodes,
+  assignJobCodeToEmployees,
+  removeJobCodeFromEmployees,
+  getJobCodesByEmployee
 } from '../controllers/jobCodeController.js';
-import authMiddleware from '../middleware/authMiddleware.js';
-import { roleMiddleware } from '../middleware/roleMiddleware.js';
 
 const router = express.Router();
 
 // Apply authentication middleware to all routes
 router.use(authMiddleware);
 
-// Get all job codes (admin only)
-router.get('/', roleMiddleware(['admin']), getAllJobCodes);
-
-// Get job code by ID (admin only)
-router.get('/:id', roleMiddleware(['admin']), getJobCodeById);
-
-// Get default job code (public for employees)
-router.get('/default/get', getDefaultJobCode);
-
-// Get job codes by category (public for employees)
-router.get('/category/:category', getJobCodesByCategory);
-
-// Get all active job codes (public for employees)
+// Public routes (for authenticated users)
 router.get('/active/all', getActiveJobCodes);
+router.get('/default', getDefaultJobCode);
+router.get('/employee/:employeeId', getJobCodesByEmployee);
 
-// Search job codes (public for employees)
-router.get('/search/query', searchJobCodes);
-
-// Create new job code (admin only)
+// Admin-only routes
+router.get('/', roleMiddleware(['admin']), getAllJobCodes);
 router.post('/', roleMiddleware(['admin']), createJobCode);
-
-// Update job code (admin only)
+router.post('/bulk', roleMiddleware(['admin']), bulkCreateJobCodes);
+router.get('/export', roleMiddleware(['admin']), exportJobCodes);
+router.get('/stats', roleMiddleware(['admin']), getJobCodeStats);
+router.get('/debug', roleMiddleware(['admin']), debugJobCodes);
+router.get('/:id', roleMiddleware(['admin']), getJobCodeById);
 router.put('/:id', roleMiddleware(['admin']), updateJobCode);
-
-// Delete job code (admin only)
 router.delete('/:id', roleMiddleware(['admin']), deleteJobCode);
-
-// Toggle job code status (admin only)
-router.patch('/:id/toggle', roleMiddleware(['admin']), toggleJobCodeStatus);
-
-// Set job code as default (admin only)
-router.patch('/:id/default', roleMiddleware(['admin']), setDefaultJobCode);
-
-// Bulk update job codes (admin only)
-router.patch('/bulk', roleMiddleware(['admin']), bulkUpdateJobCodes);
-
-// Get job code statistics (admin only)
-router.get('/stats/overview', roleMiddleware(['admin']), getJobCodeStats);
-
-// Import job codes (admin only)
-router.post('/import', roleMiddleware(['admin']), importJobCodes);
+router.patch('/:id/set-default', roleMiddleware(['admin']), setAsDefault);
+router.patch('/:id/toggle-status', roleMiddleware(['admin']), toggleJobCodeStatus);
+router.post('/:id/assign', roleMiddleware(['admin']), assignJobCodeToEmployees);
+router.post('/:id/remove', roleMiddleware(['admin']), removeJobCodeFromEmployees);
 
 export default router; 
