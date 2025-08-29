@@ -14,6 +14,7 @@ import TimeOffCard from '../components/employee/TimeOffCard';
 import NotificationsCard from '../components/employee/NotificationsCard';
 import MyTeamCard from '../components/employee/MyTeamCard';
 import TimeClockCard from '../components/employee/TimeClockCard';
+import ScheduleWidget from '../components/employee/ScheduleWidget';
 import PageLoader from '../components/common/PageLoader';
 
 const EmployeeDashboard = () => {
@@ -26,6 +27,7 @@ const EmployeeDashboard = () => {
     notifications: true,
     timeOff: true,
     timeClock: true,
+    schedule: true,
     team: true
   });
 
@@ -127,9 +129,16 @@ const EmployeeDashboard = () => {
                   <div className="min-w-0">
                     <TimeOffCard isLoading={loading} />
                   </div>
-                  <div className="min-w-0">
-                    <TimeClockCard isLoading={loading} />
-                  </div>
+                  {/* Conditional rendering based on employee type */}
+                  {user?.employmentType === 'hourly' || user?.employmentType === 'contract' ? (
+                    <div className="min-w-0">
+                      <TimeClockCard isLoading={loading} />
+                    </div>
+                  ) : (
+                    <div className="min-w-0">
+                      <ScheduleWidget isLoading={loading} />
+                    </div>
+                  )}
                 </div>
                 <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
                   <MyTeamCard isLoading={loading} />

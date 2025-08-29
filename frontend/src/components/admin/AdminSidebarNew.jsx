@@ -77,6 +77,11 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/time-tracking"
     },
     {
+      title: "Schedule Assignment",
+      icon: Calendar,
+      path: "/admin-dashboard/schedule-assignment"
+    },
+    {
       title: "Departments",
       icon: Building2,
       path: "/admin-dashboard/departments"

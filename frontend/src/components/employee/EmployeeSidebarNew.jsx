@@ -53,6 +53,7 @@ const sidebarData = [
     icon: Bell,
     path: "/employee-dashboard/notifications"
   },
+  // Conditional menu item will be handled in the component
   {
     title: "Hours",
     icon: Clock,
@@ -132,7 +133,7 @@ const bottomMenuItems = [
 ];
 
 export function EmployeeSidebarNew() {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const { isMobile, setOpenMobile } = useSidebar();
   const location = useLocation();
 
@@ -147,6 +148,31 @@ export function EmployeeSidebarNew() {
       return location.pathname === path;
     }
     return location.pathname.startsWith(path);
+  };
+
+  // Filter sidebar data based on employee type
+  const getFilteredSidebarData = () => {
+    return sidebarData.map(item => {
+      if (item.title === "Hours") {
+        // Show "Hours" for hourly/contract employees, "Schedule" for full-time/part-time
+        if (user?.employmentType === 'hourly' || user?.employmentType === 'contract') {
+          return {
+            ...item,
+            title: "Hours",
+            icon: Clock,
+            path: "/employee-dashboard/time-tracking"
+          };
+        } else {
+          return {
+            ...item,
+            title: "Schedule",
+            icon: Calendar,
+            path: "/employee-dashboard/schedule"
+          };
+        }
+      }
+      return item;
+    });
   };
 
   return (
@@ -172,7 +198,7 @@ export function EmployeeSidebarNew() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarMenu>
-            {sidebarData.map((item) => (
+            {getFilteredSidebarData().map((item) => (
               <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton asChild isActive={location.pathname === item.path || (item.path !== '/employee-dashboard' && location.pathname.startsWith(item.path))}>
                   <NavLink 
