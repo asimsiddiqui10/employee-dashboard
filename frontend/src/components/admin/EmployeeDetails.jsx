@@ -68,10 +68,86 @@ const EmployeeDetails = () => {
       const response = await api.get(`/employees/${employeeId}`);
       console.log('Fetched employee details:', response.data);
       
+      // Fetch job codes assigned to this employee
+      let assignedJobCodes = [];
+      try {
+        // Get all active job codes and filter by those that have this employee
+        const allJobCodesResponse = await api.get('/job-codes/active/all');
+        console.log('All active job codes:', allJobCodesResponse.data);
+        
+        // Log the employee data we have
+        console.log('Employee data from response:', response.data);
+        console.log('Employee _id:', response.data._id);
+        console.log('Employee employeeId:', response.data.employeeId);
+        
+        if (allJobCodesResponse.data && Array.isArray(allJobCodesResponse.data)) {
+          console.log('Employee ID we are looking for:', employeeId);
+          console.log('Type of employeeId:', typeof employeeId);
+          
+          const filteredJobCodes = allJobCodesResponse.data.filter(jobCode => {
+            console.log(`Checking job code ${jobCode.code}:`, jobCode);
+            console.log(`Job code assignedTo:`, jobCode.assignedTo);
+            
+            if (!jobCode.assignedTo || !Array.isArray(jobCode.assignedTo)) {
+              console.log(`Job code ${jobCode.code} has no assignedTo array`);
+              return false;
+            }
+            
+            // Use the employee's _id (MongoDB ObjectId) instead of employeeId
+            const employeeMongoId = response.data._id;
+            console.log(`Looking for employee with MongoDB _id:`, employeeMongoId);
+            
+            const hasEmployee = jobCode.assignedTo.some(assignment => {
+              console.log(`Checking assignment:`, assignment);
+              console.log(`Assignment employee:`, assignment.employee);
+              console.log(`Assignment employee._id:`, assignment.employee?._id);
+              console.log(`Comparing ${assignment.employee?._id} === ${employeeMongoId}:`, assignment.employee?._id === employeeMongoId);
+              return assignment.employee && assignment.employee._id === employeeMongoId;
+            });
+            
+            console.log(`Job code ${jobCode.code} has employee:`, hasEmployee);
+            return hasEmployee;
+          });
+          
+          console.log('Filtered job codes for this employee:', filteredJobCodes);
+          
+          assignedJobCodes = filteredJobCodes.map(jobCode => ({
+            code: jobCode.code,
+            title: jobCode.title,
+            description: jobCode.description,
+            rate: jobCode.rate
+          }));
+        }
+        
+        console.log('Final assigned job codes:', assignedJobCodes);
+        
+      } catch (jobCodeError) {
+        console.log('Error fetching job codes:', jobCodeError);
+        
+        // Fallback: check if employee has a primary job code
+        if (response.data.primaryJobCode) {
+          try {
+            const primaryJobCodeResponse = await api.get(`/job-codes/${response.data.primaryJobCode}`);
+            if (primaryJobCodeResponse.data) {
+              assignedJobCodes = [{
+                code: primaryJobCodeResponse.data.code,
+                title: primaryJobCodeResponse.data.title,
+                description: primaryJobCodeResponse.data.description,
+                rate: primaryJobCodeResponse.data.rate
+              }];
+              console.log('Fallback: Found primary job code:', assignedJobCodes);
+            }
+          } catch (fallbackError) {
+            console.log('Fallback also failed:', fallbackError);
+          }
+        }
+      }
+      
       // Format the data to ensure supervisor is handled consistently
       const formattedData = {
         ...response.data,
-        supervisor: response.data.supervisor?._id || null
+        supervisor: response.data.supervisor?._id || null,
+        assignedJobCodes: assignedJobCodes
       };
       
       console.log('Setting formatted form data:', formattedData);
@@ -833,6 +909,22 @@ const EmployeeDetails = () => {
                       onChange={handleInputChange}
                     />
                   </div>
+                  <div className="col-span-2 space-y-2">
+                    <Label>Job Codes</Label>
+                    <div className="p-3 bg-gray-50 rounded-md border">
+                      {form?.assignedJobCodes && form.assignedJobCodes.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {form.assignedJobCodes.map((jobCode, index) => (
+                            <Badge key={index} variant="secondary" className="text-sm">
+                              {jobCode.code}: {jobCode.title}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No job codes assigned</span>
+                      )}
+                    </div>
+                  </div>
                 </>
               ) : (
                 <>
@@ -854,6 +946,22 @@ const EmployeeDetails = () => {
                   <InfoField label="Work Email" value={form?.workEmail} />
                   <InfoField label="Work Phone Number" value={form?.workPhoneNumber} />
                   <InfoField label="Job Description" value={form?.jobDescription} />
+                  <div className="col-span-2 space-y-2">
+                    <Label className="text-sm font-medium">Job Codes</Label>
+                    <div className="p-3 bg-gray-50 rounded-md border">
+                      {form?.assignedJobCodes && form.assignedJobCodes.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {form.assignedJobCodes.map((jobCode, index) => (
+                            <Badge key={index} variant="secondary" className="text-sm">
+                              {jobCode.code}: {jobCode.title}
+                            </Badge>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">No job codes assigned</span>
+                      )}
+                    </div>
+                  </div>
                 </>
               )}
             </div>
