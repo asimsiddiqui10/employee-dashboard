@@ -3,415 +3,332 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { X, Plus } from 'lucide-react';
+import { X, Plus, Clock } from 'lucide-react';
 
-const ScheduleForm = ({ employee, jobCodes, onSubmit, onCancel, initialData = null }) => {
-  const [scheduleData, setScheduleData] = useState({
-    weekStartDate: '',
+const ScheduleForm = ({ employee, jobCodes, onSubmit, onCancel, initialData = null, isOpen = true }) => {
+  const [formData, setFormData] = useState({
+    date: '',
+    timeSlots: [
+      {
+        startTime: '09:00',
+        endTime: '17:00',
+        isBreak: false,
+        jobCode: '',
+        rate: ''
+      }
+    ],
+    notes: '',
     isRecurring: false,
-    recurringDays: [],
-    schedules: {}
+    recurringOptions: {
+      type: 'thisWeek', // 'thisWeek', 'tillWhen', 'custom'
+      endDate: '',
+      includeWeekends: false
+    }
   });
 
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (initialData) {
-      setScheduleData(initialData);
+      setFormData(initialData);
     } else {
-      // Initialize with current week
-      const today = new Date();
-      const monday = new Date(today);
-      monday.setDate(today.getDate() - today.getDay() + 1);
-      
-      const weekData = {};
-      for (let i = 0; i < 7; i++) {
-        const date = new Date(monday);
-        date.setDate(monday.getDate() + i);
-        const dateKey = date.toISOString().split('T')[0];
-        const dayName = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][i];
-        
-        weekData[dateKey] = {
-          date: dateKey,
-          dayOfWeek: dayName,
-          enabled: i > 0 && i < 6, // Monday to Friday enabled by default
-          startTime: '09:00',
-          endTime: '17:00',
-          hours: '8.0',
-          jobCode: jobCodes.length > 0 ? jobCodes[0].code : 'ACT001',
-          rate: jobCodes.length > 0 ? jobCodes[0].defaultRate : 25.00,
-          breaks: [
-            {
-              startTime: '12:00',
-              endTime: '13:00',
-              duration: 60,
-              description: 'Lunch Break'
-            }
-          ],
-          notes: ''
-        };
-      }
-      
-      setScheduleData({
-        weekStartDate: monday.toISOString().split('T')[0],
-        isRecurring: false,
-        recurringDays: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
-        schedules: weekData
-      });
+      // Set default date to today
+      const today = new Date().toISOString().split('T')[0];
+      setFormData(prev => ({
+        ...prev,
+        date: today,
+        timeSlots: prev.timeSlots.map(slot => ({
+          ...slot,
+          jobCode: jobCodes.length > 0 ? jobCodes[0].code : '',
+          rate: jobCodes.length > 0 ? jobCodes[0].rate || 'NA' : 'NA'
+        }))
+      }));
     }
   }, [initialData, jobCodes]);
 
-  const handleDayToggle = (dateKey, enabled) => {
-    setScheduleData(prev => ({
+  const addTimeSlot = () => {
+    setFormData(prev => ({
       ...prev,
-      schedules: {
-        ...prev.schedules,
-        [dateKey]: {
-          ...prev.schedules[dateKey],
-          enabled
+      timeSlots: [
+        ...prev.timeSlots,
+        {
+          startTime: '12:00',
+          endTime: '13:00',
+          isBreak: true,
+          jobCode: jobCodes.length > 0 ? jobCodes[0].code : '',
+          rate: jobCodes.length > 0 ? jobCodes[0].rate || 'NA' : 'NA'
         }
-      }
+      ]
     }));
   };
 
-  const handleScheduleChange = (dateKey, field, value) => {
-    setScheduleData(prev => ({
+  const removeTimeSlot = (index) => {
+    if (formData.timeSlots.length > 1) {
+      setFormData(prev => ({
+        ...prev,
+        timeSlots: prev.timeSlots.filter((_, i) => i !== index)
+      }));
+    }
+  };
+
+  const updateTimeSlot = (index, field, value) => {
+    setFormData(prev => ({
       ...prev,
-      schedules: {
-        ...prev.schedules,
-        [dateKey]: {
-          ...prev.schedules[dateKey],
-          [field]: value
-        }
-      }
+      timeSlots: prev.timeSlots.map((slot, i) =>
+        i === index ? { ...slot, [field]: value } : slot
+      )
     }));
   };
 
-  const handleBreakChange = (dateKey, breakIndex, field, value) => {
-    setScheduleData(prev => ({
-      ...prev,
-      schedules: {
-        ...prev.schedules,
-        [dateKey]: {
-          ...prev.schedules[dateKey],
-          breaks: prev.schedules[dateKey].breaks.map((breakItem, index) =>
-            index === breakIndex ? { ...breakItem, [field]: value } : breakItem
-          )
-        }
-      }
-    }));
-  };
-
-  const addBreak = (dateKey) => {
-    setScheduleData(prev => ({
-      ...prev,
-      schedules: {
-        ...prev.schedules,
-        [dateKey]: {
-          ...prev.schedules[dateKey],
-          breaks: [
-            ...prev.schedules[dateKey].breaks,
-            {
-              startTime: '10:00',
-              endTime: '10:15',
-              duration: 15,
-              description: 'Break'
-            }
-          ]
-        }
-      }
-    }));
-  };
-
-  const removeBreak = (dateKey, breakIndex) => {
-    setScheduleData(prev => ({
-      ...prev,
-      schedules: {
-        ...prev.schedules,
-        [dateKey]: {
-          ...prev.schedules[dateKey],
-          breaks: prev.schedules[dateKey].breaks.filter((_, index) => index !== breakIndex)
-        }
-      }
-    }));
-  };
-
-  const handleRecurringDayToggle = (day) => {
-    setScheduleData(prev => ({
-      ...prev,
-      recurringDays: prev.recurringDays.includes(day)
-        ? prev.recurringDays.filter(d => d !== day)
-        : [...prev.recurringDays, day]
-    }));
-  };
-
-  const calculateDayHours = (startTime, endTime, breaks) => {
-    if (!startTime || !endTime) return 0;
-    
-    const start = new Date(`2000-01-01T${startTime}`);
-    const end = new Date(`2000-01-01T${endTime}`);
-    let totalMinutes = (end - start) / (1000 * 60);
-    
-    // Subtract break time
-    breaks.forEach(breakItem => {
-      if (breakItem.duration) {
-        totalMinutes -= breakItem.duration;
+  const calculateTotalHours = () => {
+    let totalHours = 0;
+    formData.timeSlots.forEach(slot => {
+      if (!slot.isBreak) {
+        const start = new Date(`2000-01-01T${slot.startTime}`);
+        const end = new Date(`2000-01-01T${slot.endTime}`);
+        const hours = (end - start) / (1000 * 60 * 60);
+        totalHours += hours;
       }
     });
-    
-    return Math.max(0, totalMinutes / 60);
+    return totalHours.toFixed(1);
   };
 
   const handleSubmit = async () => {
+    if (!formData.date || formData.timeSlots.length === 0) {
+      return;
+    }
+
+    setLoading(true);
     try {
-      setLoading(true);
-      
-      // Convert schedules object to array and calculate hours
-      const schedulesArray = Object.values(scheduleData.schedules)
-        .filter(day => day.enabled)
-        .map(day => ({
-          ...day,
-          hours: calculateDayHours(day.startTime, day.endTime, day.breaks)
-        }));
-
-      const schedulePayload = {
-        employeeId: employee.employeeId,
-        weekStartDate: scheduleData.weekStartDate,
-        schedules: schedulesArray,
-        isRecurring: scheduleData.isRecurring,
-        recurringDays: scheduleData.recurringDays,
-        status: 'draft'
-      };
-
-      await onSubmit(schedulePayload);
+      await onSubmit(formData);
     } catch (error) {
-      console.error('Error submitting schedule:', error);
+      console.error('Error creating schedule:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  const getJobCodeRate = (jobCode) => {
-    const jobCodeObj = jobCodes.find(jc => jc.code === jobCode);
-    return jobCodeObj ? jobCodeObj.defaultRate : 0;
-  };
-
-  const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
-
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold">Create Schedule for {employee?.name}</h2>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onCancel}>
-            Cancel
-          </Button>
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Creating...' : 'Create Schedule'}
-          </Button>
-        </div>
-      </div>
+    <Dialog open={isOpen} onOpenChange={onCancel}>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Create Schedule for {employee?.name}</DialogTitle>
+        </DialogHeader>
 
-      {/* Week Start Date */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Schedule Details</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
+        <div className="space-y-6">
+          {/* Date Selection */}
           <div>
-            <Label htmlFor="weekStartDate">Week Start Date</Label>
+            <Label htmlFor="date">Date</Label>
             <Input
-              id="weekStartDate"
+              id="date"
               type="date"
-              value={scheduleData.weekStartDate}
-              onChange={(e) => setScheduleData(prev => ({
-                ...prev,
-                weekStartDate: e.target.value
-              }))}
+              value={formData.date}
+              onChange={(e) => setFormData(prev => ({ ...prev, date: e.target.value }))}
+              className="mt-1"
             />
-          </div>
-          
-          <div className="flex items-center space-x-2">
-            <Switch
-              id="isRecurring"
-              checked={scheduleData.isRecurring}
-              onCheckedChange={(checked) => setScheduleData(prev => ({
-                ...prev,
-                isRecurring: checked
-              }))}
-            />
-            <Label htmlFor="isRecurring">Make recurring for weekdays</Label>
           </div>
 
-          {scheduleData.isRecurring && (
-            <div>
-              <Label>Recurring Days</Label>
-              <div className="flex gap-2 mt-2">
-                {weekDays.map((day) => (
-                  <Button
-                    key={day}
-                    variant={scheduleData.recurringDays.includes(day) ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => handleRecurringDayToggle(day)}
-                  >
-                    {day.slice(0, 3)}
-                  </Button>
-                ))}
-              </div>
+          {/* Time Slots */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <Label>Time Slots</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={addTimeSlot}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Time Slot
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Weekly Schedule Grid */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Weekly Schedule</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {Object.entries(scheduleData.schedules).map(([dateKey, daySchedule]) => (
-              <div key={dateKey} className="border rounded-lg p-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    <Switch
-                      checked={daySchedule.enabled}
-                      onCheckedChange={(enabled) => handleDayToggle(dateKey, enabled)}
-                    />
-                    <div>
-                      <h3 className="font-medium">{daySchedule.dayOfWeek}</h3>
-                      <p className="text-sm text-gray-600">{dateKey}</p>
+            <div className="space-y-3">
+              {formData.timeSlots.map((slot, index) => (
+                <div key={index} className="p-3 border rounded-lg space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Switch
+                        checked={slot.isBreak}
+                        onCheckedChange={(checked) => updateTimeSlot(index, 'isBreak', checked)}
+                      />
+                      <Label className="text-sm">
+                        {slot.isBreak ? 'Break' : 'Work'}
+                      </Label>
                     </div>
-                  </div>
-                  {daySchedule.enabled && (
-                    <Badge variant="outline">
-                      {calculateDayHours(daySchedule.startTime, daySchedule.endTime, daySchedule.breaks).toFixed(1)} hours
-                    </Badge>
-                  )}
-                </div>
 
-                {daySchedule.enabled && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div>
-                      <Label>Start Time</Label>
-                      <Input
-                        type="time"
-                        value={daySchedule.startTime}
-                        onChange={(e) => handleScheduleChange(dateKey, 'startTime', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>End Time</Label>
-                      <Input
-                        type="time"
-                        value={daySchedule.endTime}
-                        onChange={(e) => handleScheduleChange(dateKey, 'endTime', e.target.value)}
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>Job Code</Label>
-                      <Input
-                        type="text"
-                        value={daySchedule.jobCode}
-                        onChange={(e) => {
-                          const value = e.target.value;
-                          handleScheduleChange(dateKey, 'jobCode', value);
-                          handleScheduleChange(dateKey, 'rate', getJobCodeRate(value));
-                        }}
-                        placeholder="Enter job code"
-                      />
-                    </div>
-                    
-                    <div>
-                      <Label>Rate ($/hr)</Label>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={daySchedule.rate}
-                        onChange={(e) => handleScheduleChange(dateKey, 'rate', parseFloat(e.target.value))}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {daySchedule.enabled && (
-                  <div className="mt-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <Label>Breaks</Label>
+                    {formData.timeSlots.length > 1 && (
                       <Button
                         type="button"
-                        variant="outline"
+                        variant="ghost"
                         size="sm"
-                        onClick={() => addBreak(dateKey)}
+                        onClick={() => removeTimeSlot(index)}
+                        className="text-red-500 hover:text-red-700"
                       >
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Break
+                        <X className="h-4 w-4" />
                       </Button>
-                    </div>
-                    
-                    <div className="space-y-2">
-                      {daySchedule.breaks.map((breakItem, breakIndex) => (
-                        <div key={breakIndex} className="flex items-center gap-2">
-                          <Input
-                            type="time"
-                            value={breakItem.startTime}
-                            onChange={(e) => handleBreakChange(dateKey, breakIndex, 'startTime', e.target.value)}
-                            className="w-24"
-                          />
-                          <Input
-                            type="time"
-                            value={breakItem.endTime}
-                            onChange={(e) => handleBreakChange(dateKey, breakIndex, 'endTime', e.target.value)}
-                            className="w-24"
-                          />
-                          <Input
-                            type="number"
-                            placeholder="Duration (min)"
-                            value={breakItem.duration}
-                            onChange={(e) => handleBreakChange(dateKey, breakIndex, 'duration', parseInt(e.target.value))}
-                            className="w-24"
-                          />
-                          <Input
-                            placeholder="Description"
-                            value={breakItem.description}
-                            onChange={(e) => handleBreakChange(dateKey, breakIndex, 'description', e.target.value)}
-                            className="flex-1"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => removeBreak(dateKey, breakIndex)}
-                          >
-                            <X className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
+                    )}
                   </div>
-                )}
 
-                {daySchedule.enabled && (
-                  <div className="mt-4">
-                    <Label>Notes</Label>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-gray-500" />
                     <Input
-                      placeholder="Optional notes for this day..."
-                      value={daySchedule.notes}
-                      onChange={(e) => handleScheduleChange(dateKey, 'notes', e.target.value)}
+                      type="time"
+                      value={slot.startTime}
+                      onChange={(e) => updateTimeSlot(index, 'startTime', e.target.value)}
+                      className="w-24"
+                    />
+                    <span className="text-gray-500">-</span>
+                    <Input
+                      type="time"
+                      value={slot.endTime}
+                      onChange={(e) => updateTimeSlot(index, 'endTime', e.target.value)}
+                      className="w-24"
+                    />
+                  </div>
+
+                  {!slot.isBreak && (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <Label className="text-sm">Job Code</Label>
+                        <Select
+                          value={slot.jobCode || ''}
+                          onValueChange={(value) => updateTimeSlot(index, 'jobCode', value)}
+                        >
+                          <SelectTrigger className="mt-1">
+                            <SelectValue placeholder="Select job code" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {jobCodes.map((jobCode) => (
+                              <SelectItem key={jobCode.code} value={jobCode.code}>
+                                {jobCode.code}: {jobCode.title}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      <div>
+                        <Label className="text-sm">Rate</Label>
+                        <Input
+                          type="text"
+                          value={slot.rate || ''}
+                          onChange={(e) => updateTimeSlot(index, 'rate', e.target.value)}
+                          placeholder="NA"
+                          className="mt-1"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Total Hours Display */}
+            <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium">Total Work Hours:</span>
+                <Badge variant="secondary" className="text-lg">
+                  {calculateTotalHours()} hours
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label htmlFor="notes">Notes (Optional)</Label>
+            <Input
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              placeholder="Add any additional notes..."
+              className="mt-1"
+            />
+          </div>
+
+          {/* Recurring Options */}
+          <div className="border-t pt-4">
+            <div className="flex items-center space-x-2 mb-3">
+              <Switch
+                id="isRecurring"
+                checked={formData.isRecurring}
+                onCheckedChange={(checked) => setFormData(prev => ({
+                  ...prev,
+                  isRecurring: checked
+                }))}
+              />
+              <Label htmlFor="isRecurring">Make recurring</Label>
+            </div>
+
+            {formData.isRecurring && (
+              <div className="space-y-4 pl-6 border-l-2 border-gray-200">
+                <div>
+                  <Label>Recurring Type</Label>
+                  <Select
+                    value={formData.recurringOptions.type}
+                    onValueChange={(value) => setFormData(prev => ({
+                      ...prev,
+                      recurringOptions: { ...prev.recurringOptions, type: value }
+                    }))}
+                  >
+                    <SelectTrigger className="mt-1">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="thisWeek">For this week</SelectItem>
+                      <SelectItem value="tillWhen">Till when</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {formData.recurringOptions.type === 'tillWhen' && (
+                  <div>
+                    <Label>End Date</Label>
+                    <Input
+                      type="date"
+                      value={formData.recurringOptions.endDate}
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
+                        recurringOptions: { ...prev.recurringOptions, endDate: e.target.value }
+                      }))}
+                      className="mt-1"
                     />
                   </div>
                 )}
+
+                <div className="flex items-center space-x-2">
+                  <Switch
+                    id="includeWeekends"
+                    checked={formData.recurringOptions.includeWeekends}
+                    onCheckedChange={(checked) => setFormData(prev => ({
+                      ...prev,
+                      recurringOptions: { ...prev.recurringOptions, includeWeekends: checked }
+                    }))}
+                  />
+                  <Label htmlFor="includeWeekends">Include weekends</Label>
+                </div>
               </div>
-            ))}
+            )}
           </div>
-        </CardContent>
-      </Card>
-    </div>
+
+          {/* Action Buttons */}
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button variant="outline" onClick={onCancel}>
+              Cancel
+            </Button>
+            <Button onClick={handleSubmit} disabled={loading}>
+              {loading ? 'Creating...' : 'Create Schedule'}
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 };
 

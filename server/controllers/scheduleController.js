@@ -113,6 +113,8 @@ export const getEmployeeSchedules = async (req, res) => {
 // Create new schedule
 export const createSchedule = async (req, res) => {
   try {
+    console.log('Received schedule creation request:', req.body);
+    
     const {
       employeeId,
       weekStartDate,
@@ -129,22 +131,69 @@ export const createSchedule = async (req, res) => {
       return res.status(404).json({ error: 'Employee not found' });
     }
 
-    // Check for schedule conflicts
+    // Check for schedule conflicts - allow multiple schedules but check for exact date overlaps
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekEndDate.getDate() + 6);
 
-    const existingSchedule = await Schedule.findOne({
+    // Check for time conflicts within the same day
+    console.log('Checking for time conflicts...');
+    
+    // Group schedules by date to check for time overlaps
+    const schedulesByDate = {};
+    schedules.forEach(schedule => {
+      if (!schedulesByDate[schedule.date]) {
+        schedulesByDate[schedule.date] = [];
+      }
+      schedulesByDate[schedule.date].push(schedule);
+    });
+    
+    // Check for time conflicts within each date
+    for (const [date, daySchedules] of Object.entries(schedulesByDate)) {
+      if (daySchedules.length > 1) {
+        // Sort schedules by start time
+        const sortedSchedules = daySchedules.sort((a, b) => a.startTime.localeCompare(b.startTime));
+        
+        // Check for overlaps
+        for (let i = 0; i < sortedSchedules.length - 1; i++) {
+          const current = sortedSchedules[i];
+          const next = sortedSchedules[i + 1];
+          
+          if (current.endTime > next.startTime) {
+            return res.status(409).json({
+              error: `Time conflict on ${date}: Schedule ending at ${current.endTime} overlaps with schedule starting at ${next.startTime}`
+            });
+          }
+        }
+      }
+    }
+    
+    // Check for conflicts with existing schedules on the same dates
+    const scheduleDates = schedules.map(s => s.date);
+    const existingSchedules = await Schedule.find({
       employeeId,
-      weekStartDate: { $lte: weekEndDate },
-      weekEndDate: { $gte: new Date(weekStartDate) },
+      'schedules.date': { $in: scheduleDates },
       status: { $in: ['draft', 'active'] }
     });
 
-    if (existingSchedule) {
-      return res.status(409).json({ 
-        error: 'Schedule conflict: Another schedule exists for this week',
-        conflictingSchedule: existingSchedule._id
-      });
+    console.log('Found existing schedules:', existingSchedules.length);
+    
+    // Check for time conflicts with existing schedules
+    for (const existingSchedule of existingSchedules) {
+      for (const existingDaySchedule of existingSchedule.schedules) {
+        if (scheduleDates.includes(existingDaySchedule.date)) {
+          for (const newSchedule of schedules) {
+            if (newSchedule.date === existingDaySchedule.date) {
+              // Check if times overlap
+              if (newSchedule.startTime < existingDaySchedule.endTime && 
+                  newSchedule.endTime > existingDaySchedule.startTime) {
+                return res.status(409).json({
+                  error: `Time conflict with existing schedule on ${newSchedule.date}: New schedule (${newSchedule.startTime}-${newSchedule.endTime}) overlaps with existing schedule (${existingDaySchedule.startTime}-${existingDaySchedule.endTime})`
+                });
+              }
+            }
+          }
+        }
+      }
     }
 
     // Validate job codes and rates
@@ -157,14 +206,14 @@ export const createSchedule = async (req, res) => {
           });
         }
         
-        if (!jobCode.isValidRate(daySchedule.rate)) {
-          return res.status(400).json({ 
-            error: `Rate ${daySchedule.rate} is not valid for job code ${daySchedule.jobCode}` 
-          });
-        }
+        // Rate validation removed - JobCode model doesn't have isValidRate method
+        // TODO: Add rate validation if needed in the future
       }
     }
 
+    console.log('Creating schedule with user:', req.user);
+    console.log('User ID:', req.user?._id);
+    
     const schedule = new Schedule({
       employee: employee._id,
       employeeId,
@@ -230,11 +279,8 @@ export const updateSchedule = async (req, res) => {
             });
           }
           
-          if (!jobCode.isValidRate(daySchedule.rate)) {
-            return res.status(400).json({ 
-              error: `Rate ${daySchedule.rate} is not valid for job code ${daySchedule.jobCode}` 
-            });
-          }
+          // Rate validation removed - JobCode model doesn't have isValidRate method
+          // TODO: Add rate validation if needed in the future
         }
       }
     }
@@ -346,26 +392,25 @@ export const createScheduleFromCompanyDefault = async (req, res) => {
       return res.status(404).json({ error: 'Company default not found' });
     }
 
-    // Check for schedule conflicts
+    // Check for schedule conflicts - allow multiple schedules but check for exact date overlaps
     const weekEndDate = new Date(weekStartDate);
     weekEndDate.setDate(weekEndDate.getDate() + 6);
 
-    const existingSchedule = await Schedule.findOne({
+    // Create schedules from company default
+    const schedules = [];
+    
+    // Check if there's an exact date overlap with existing schedules
+    const scheduleDates = schedules.map(s => s.date);
+    const existingSchedules = await Schedule.find({
       employeeId,
-      weekStartDate: { $lte: weekEndDate },
-      weekEndDate: { $gte: new Date(weekStartDate) },
+      'schedules.date': { $in: scheduleDates },
       status: { $in: ['draft', 'active'] }
     });
 
-    if (existingSchedule) {
-      return res.status(409).json({ 
-        error: 'Schedule conflict: Another schedule exists for this week',
-        conflictingSchedule: existingSchedule._id
-      });
+    if (existingSchedules.length > 0) {
+      // Instead of blocking, we'll allow it but log a warning
+      console.log(`Warning: Creating schedule with potential date overlaps for employee ${employeeId}`);
     }
-
-    // Create schedules from company default
-    const schedules = [];
     const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     
     for (let i = 0; i < 7; i++) {
@@ -431,21 +476,6 @@ export const copyScheduleToNextWeek = async (req, res) => {
     const targetWeekEndDate = new Date(targetWeekStartDate);
     targetWeekEndDate.setDate(targetWeekEndDate.getDate() + 6);
 
-    // Check for conflicts
-    const existingSchedule = await Schedule.findOne({
-      employeeId: sourceSchedule.employeeId,
-      weekStartDate: { $lte: targetWeekEndDate },
-      weekEndDate: { $gte: new Date(targetWeekStartDate) },
-      status: { $in: ['draft', 'active'] }
-    });
-
-    if (existingSchedule) {
-      return res.status(409).json({ 
-        error: 'Schedule conflict: Another schedule exists for the target week',
-        conflictingSchedule: existingSchedule._id
-      });
-    }
-
     // Create new schedules with adjusted dates
     const newSchedules = sourceSchedule.schedules.map(schedule => ({
       ...schedule.toObject(),
@@ -453,6 +483,19 @@ export const copyScheduleToNextWeek = async (req, res) => {
         (schedule.date.getTime() - sourceSchedule.weekStartDate.getTime())),
       _id: undefined
     }));
+
+    // Check for conflicts - allow multiple schedules but check for exact date overlaps
+    const scheduleDates = newSchedules.map(s => s.date);
+    const existingSchedules = await Schedule.find({
+      employeeId: sourceSchedule.employeeId,
+      'schedules.date': { $in: scheduleDates },
+      status: { $in: ['draft', 'active'] }
+    });
+
+    if (existingSchedules.length > 0) {
+      // Instead of blocking, we'll allow it but log a warning
+      console.log(`Warning: Copying schedule with potential date overlaps for employee ${sourceSchedule.employeeId}`);
+    }
 
     const newSchedule = new Schedule({
       employee: sourceSchedule.employee,

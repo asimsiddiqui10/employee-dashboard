@@ -59,8 +59,11 @@ const AdminScheduleManagement = () => {
 
   const fetchSchedules = async () => {
     try {
+      console.log('Fetching schedules...');
       const response = await api.get('/schedules');
+      console.log('Schedules response:', response.data);
       setSchedules(response.data.schedules || []);
+      console.log('Set schedules state to:', response.data.schedules || []);
     } catch (error) {
       console.error('Error fetching schedules:', error);
     }
@@ -105,11 +108,85 @@ const AdminScheduleManagement = () => {
     setShowCompanyDefault(true);
   };
 
-  const handleCreateSchedule = async (scheduleData) => {
+  const handleCreateSchedule = async (formData) => {
     try {
       setLoading(true);
       
-      const response = await api.post('/schedules', scheduleData);
+      // Transform the new form data to the expected schedule format
+      const scheduleDate = new Date(formData.date);
+      
+      // Calculate Monday of the week (day 1 = Monday, day 0 = Sunday)
+      const dayOfWeek = scheduleDate.getDay();
+      const daysToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1; // If Sunday, go back 6 days
+      
+      const weekStartDate = new Date(scheduleDate);
+      weekStartDate.setDate(scheduleDate.getDate() - daysToMonday);
+      
+      const weekEndDate = new Date(weekStartDate);
+      weekEndDate.setDate(weekStartDate.getDate() + 6); // Sunday of the week
+      
+      // Format dates as YYYY-MM-DD without timezone issues
+      const formatDate = (date) => {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+      };
+      
+      // Create schedule only for the selected date
+      const selectedDateSchedules = formData.timeSlots.map(slot => {
+        const calculatedRate = slot.isBreak ? 0 : (slot.rate === 'NA' ? 0 : parseFloat(slot.rate) || 0);
+        const calculatedHours = slot.isBreak ? 0 : calculateHours(slot.startTime, slot.endTime);
+        
+        console.log('Creating schedule slot:', {
+          date: formData.date,
+          isBreak: slot.isBreak,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          hours: calculatedHours,
+          jobCode: slot.jobCode || 'ACT001',
+          rate: calculatedRate,
+          originalRate: slot.rate
+        });
+        
+        return {
+          date: formData.date,
+          dayOfWeek: new Date(formData.date).toLocaleDateString('en-US', { weekday: 'long' }),
+          enabled: true,
+          startTime: slot.startTime,
+          endTime: slot.endTime,
+          hours: calculatedHours,
+          jobCode: slot.jobCode || 'ACT001',
+          rate: calculatedRate,
+          breaks: slot.isBreak ? [{
+            startTime: slot.startTime,
+            endTime: slot.endTime,
+            duration: calculateMinutes(slot.startTime, slot.endTime),
+            description: 'Break'
+          }] : [],
+          notes: formData.notes,
+          isWeekend: [0, 6].includes(new Date(formData.date).getDay())
+        };
+      });
+      
+      const schedulePayload = {
+        employeeId: selectedEmployee.employeeId,
+        weekStartDate: formatDate(weekStartDate),
+        weekEndDate: formatDate(weekEndDate),
+        schedules: selectedDateSchedules,
+        isRecurring: formData.isRecurring,
+        recurringDays: formData.isRecurring ? getRecurringDays(formData.recurringOptions) : [],
+        status: 'draft',
+        notes: formData.notes
+      };
+      
+      console.log('Formatted dates - weekStartDate:', formatDate(weekStartDate), 'weekEndDate:', formatDate(weekEndDate));
+      
+      console.log('Schedule payload being sent:', schedulePayload);
+      console.log('Week start date:', weekStartDate);
+      console.log('Week end date:', weekEndDate);
+      
+      const response = await api.post('/schedules', schedulePayload);
       
       toast({
         title: "Success",
@@ -119,6 +196,7 @@ const AdminScheduleManagement = () => {
       setShowScheduleForm(false);
       fetchSchedules();
     } catch (error) {
+      console.error('Schedule creation error:', error);
       toast({
         title: "Error",
         description: error.response?.data?.error || "Failed to create schedule",
@@ -168,7 +246,11 @@ const AdminScheduleManagement = () => {
   );
 
   const getEmployeeSchedules = (employeeId) => {
-    return schedules.filter(schedule => schedule.employeeId === employeeId);
+    console.log('Getting schedules for employee:', employeeId);
+    console.log('All schedules:', schedules);
+    const employeeSchedules = schedules.filter(schedule => schedule.employeeId === employeeId);
+    console.log('Filtered schedules for employee:', employeeSchedules);
+    return employeeSchedules;
   };
 
   const formatDate = (dateString) => {
@@ -182,6 +264,36 @@ const AdminScheduleManagement = () => {
       case 'archived': return 'bg-gray-100 text-gray-800';
       default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  // Helper function to calculate hours between two time strings
+  const calculateHours = (startTime, endTime) => {
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    const hours = (end - start) / (1000 * 60 * 60);
+    return Math.max(0, hours);
+  };
+
+  // Helper function to calculate minutes between two time strings
+  const calculateMinutes = (startTime, endTime) => {
+    const start = new Date(`2000-01-01T${startTime}`);
+    const end = new Date(`2000-01-01T${endTime}`);
+    const minutes = (end - start) / (1000 * 60);
+    return Math.max(0, minutes);
+  };
+
+  // Helper function to get recurring days based on options
+  const getRecurringDays = (recurringOptions) => {
+    if (recurringOptions.type === 'thisWeek') {
+      return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    } else if (recurringOptions.type === 'tillWhen') {
+      // For now, return weekdays. This could be expanded based on the end date
+      return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    } else if (recurringOptions.type === 'custom') {
+      // Return weekdays by default, but could be expanded
+      return ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    }
+    return [];
   };
 
   if (fetchingData) {
@@ -327,106 +439,6 @@ const AdminScheduleManagement = () => {
       )}
 
       {/* No Schedules Message */}
-      {!searchTerm.trim() && employees.length > 0 && schedules.length === 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-2">No schedules found in the system</p>
-              <p className="text-sm text-gray-400">Select an employee and create schedules to get started</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* No Company Defaults Message */}
-      {!searchTerm.trim() && employees.length > 0 && companyDefaults.length === 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-2">No company default schedules found</p>
-              <p className="text-sm text-gray-400">Company defaults need to be configured by administrators</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* No Job Codes Message */}
-      {!searchTerm.trim() && employees.length > 0 && jobCodes.length === 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-2">No job codes found</p>
-              <p className="text-sm text-gray-400">Job codes need to be configured before creating schedules</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Welcome Message */}
-      {!searchTerm.trim() && employees.length > 0 && schedules.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-gray-500 mb-2">Welcome to Schedule Management</p>
-              <p className="text-sm text-gray-400">Search for an employee to manage their schedules</p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Instructions */}
-      {!searchTerm.trim() && employees.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-4">
-              <p className="text-sm text-gray-500">
-                💡 <strong>Tip:</strong> Use the search bar above to find employees by name or ID
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Quick Actions */}
-      {!searchTerm.trim() && employees.length > 0 && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-4">
-              <div className="flex gap-4 justify-center">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowCompanyDefault(true)}
-                  disabled={companyDefaults.length === 0}
-                >
-                  View Company Defaults
-                </Button>
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowCompanyDefault(true)}
-                  disabled={jobCodes.length === 0}
-                >
-                  View Job Codes
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Footer */}
-      <div className="text-center py-4">
-        <p className="text-xs text-gray-400">
-          Schedule Management System • {new Date().getFullYear()}
-        </p>
-      </div>
-
-
-
-
-
-
-
-
 
 
 
@@ -452,12 +464,7 @@ const AdminScheduleManagement = () => {
               />
             ) : (
               <div className="space-y-4">
-                {getEmployeeSchedules(selectedEmployee.employeeId).length === 0 ? (
-                  <div className="text-center py-8">
-                    <p className="text-gray-500 mb-2">No schedules found for this employee</p>
-                    <p className="text-sm text-gray-400">Create a new schedule to get started</p>
-                  </div>
-                ) : (
+                {getEmployeeSchedules(selectedEmployee.employeeId).length > 0 && (
                   <div className="space-y-4">
                     {getEmployeeSchedules(selectedEmployee.employeeId).map((schedule) => (
                       <div key={schedule._id} className="border rounded-lg p-4">
@@ -489,29 +496,14 @@ const AdminScheduleManagement = () => {
         </Card>
       )}
 
-      {/* Schedule Form */}
-      {showScheduleForm && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Create New Schedule for {selectedEmployee?.name}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {jobCodes.length === 0 ? (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-2">No job codes found</p>
-                <p className="text-sm text-gray-400">Job codes need to be configured before creating schedules</p>
-              </div>
-            ) : (
-              <ScheduleForm
-                employee={selectedEmployee}
-                jobCodes={jobCodes}
-                onSubmit={handleCreateSchedule}
-                onCancel={() => setShowScheduleForm(false)}
-              />
-            )}
-          </CardContent>
-        </Card>
-      )}
+      {/* Schedule Form Modal */}
+      <ScheduleForm
+        employee={selectedEmployee}
+        jobCodes={jobCodes}
+        onSubmit={handleCreateSchedule}
+        onCancel={() => setShowScheduleForm(false)}
+        isOpen={showScheduleForm}
+      />
 
       {/* Company Default Dialog */}
       <Dialog open={showCompanyDefault} onOpenChange={setShowCompanyDefault}>
@@ -520,38 +512,31 @@ const AdminScheduleManagement = () => {
             <DialogTitle>Company Default Schedules</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {companyDefaults.length > 0 ? (
-              companyDefaults.map((defaultSchedule) => (
-                <div key={defaultSchedule._id} className="border rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium">{defaultSchedule.name}</h4>
-                      <p className="text-sm text-gray-600">{defaultSchedule.description}</p>
-                      <p className="text-sm text-gray-500">
-                        {defaultSchedule.defaultJobCode} • ${defaultSchedule.defaultRate}/hr
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {defaultSchedule.isDefault && (
-                        <Badge className="bg-green-100 text-green-800">Default</Badge>
-                      )}
-                      <Button
-                        onClick={() => handleCreateFromCompanyDefault(defaultSchedule)}
-                        disabled={loading || !selectedEmployee}
-                        size="sm"
-                      >
-                        Use This
-                      </Button>
-                    </div>
+            {companyDefaults.length > 0 && companyDefaults.map((defaultSchedule) => (
+              <div key={defaultSchedule._id} className="border rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h4 className="font-medium">{defaultSchedule.name}</h4>
+                    <p className="text-sm text-gray-600">{defaultSchedule.description}</p>
+                    <p className="text-sm text-gray-500">
+                      {defaultSchedule.defaultJobCode} • ${defaultSchedule.defaultRate}/hr
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {defaultSchedule.isDefault && (
+                      <Badge className="bg-green-100 text-green-800">Default</Badge>
+                    )}
+                    <Button
+                      onClick={() => handleCreateFromCompanyDefault(defaultSchedule)}
+                      disabled={loading || !selectedEmployee}
+                      size="sm"
+                    >
+                      Use This
+                    </Button>
                   </div>
                 </div>
-              ))
-            ) : (
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-2">No company default schedules found</p>
-                <p className="text-sm text-gray-400">Company defaults need to be configured by administrators</p>
               </div>
-            )}
+            ))}
           </div>
         </DialogContent>
       </Dialog>

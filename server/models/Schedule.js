@@ -163,7 +163,7 @@ scheduleSchema.pre('save', function(next) {
   }
   
   // Increment version on each save
-  this.version += 1;
+  this.version = (this.version || 0) + 1;
   
   next();
 });
