@@ -433,7 +433,7 @@ const EmployeeDetails = () => {
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Payroll Documents</h3>
+                              <h3 className="text-xl font-bold">Payroll Documents</h3>
               <Button
                 onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}&type=payroll`)}
                 size="sm"
@@ -478,7 +478,7 @@ const EmployeeDetails = () => {
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Employee Documents</h3>
+                              <h3 className="text-xl font-bold">Employee Documents</h3>
               <Button
                 onClick={() => navigate(`/admin-dashboard/documents?employeeId=${employeeId}`)}
                 size="sm"
@@ -530,7 +530,7 @@ const EmployeeDetails = () => {
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Personal Information</h3>
+              <h3 className="text-xl font-bold">Personal Information</h3>
             </div>
             <Separator className="my-4" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -717,7 +717,7 @@ const EmployeeDetails = () => {
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Work Information</h3>
+              <h3 className="text-xl font-bold">Work Information</h3>
             </div>
             <Separator className="my-4" />
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -911,7 +911,7 @@ const EmployeeDetails = () => {
                   </div>
                   <div className="col-span-2 space-y-2">
                     <Label>Job Codes</Label>
-                    <div className="p-3 bg-gray-50 rounded-md border">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md border">
                       {form?.assignedJobCodes && form.assignedJobCodes.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {form.assignedJobCodes.map((jobCode, index) => (
@@ -948,7 +948,7 @@ const EmployeeDetails = () => {
                   <InfoField label="Job Description" value={form?.jobDescription} />
                   <div className="col-span-2 space-y-2">
                     <Label className="text-sm font-medium">Job Codes</Label>
-                    <div className="p-3 bg-gray-50 rounded-md border">
+                    <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded-md border">
                       {form?.assignedJobCodes && form.assignedJobCodes.length > 0 ? (
                         <div className="flex flex-wrap gap-2">
                           {form.assignedJobCodes.map((jobCode, index) => (
@@ -971,7 +971,7 @@ const EmployeeDetails = () => {
         return (
           <div className="space-y-4">
             <div className="flex justify-between items-center">
-              <h3 className="text-lg font-semibold">Leave Management</h3>
+              <h3 className="text-xl font-bold">Leave Management</h3>
             </div>
             <Separator className="my-4" />
 
@@ -1041,21 +1041,21 @@ const EmployeeDetails = () => {
                     </>
                   ) : (
                     <>
-                      <div className="p-4 bg-green-50 rounded-lg">
-                        <div className="text-sm text-green-600 font-medium">Total Leave Days</div>
-                        <div className="text-2xl font-bold text-green-600 mt-1">
+                      <div className="p-4 bg-green-50 dark:bg-green-950/20 rounded-lg">
+                        <div className="text-sm text-green-600 dark:text-green-400 font-medium">Total Leave Days</div>
+                        <div className="text-2xl font-bold text-green-600 dark:text-green-400 mt-1">
                           {form.leaveSummary?.totalLeaves || 0}
                         </div>
                       </div>
-                      <div className="p-4 bg-blue-50 rounded-lg">
-                        <div className="text-sm text-blue-600 font-medium">Leaves Remaining</div>
-                        <div className="text-2xl font-bold text-blue-600 mt-1">
+                      <div className="p-4 bg-blue-50 dark:bg-blue-950/20 rounded-lg">
+                        <div className="text-sm text-blue-600 dark:text-blue-400 font-medium">Leaves Remaining</div>
+                        <div className="text-2xl font-bold text-blue-600 dark:text-blue-400 mt-1">
                           {form.leaveSummary?.leavesRemaining || 0}
                         </div>
                       </div>
-                      <div className="p-4 bg-orange-50 rounded-lg">
-                        <div className="text-sm text-orange-600 font-medium">Leaves Taken</div>
-                        <div className="text-2xl font-bold text-orange-600 mt-1">
+                      <div className="p-4 bg-orange-50 dark:bg-orange-950/20 rounded-lg">
+                        <div className="text-sm text-orange-600 dark:text-orange-400 font-medium">Leaves Taken</div>
+                        <div className="text-2xl font-bold text-orange-600 dark:text-orange-400 mt-1">
                           {form.leaveSummary?.leavesTaken || 0}
                         </div>
                       </div>
@@ -1195,23 +1195,44 @@ const EmployeeDetails = () => {
 
   if (!form) return <div>Loading...</div>;
 
+  // Tab configuration with display names
+  const tabConfig = {
+    'personal': 'Basic info',
+    'work': 'Work',
+    'leave': 'Leave',
+    'payroll': 'Payroll',
+    'documents': 'Documents',
+    'benefits': 'Benefits',
+    'performance': 'Performance',
+    'training': 'Training'
+  };
+
   return (
-    <div className="container mx-auto pt-2 pb-6">
-      <Card className="border-none">
-        {/* Header Section */}
-        <CardHeader className="px-6 pb-0">
-          <div className="flex flex-col lg:flex-row items-start gap-6 pb-6">
-            {/* Profile Picture */}
+    <div className="min-h-screen">
+      {/* Header with employee info */}
+      <div className="">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center gap-6">
+            {/* Back Button - Full height clickable area */}
+            <Button
+              variant="ghost"
+              onClick={() => navigate(-1)}
+              className="h-full py-4 px-2 -my-4"
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Profile Picture - Increased size by 50% */}
             <div className="relative group shrink-0">
               {form?.profilePic ? (
                 <img
                   src={form.profilePic}
                   alt={form.name}
-                  className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg object-cover ring-2 ring-muted"
+                  className="w-24 h-24 rounded-lg object-cover ring-2 ring-muted"
                 />
               ) : (
-                <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
-                  <User className="h-12 w-12 lg:h-16 lg:w-16 text-muted-foreground" />
+                <div className="w-24 h-24 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
+                  <User className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
               
@@ -1226,184 +1247,190 @@ const EmployeeDetails = () => {
                   />
                   <label
                     htmlFor="profile-upload"
-                    className="bg-background/95 hover:bg-background/100 text-foreground px-3 py-2 rounded-md text-sm cursor-pointer flex items-center shadow-sm"
+                    className="bg-background/95 hover:bg-background/100 text-foreground px-2 py-1 rounded text-xs cursor-pointer flex items-center shadow-sm"
                   >
-                    <Upload size={14} className="mr-2" />
-                    Update Photo
+                    <Upload size={12} className="mr-1" />
+                    Update
                   </label>
                 </div>
               )}
             </div>
 
-            {/* Employee Info and Actions */}
-            <div className="flex-1 min-w-0 w-full">
-              <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                <div className="space-y-4">
-                  {/* Back Button and Name */}
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => navigate(-1)}
-                      className="h-10 w-10 -ml-2.5"
-                    >
-                      <ArrowLeft className="h-5 w-5" />
-                    </Button>
-                    {isEditing ? (
+            {/* Employee Name and Info - Reformatted */}
+            <div className="flex-1 min-w-0">
+              <div className="space-y-1">
+                {/* Name and ID on same line */}
+                <div className="flex items-center gap-3">
+                  {isEditing ? (
+                    <>
                       <Input
                         value={form?.name || ''}
                         onChange={(e) => handleInputChange({ target: { name: 'name', value: e.target.value } })}
-                        className="h-9 text-xl font-semibold"
+                        className="h-8 text-2xl font-bold max-w-xs bg-background border-input"
                       />
-                    ) : (
-                      <h2 className="text-xl lg:text-2xl font-semibold text-foreground">{form?.name}</h2>
-                    )}
-                  </div>
-
-                  {/* Position, Department and ID */}
-                  <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
-                    {isEditing ? (
-                      <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-                        <Input
-                          value={form?.position || ''}
-                          onChange={(e) => handleInputChange({ target: { name: 'position', value: e.target.value } })}
-                          className="h-8 w-full sm:w-40"
-                          placeholder="Position"
-                        />
-                        <span className="hidden sm:inline">•</span>
-                        <Select
-                          value={form?.department || ''}
-                          onValueChange={(value) => handleInputChange({ target: { name: 'department', value } })}
-                        >
-                          <SelectTrigger className="h-8 w-full sm:w-40">
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Object.entries(departments).map(([key, dept]) => (
-                              <SelectItem key={key} value={key}>
-                                <div className="flex items-center gap-2">
-                                  <dept.icon className={`h-4 w-4 ${dept.color}`} />
-                                  <span>{dept.label}</span>
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <span className="hidden sm:inline"> </span>
-                        <Input
-                          value={form?.employeeId || ''}
-                          onChange={(e) => handleInputChange({ target: { name: 'employeeId', value: e.target.value } })}
-                          className="h-8 w-full sm:w-32"
-                          placeholder="Employee ID"
-                        />
-                      </div>
-                    ) : (
-                      <>
-                        <span>{form?.position}</span>
-                        {form?.department && (
-                          <>
-                            <span className="hidden sm:inline"> </span>
-                            <div className="flex items-center gap-1">
-                              {(() => {
-                                const deptConfig = getDepartmentConfig(form.department);
-                                const Icon = deptConfig.icon;
-                                return (
-                                  <>
-                                    <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
-                                      <Icon className={`h-3.5 w-3.5 transition-colors ${deptConfig.color}`} />
-                                    </div>
-                                    <span className={`transition-colors ${deptConfig.color}`}>
-                                      {form.department}
-                                    </span>
-                                  </>
-                                );
-                              })()}
-                            </div>
-                          </>
-                        )}
-                        <span className="hidden sm:inline"></span>
-                        <span>ID: {form?.employeeId}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="flex items-center space-x-2">
-                  {!isEditing ? (
-                    <>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setIsEditing(true)}
-                        className="h-8"
-                      >
-                        <Pencil className="h-4 w-4 mr-2" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => setShowPasswordModal(true)}
-                        className="h-8"
-                      >
-                        <Key className="h-4 w-4 mr-2" />
-                        Change Password
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setShowDeleteModal(true)}
-                        className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete
-                      </Button>
+                      <Input
+                        value={form?.employeeId || ''}
+                        onChange={(e) => handleInputChange({ target: { name: 'employeeId', value: e.target.value } })}
+                        className="h-8 w-24 text-sm bg-background border-input"
+                        placeholder="ID"
+                      />
                     </>
                   ) : (
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={handleSave}
-                      className="h-8"
-                    >
-                      Save Changes
-                    </Button>
+                    <>
+                      <h1 className="text-2xl font-bold text-foreground">{form?.name}</h1>
+                      <span className="text-sm text-muted-foreground">{form?.employeeId}</span>
+                    </>
                   )}
                 </div>
-              </div>
-
-              {/* Tabs Navigation */}
-              <div className="mt-6 overflow-x-auto pb-2">
-                <div className="flex space-x-1 bg-accent p-1 rounded-lg min-w-max">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={cn(
-                        "px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                        activeTab === tab
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-accent-foreground/80 hover:text-accent-foreground hover:bg-accent-foreground/10"
+                
+                {/* Department and Position */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  {isEditing ? (
+                    <div className="flex items-center gap-2">
+                      <Select
+                        value={form?.department || ''}
+                        onValueChange={(value) => handleInputChange({ target: { name: 'department', value } })}
+                      >
+                        <SelectTrigger className="h-6 w-32 text-xs bg-background border-input">
+                          <SelectValue placeholder="Department" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(departments).map(([key, dept]) => (
+                            <SelectItem key={key} value={key}>
+                              <div className="flex items-center gap-2">
+                                <dept.icon className={`h-3 w-3 ${dept.color}`} />
+                                <span>{dept.label}</span>
+                              </div>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Input
+                        value={form?.position || ''}
+                        onChange={(e) => handleInputChange({ target: { name: 'position', value: e.target.value } })}
+                        className="h-6 w-32 text-xs bg-background border-input"
+                        placeholder="Position"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {form?.department && (
+                        <>
+                          <div className="flex items-center gap-1">
+                            {(() => {
+                              const deptConfig = getDepartmentConfig(form.department);
+                              const Icon = deptConfig.icon;
+                              return (
+                                <>
+                                  <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
+                                    <Icon className={`h-3 w-3 transition-colors ${deptConfig.color}`} />
+                                  </div>
+                                  <span className={`transition-colors ${deptConfig.color}`}>
+                                    {form.department}
+                                  </span>
+                                </>
+                              );
+                            })()}
+                          </div>
+                          {form?.position && (
+                            <>
+                              <span>•</span>
+                              <span>{form.position}</span>
+                            </>
+                          )}
+                        </>
                       )}
-                    >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                  ))}
+                    </>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="text-sm text-muted-foreground">
+                  {form?.workEmail || 'aasymsiddiqui379@gmail.com'}
                 </div>
               </div>
             </div>
-          </div>
-        </CardHeader>
 
-        {/* Content Section */}
-        <CardContent className="px-4 sm:px-6 pt-6">
-          <div className="max-w-full overflow-x-auto">
-            {renderTabContent()}
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-2">
+              {!isEditing ? (
+                <>
+                  <Button
+                    onClick={() => setIsEditing(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Pencil className="h-4 w-4" />
+                    Edit Employee
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowPasswordModal(true)}
+                    className="h-8"
+                  >
+                    <Key className="h-4 w-4 mr-2" />
+                    Change Password
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="h-8 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleSave}
+                  className="h-8"
+                >
+                  Save Changes
+                </Button>
+              )}
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
+      {/* Main Layout: Sidebar + Content */}
+      <div className="flex min-h-[calc(100vh-120px)]">
+        {/* Left Sidebar with Tabs - Individual right borders on each item */}
+        <div className="w-64 relative">
+          <div className="p-4">
+            <nav className="space-y-0">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "w-full text-left px-4 py-3 text-sm transition-all",
+                    activeTab === tab
+                      ? "bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 border-r-[3px] border-r-blue-500 font-semibold"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/10 hover:text-blue-800 dark:hover:text-blue-200 border-r border-r-gray-300 dark:border-r-gray-600 font-medium"
+                  )}
+                >
+                  {tabConfig[tab] || tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </nav>
+          </div>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1">
+          <div className="p-8">
+            <div className="max-w-4xl">
+              {renderTabContent()}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Modals */}
       {showDeleteModal && (
         <DeleteConfirmationModal
           employee={form}
