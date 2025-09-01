@@ -140,25 +140,20 @@ const AdminScheduleAssignment = () => {
   const handleSaveSchedule = async (employee) => {
     try {
       // Convert scheduleData to the format expected by the backend
-      const weekStartDate = new Date();
-      weekStartDate.setDate(weekStartDate.getDate() - weekStartDate.getDay() + 1); // Monday
-      
       const schedules = Object.keys(scheduleData).map(dateKey => ({
         date: dateKey,
         hours: parseFloat(scheduleData[dateKey].hours),
         startTime: scheduleData[dateKey].startTime,
         endTime: scheduleData[dateKey].endTime,
         jobCode: scheduleData[dateKey].jobCode,
-        rate: parseFloat(scheduleData[dateKey].rate),
+        rate: scheduleData[dateKey].rate === 'NA' ? 'NA' : parseFloat(scheduleData[dateKey].rate),
         enabled: scheduleData[dateKey].enabled
       }));
 
       // Save schedule data to backend
       await api.post('/schedules', {
         employeeId: employee.employeeId,
-        weekStartDate: weekStartDate.toISOString(),
-        schedules,
-        status: 'draft'
+        schedules
       });
       
       toast({

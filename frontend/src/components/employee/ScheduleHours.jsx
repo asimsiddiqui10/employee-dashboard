@@ -92,7 +92,7 @@ const ScheduleHours = () => {
           startTime: new Date(day.date.setHours(9, 0, 0, 0)), // Default 9 AM start
           endTime: new Date(day.date.setHours(9 + parseFloat(day.hours), 0, 0, 0)), // Calculate end time
           jobCode: 'General',
-          rate: 25, // Default rate
+          rate: 'NA', // Default rate
           notes: ''
         }));
 
@@ -107,7 +107,21 @@ const ScheduleHours = () => {
 
       // Create schedules for each day
       for (const schedule of schedules) {
-        await api.post('/scheduled-work', schedule);
+        await api.post('/schedules', {
+          employeeId: employee.employeeId,
+          schedules: [{
+            date: schedule.date,
+            enabled: true,
+            startTime: schedule.startTime,
+            endTime: schedule.endTime,
+            hours: parseFloat(schedule.hours) || 0,
+            jobCode: schedule.jobCode,
+            rate: schedule.rate,
+            isBreak: false,
+            notes: schedule.notes
+          }],
+          notes: 'Created from employee schedule hours'
+        });
       }
 
       toast({

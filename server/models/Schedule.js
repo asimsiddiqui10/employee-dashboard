@@ -12,25 +12,19 @@ const scheduleSchema = new mongoose.Schema({
     required: true,
     index: true
   },
-  weekStartDate: {
-    type: Date,
-    required: true,
-    index: true
-  },
-  weekEndDate: {
-    type: Date,
-    required: true,
-    index: true
-  },
   schedules: [{
     date: {
-      type: Date,
-      required: true
-    },
-    dayOfWeek: {
-      type: String,
-      enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-      required: true
+      type: mongoose.Schema.Types.Mixed, // Allow both String and Date
+      required: true,
+      set: function(val) {
+        // If it's a string, keep it as is; if it's a Date, convert to string
+        if (typeof val === 'string') {
+          return val;
+        } else if (val instanceof Date) {
+          return val.toISOString().split('T')[0];
+        }
+        return val;
+      }
     },
     enabled: {
       type: Boolean,
@@ -56,194 +50,45 @@ const scheduleSchema = new mongoose.Schema({
       default: 'ACT001'
     },
     rate: {
-      type: Number,
-      min: 0,
-      required: function() { return this.enabled; }
+      type: mongoose.Schema.Types.Mixed, // Allow both String and Number
+      default: 'NA',
+      validate: {
+        validator: function(v) {
+          // Allow 'NA' string or positive numbers
+          return v === 'NA' || (typeof v === 'number' && v >= 0);
+        },
+        message: 'Rate must be "NA" or a positive number'
+      }
     },
-    breaks: [{
-      startTime: String, // Format: "HH:MM"
-      endTime: String,   // Format: "HH:MM"
-      duration: Number,  // Duration in minutes
-      description: String // Optional break description
-    }],
+    isBreak: {
+      type: Boolean,
+      default: false
+    },
     notes: {
       type: String,
       maxLength: 500
-    },
-    isWeekend: {
-      type: Boolean,
-      default: false
     }
   }],
-  totalWeeklyHours: {
-    type: Number,
-    min: 0,
-    max: 168, // 7 days * 24 hours
-    default: 0
-  },
-  totalWeeklyPay: {
-    type: Number,
-    min: 0,
-    default: 0
-  },
-  status: {
-    type: String,
-    enum: ['draft', 'active', 'archived', 'cancelled'],
-    default: 'draft'
-  },
-  approvalStatus: {
-    type: String,
-    enum: ['pending', 'approved', 'rejected'],
-    default: 'pending'
-  },
-  approvedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee'
-  },
-  approvalDate: Date,
-  approvalNotes: String,
   isRecurring: {
     type: Boolean,
     default: false
   },
-  recurringDays: [{
-    type: String,
-    enum: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-  }],
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Employee',
     required: true
   },
-  lastModifiedBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee'
-  },
-  version: {
-    type: Number,
-    default: 1
-  },
-  isTemplate: {
-    type: Boolean,
-    default: false
-  },
-  templateName: {
+  notes: {
     type: String,
-    maxLength: 100
+    maxLength: 500
   }
-}, {
-  timestamps: true
 });
 
-// Compound indexes for efficient queries
-scheduleSchema.index({ employee: 1, weekStartDate: 1, status: 1 });
-scheduleSchema.index({ employeeId: 1, weekStartDate: 1 });
-scheduleSchema.index({ status: 1, approvalStatus: 1 });
-scheduleSchema.index({ weekStartDate: 1, weekEndDate: 1 });
-
-// Pre-save middleware to calculate totals and validate data
-scheduleSchema.pre('save', function(next) {
-  // Calculate total weekly hours and pay
-  this.totalWeeklyHours = this.schedules
-    .filter(schedule => schedule.enabled)
-    .reduce((total, schedule) => total + (schedule.hours || 0), 0);
-  
-  this.totalWeeklyPay = this.schedules
-    .filter(schedule => schedule.enabled)
-    .reduce((total, schedule) => total + ((schedule.hours || 0) * (schedule.rate || 0)), 0);
-  
-  // Set week start and end dates if not provided
-  if (!this.weekStartDate || !this.weekEndDate) {
-    const schedules = this.schedules.filter(s => s.enabled);
-    if (schedules.length > 0) {
-      const dates = schedules.map(s => s.date).sort();
-      this.weekStartDate = dates[0];
-      this.weekEndDate = dates[dates.length - 1];
-    }
-  }
-  
-  // Increment version on each save
-  this.version += 1;
-  
-  next();
-});
-
-// Pre-save middleware to set day of week and weekend flag
-scheduleSchema.pre('save', function(next) {
-  this.schedules.forEach(schedule => {
-    if (schedule.date) {
-      const date = new Date(schedule.date);
-      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-      schedule.dayOfWeek = days[date.getDay()];
-      schedule.isWeekend = date.getDay() === 0 || date.getDay() === 6;
-    }
-  });
-  next();
-});
-
-// Instance method to get schedule for a specific date
-scheduleSchema.methods.getScheduleForDate = function(date) {
-  const dateStr = date.toISOString().split('T')[0];
-  return this.schedules.find(schedule => 
-    schedule.date.toISOString().split('T')[0] === dateStr
-  );
-};
-
-// Instance method to get total hours for a date range
-scheduleSchema.methods.getTotalHoursForRange = function(startDate, endDate) {
-  return this.schedules
-    .filter(schedule => 
-      schedule.enabled && 
-      schedule.date >= startDate && 
-      schedule.date <= endDate
-    )
-    .reduce((total, schedule) => total + (schedule.hours || 0), 0);
-};
-
-// Static method to find schedules for an employee in a date range
-scheduleSchema.statics.findByEmployeeAndDateRange = function(employeeId, startDate, endDate) {
-  return this.find({
-    employeeId,
-    weekStartDate: { $lte: endDate },
-    weekEndDate: { $gte: startDate }
-  }).populate('employee', 'name employeeId department');
-};
-
-// Static method to find active schedules for an employee
-scheduleSchema.statics.findActiveByEmployee = function(employeeId) {
-  return this.find({
-    employeeId,
-    status: 'active',
-    weekStartDate: { $lte: new Date() },
-    weekEndDate: { $gte: new Date() }
-  }).populate('employee', 'name employeeId department');
-};
-
-// Static method to create schedule from template
-scheduleSchema.statics.createFromTemplate = function(templateId, employeeId, weekStartDate) {
-  return this.findById(templateId).then(template => {
-    if (!template || !template.isTemplate) {
-      throw new Error('Invalid template');
-    }
-    
-    const weekEndDate = new Date(weekStartDate);
-    weekEndDate.setDate(weekEndDate.getDate() + 6);
-    
-    const newSchedules = template.schedules.map(schedule => ({
-      ...schedule.toObject(),
-      date: new Date(weekStartDate.getTime() + (schedule.date.getTime() - template.weekStartDate.getTime())),
-      _id: undefined
-    }));
-    
-    return new this({
-      employeeId,
-      weekStartDate,
-      weekEndDate,
-      schedules: newSchedules,
-      createdBy: template.createdBy
-    });
-  });
-};
+// Basic indexes for performance
+scheduleSchema.index({ employee: 1 });
+scheduleSchema.index({ employeeId: 1 });
+scheduleSchema.index({ 'schedules.date': 1, employeeId: 1 });
+scheduleSchema.index({ 'schedules.jobCode': 1, employeeId: 1 });
 
 const Schedule = mongoose.model('Schedule', scheduleSchema);
 

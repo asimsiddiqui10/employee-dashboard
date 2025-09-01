@@ -7,6 +7,7 @@ import { toast } from '@/hooks/use-toast';
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { getDepartmentConfig } from '@/lib/departments';
 import { cn } from "@/lib/utils";
 
@@ -35,7 +36,49 @@ const MyDetails = () => {
     try {
       const response = await api.get('/employees/me');
       console.log('Employee details:', response.data);
-      setEmployeeDetails(response.data);
+      
+      // Fetch job codes assigned to this employee
+      let assignedJobCodes = [];
+      try {
+        // Get all active job codes and filter by those that have this employee
+        const allJobCodesResponse = await api.get('/job-codes/active/all');
+        console.log('All active job codes:', allJobCodesResponse.data);
+        
+        if (allJobCodesResponse.data && Array.isArray(allJobCodesResponse.data)) {
+          // Use the employee's _id (MongoDB ObjectId) for comparison
+          const employeeMongoId = response.data._id;
+          console.log(`Looking for employee with MongoDB _id:`, employeeMongoId);
+          
+          const filteredJobCodes = allJobCodesResponse.data.filter(jobCode => 
+            jobCode.assignedTo && 
+            jobCode.assignedTo.some(assignment => 
+              assignment.employee && assignment.employee._id === employeeMongoId
+            )
+          );
+          
+          console.log('Filtered job codes for this employee:', filteredJobCodes);
+          
+          assignedJobCodes = filteredJobCodes.map(jobCode => ({
+            code: jobCode.code,
+            title: jobCode.title,
+            description: jobCode.description,
+            rate: jobCode.rate
+          }));
+        }
+        
+        console.log('Final assigned job codes:', assignedJobCodes);
+        
+      } catch (jobCodeError) {
+        console.log('Error fetching job codes:', jobCodeError);
+      }
+      
+      // Combine employee details with job codes
+      const employeeDataWithJobCodes = {
+        ...response.data,
+        assignedJobCodes: assignedJobCodes
+      };
+      
+      setEmployeeDetails(employeeDataWithJobCodes);
     } catch (error) {
       const { message } = handleApiError(error);
       console.error('Error fetching employee details:', error);
@@ -113,6 +156,22 @@ const MyDetails = () => {
             <InfoItem label="Date of Hire" value={formatDate(employeeDetails.dateOfHire)} />
             <InfoItem label="Manager" value={employeeDetails.manager?.name || 'Not assigned'} />
             <InfoItem label="Work Phone" value={employeeDetails.workPhoneNumber || 'Not provided'} />
+            <div className="col-span-2">
+              <p className="text-sm text-muted-foreground">Job Codes</p>
+              <div className="mt-2">
+                {employeeDetails.assignedJobCodes && employeeDetails.assignedJobCodes.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {employeeDetails.assignedJobCodes.map((jobCode, index) => (
+                      <Badge key={index} variant="secondary" className="text-sm">
+                        {jobCode.code}: {jobCode.title}
+                      </Badge>
+                    ))}
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground text-sm">No job codes assigned</span>
+                )}
+              </div>
+            </div>
           </div>
         );
 
