@@ -4,24 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../ui/select";
 
 const chartData = [
-  { date: "2023-01-01", visitors: 2450, revenue: 1600 },
-  { date: "2023-02-01", visitors: 2680, revenue: 1800 },
-  { date: "2023-03-01", visitors: 3100, revenue: 1900 },
-  { date: "2023-04-01", visitors: 2756, revenue: 2300 },
-  { date: "2023-05-01", visitors: 900, revenue: 2800 },
-  { date: "2023-06-01", visitors: 3250, revenue: 3400 },
-  { date: "2023-07-01", visitors: 3000, revenue: 1900 },
-  { date: "2023-08-01", visitors: 3322, revenue: 2600 },
-  { date: "2023-09-01", visitors: 2900, revenue: 4000 },
-  { date: "2023-10-01", visitors: 3475, revenue: 2400 },
-  { date: "2023-11-01", visitors: 3100, revenue: 1800 },
-  { date: "2023-12-01", visitors: 3250, revenue: 2200 },
-  { date: "2024-01-01", visitors: 1600, revenue: 2900 },
-  { date: "2024-02-01", visitors: 3100, revenue: 2300 },
-  { date: "2024-03-01", visitors: 3600, revenue: 1700 },
-  { date: "2024-04-01", visitors: 2000, revenue: 2800 },
-  { date: "2024-05-01", visitors: 1800, revenue: 3200 },
-  { date: "2024-06-01", visitors: 3400, revenue: 2500 }
+  { date: "2023-01-01", fulltime: 24, contract: 16 },
+  { date: "2023-02-01", fulltime: 27, contract: 18 },
+  { date: "2023-03-01", fulltime: 31, contract: 19 },
+  { date: "2023-04-01", fulltime: 28, contract: 23 },
+  { date: "2023-05-01", fulltime: 9, contract: 28 },
+  { date: "2023-06-01", fulltime: 33, contract: 34 },
+  { date: "2023-07-01", fulltime: 30, contract: 19 },
+  { date: "2023-08-01", fulltime: 33, contract: 26 },
+  { date: "2023-09-01", fulltime: 29, contract: 40 },
+  { date: "2023-10-01", fulltime: 35, contract: 24 },
+  { date: "2023-11-01", fulltime: 31, contract: 18 },
+  { date: "2023-12-01", fulltime: 33, contract: 22 },
+  { date: "2024-01-01", fulltime: 16, contract: 29 },
+  { date: "2024-02-01", fulltime: 31, contract: 23 },
+  { date: "2024-03-01", fulltime: 36, contract: 17 },
+  { date: "2024-04-01", fulltime: 20, contract: 28 },
+  { date: "2024-05-01", fulltime: 18, contract: 32 },
+  { date: "2024-06-01", fulltime: 34, contract: 25 }
 ];
 
 export function VisitorsAreaChart() {
@@ -31,7 +31,7 @@ export function VisitorsAreaChart() {
     <Card>
       <CardHeader className="flex items-center gap-2 space-y-0 border-b py-3 sm:flex-row">
         <div className="grid flex-1 gap-1 text-center sm:text-left">
-          <CardTitle>Daily Activity Overview</CardTitle>
+          <CardTitle>Attendance Trends</CardTitle>
         </div>
         <Select value={timeRange} onValueChange={setTimeRange}>
           <SelectTrigger className="w-[160px] rounded-lg sm:ml-auto">
@@ -54,11 +54,11 @@ export function VisitorsAreaChart() {
             style={{ width: '100%', height: '100%' }}
           >
             <defs>
-              <linearGradient id="colorVisitors" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="colorFulltime" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8}/>
                 <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1}/>
               </linearGradient>
-              <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+              <linearGradient id="colorContract" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8}/>
                 <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1}/>
               </linearGradient>
@@ -71,31 +71,36 @@ export function VisitorsAreaChart() {
             <XAxis
               dataKey="date"
               tickFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'short' })}
-              tick={{ fontSize: 12 }}
+              tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fillOpacity: 0.8 }}
               tickMargin={10}
               stroke="hsl(var(--border))"
               strokeOpacity={0.2}
             />
             <Tooltip
-              formatter={(value, name) => [`${value}`, name.charAt(0).toUpperCase() + name.slice(1)]}
+              formatter={(value, name) => [
+                `${value}`, 
+                name === 'fulltime' ? 'Full-time' : name === 'contract' ? 'Contract' : name.charAt(0).toUpperCase() + name.slice(1)
+              ]}
               labelFormatter={(value) => new Date(value).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
             />
             <Legend verticalAlign="top" height={36} />
             <Area
               type="monotone"
-              dataKey="visitors"
+              dataKey="fulltime"
               stroke="hsl(var(--chart-1))"
               strokeWidth={2}
               fillOpacity={1}
-              fill="url(#colorVisitors)"
+              fill="url(#colorFulltime)"
+              name="Full-time"
             />
             <Area
               type="monotone"
-              dataKey="revenue"
+              dataKey="contract"
               stroke="hsl(var(--chart-2))" 
               strokeWidth={2}
               fillOpacity={1}
-              fill="url(#colorRevenue)"
+              fill="url(#colorContract)"
+              name="Contract"
             />
           </AreaChart>
         </div>

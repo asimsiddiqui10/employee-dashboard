@@ -108,7 +108,7 @@ const MyTeam = () => {
       </div>
 
       {/* Team Members Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4">
         {teamMembers.length === 0 ? (
           <div className="col-span-full text-center py-12">
             <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -120,28 +120,28 @@ const MyTeam = () => {
         ) : (
           teamMembers.map((member) => (
             <Card key={member._id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-12 w-12">
+              <CardContent className="p-4">
+                <div className="flex flex-col items-center text-center space-y-3">
+                  <Avatar className="h-16 w-16">
                     <AvatarImage src={member.profilePic} alt={member.name} />
-                    <AvatarFallback className="text-sm font-medium">
+                    <AvatarFallback className="text-lg font-medium">
                       {getInitials(member.name)}
                     </AvatarFallback>
                   </Avatar>
                   
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-2">
-                      <h3 className="font-semibold truncate">{member.name}</h3>
-                      <Badge variant="outline" className={getEmploymentTypeColor(member.employmentType)}>
+                  <div className="w-full space-y-2">
+                    <div>
+                      <h3 className="font-semibold text-sm truncate">{member.name}</h3>
+                      <Badge variant="outline" className={`${getEmploymentTypeColor(member.employmentType)} text-xs mt-1`}>
                         {member.employmentType}
                       </Badge>
                     </div>
                     
-                    <p className="text-sm text-muted-foreground mb-3">
+                    <p className="text-xs text-muted-foreground">
                       {member.position || 'No position specified'}
                     </p>
                     
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                       <User className="h-3 w-3" />
                       <span>ID: {member.employeeId}</span>
                     </div>

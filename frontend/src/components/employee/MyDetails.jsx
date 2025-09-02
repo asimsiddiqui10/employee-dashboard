@@ -260,41 +260,48 @@ const MyDetails = () => {
     );
   };
 
+  const tabConfig = {
+    personal: 'Basic Info',
+    work: 'Work',
+    compensation: 'Compensation',
+    contact: 'Contact',
+    emergency: 'Emergency'
+  };
+
   return (
-    <div className="container mx-auto p-4 space-y-4">
-      <Card className="border-none">
-        {/* Header Section */}
-        <CardHeader className="px-6 pb-0">
-          <div className="flex flex-col lg:flex-row items-start gap-6 pb-6">
-            {/* Profile Picture */}
+    <div className="min-h-screen">
+      {/* Header with employee info */}
+      <div className="">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center gap-6">
+            {/* Profile Picture - Increased size by 50% */}
             <div className="relative shrink-0">
               {employeeDetails.profilePic ? (
                 <img
                   src={employeeDetails.profilePic}
                   alt={employeeDetails.name}
-                  className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg object-cover ring-2 ring-muted"
+                  className="w-24 h-24 rounded-lg object-cover ring-2 ring-muted"
                 />
               ) : (
-                <div className="w-24 h-24 lg:w-32 lg:h-32 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
-                  <User className="h-12 w-12 lg:h-16 lg:w-16 text-muted-foreground" />
+                <div className="w-24 h-24 rounded-lg bg-muted flex items-center justify-center ring-2 ring-muted">
+                  <User className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
             </div>
 
-            {/* Employee Info */}
-            <div className="flex-1 min-w-0 w-full">
-              <div className="space-y-4">
-                {/* Name */}
-                <div>
-                  <h2 className="text-xl lg:text-2xl font-semibold text-foreground">{employeeDetails.name}</h2>
+            {/* Employee Name and Info - Reformatted */}
+            <div className="flex-1 min-w-0">
+              <div className="space-y-1">
+                {/* Name and ID on same line */}
+                <div className="flex items-center gap-3">
+                  <h1 className="text-2xl font-bold text-foreground">{employeeDetails.name}</h1>
+                  <span className="text-sm text-muted-foreground">{employeeDetails.employeeId}</span>
                 </div>
-
-                {/* Position, Department and ID */}
-                <div className="flex flex-wrap items-center gap-2 text-muted-foreground">
-                  <span>{employeeDetails.position}</span>
+                
+                {/* Department and Position */}
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                   {employeeDetails.department && (
                     <>
-                      <span className="hidden sm:inline">•</span>
                       <div className="flex items-center gap-1">
                         {(() => {
                           const deptConfig = getDepartmentConfig(employeeDetails.department);
@@ -302,7 +309,7 @@ const MyDetails = () => {
                           return (
                             <>
                               <div className={`p-1 rounded transition-colors ${deptConfig.bgColor}`}>
-                                <Icon className={`h-3.5 w-3.5 transition-colors ${deptConfig.color}`} />
+                                <Icon className={`h-3 w-3 transition-colors ${deptConfig.color}`} />
                               </div>
                               <span className={`transition-colors ${deptConfig.color}`}>
                                 {employeeDetails.department}
@@ -311,43 +318,59 @@ const MyDetails = () => {
                           );
                         })()}
                       </div>
+                      {employeeDetails.position && (
+                        <>
+                          <span>•</span>
+                          <span>{employeeDetails.position}</span>
+                        </>
+                      )}
                     </>
                   )}
-                  <span className="hidden sm:inline">•</span>
-                  <span>ID: {employeeDetails.employeeId}</span>
                 </div>
-              </div>
 
-              {/* Tabs Navigation */}
-              <div className="mt-6 overflow-x-auto pb-2">
-                <div className="flex space-x-1 bg-accent p-1 rounded-lg min-w-max">
-                  {tabs.map((tab) => (
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab)}
-                      className={cn(
-                        "px-3 py-1.5 text-sm font-medium rounded-md transition-all whitespace-nowrap",
-                        activeTab === tab
-                          ? "bg-primary text-primary-foreground shadow-sm"
-                          : "text-accent-foreground/80 hover:text-accent-foreground hover:bg-accent-foreground/10"
-                      )}
-                    >
-                      {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                    </button>
-                  ))}
+                {/* Email */}
+                <div className="text-sm text-muted-foreground">
+                  {employeeDetails.email}
                 </div>
               </div>
             </div>
           </div>
-        </CardHeader>
+        </div>
+      </div>
 
-        {/* Content Section */}
-        <CardContent className="px-4 sm:px-6 pt-6">
-          <div className="max-w-full overflow-x-auto">
-            {renderTabContent()}
+      {/* Main Layout: Sidebar + Content */}
+      <div className="flex min-h-[calc(100vh-120px)]">
+        {/* Left Sidebar with Tabs - Individual right borders on each item */}
+        <div className="w-64 relative">
+          <div className="p-4">
+            <nav className="space-y-0">
+              {tabs.map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    "w-full text-left px-4 py-3 text-sm transition-all",
+                    activeTab === tab
+                      ? "bg-blue-50 dark:bg-blue-950/20 text-blue-900 dark:text-blue-100 border-r-[3px] border-r-blue-500 font-semibold"
+                      : "text-gray-600 dark:text-gray-400 hover:bg-blue-50/50 dark:hover:bg-blue-950/10 hover:text-blue-800 dark:hover:text-blue-200 border-r border-r-gray-300 dark:border-r-gray-600 font-medium"
+                  )}
+                >
+                  {tabConfig[tab] || tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </nav>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+
+        {/* Main Content Area */}
+        <div className="flex-1">
+          <div className="p-8">
+            <div className="max-w-4xl">
+              {renderTabContent()}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
