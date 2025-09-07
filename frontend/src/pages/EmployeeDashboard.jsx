@@ -16,6 +16,8 @@ import MyTeamCard from '../components/employee/MyTeamCard';
 import TimeClockCard from '../components/employee/TimeClockCard';
 import ScheduleWidget from '../components/employee/ScheduleWidget';
 import PageLoader from '../components/common/PageLoader';
+import LoadingBar from '../components/common/LoadingBar';
+import RoleSwitcher from '../components/common/RoleSwitcher';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
@@ -93,17 +95,17 @@ const EmployeeDashboard = () => {
           </div>
 
           <div className="flex items-center gap-4 px-4">
+            <RoleSwitcher />
             <ThemeToggle />
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
               <User className="h-5 w-5 text-muted-foreground" />
             </div>
           </div>
         </nav>
+        
+        {loading && showDashboard && <LoadingBar />}
 
-        {showDashboard && (
-          loading ? (
-            <PageLoader />
-          ) : (
+        {showDashboard && !loading && (
             <div className="container mx-auto p-6 animate-in fade-in duration-500">
               <div className="mb-6 animate-in slide-in-from-bottom-4 duration-700">
                 <h2 className="text-2xl font-semibold">
@@ -145,8 +147,8 @@ const EmployeeDashboard = () => {
                 </div>
               </div>
             </div>
-          )
-        )}
+          )}
+        
         {!showDashboard && <Outlet />}
       </SidebarInset>
 

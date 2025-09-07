@@ -10,6 +10,7 @@ import {
 } from "../components/ui/sidebar";
 import { Separator } from "../components/ui/separator";
 import { ThemeToggle } from "../components/ui/theme-toggle";
+import RoleSwitcher from '../components/common/RoleSwitcher';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -29,6 +30,7 @@ const AdminDashboard = () => {
           </div>
 
           <div className="flex items-center gap-4 px-4">
+            <RoleSwitcher />
             <ThemeToggle />
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
               <User className="h-5 w-5 text-muted-foreground" />

@@ -12,6 +12,7 @@ import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import { format } from 'date-fns';
 import PageLoader from '../common/PageLoader';
+import LoadingBar from '../common/LoadingBar';
 
 
 
@@ -201,12 +202,10 @@ const AdminHome = () => {
     { name: "Terminated", value: 10 },
   ];
 
-  if (loading) {
-    return <PageLoader />;
-  }
-
   return (
-    <div className="flex flex-col-reverse gap-4 lg:flex-row min-w-0 animate-in fade-in duration-500">
+    <>
+      {loading && <LoadingBar />}
+      <div className="flex flex-col-reverse gap-4 lg:flex-row min-w-0 animate-in fade-in duration-500">
       {/* Main Content */}
       <div className="flex w-full flex-col gap-4 lg:w-3/4 min-w-0">
         {/* Stats Section */}
@@ -438,6 +437,7 @@ const AdminHome = () => {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 };
 

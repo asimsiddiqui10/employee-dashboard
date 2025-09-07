@@ -19,6 +19,7 @@ import reimbursementRoutes from './routes/reimbursementRoutes.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
 import jobCodeRoutes from './routes/jobCodeRoutes.js';
 import companyDefaultRoutes from './routes/companyDefaultRoutes.js';
+import roleRoutes from './routes/roleRoutes.js';
 import { recoverActiveSessions } from './controllers/timeClockController.js';
 
 // Load environment variables
@@ -84,6 +85,7 @@ app.use('/api/reimbursements', reimbursementRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/job-codes', jobCodeRoutes);
 app.use('/api/company-defaults', companyDefaultRoutes);
+app.use('/api/roles', roleRoutes);
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

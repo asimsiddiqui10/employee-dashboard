@@ -22,15 +22,25 @@ export const AuthProvider = ({ children }) => {
                     // Verify token with backend
                     const response = await api.get('/auth/verify');
                     if (response.data.user) {
-                        setUser(response.data.user);
+                        const userData = response.data.user;
+                        
+                        // Check if there's a stored active role
+                        const storedActiveRole = localStorage.getItem('activeRole');
+                        if (storedActiveRole && userData.roles && userData.roles.includes(storedActiveRole)) {
+                            userData.activeRole = storedActiveRole;
+                        }
+                        
+                        setUser(userData);
                     } else {
                         localStorage.removeItem('token');
+                        localStorage.removeItem('activeRole');
                         delete api.defaults.headers.common['Authorization'];
                     }
                 } catch (error) {
                     const { message } = handleApiError(error);
                     console.error(message);
                     localStorage.removeItem('token');
+                    localStorage.removeItem('activeRole');
                     delete api.defaults.headers.common['Authorization'];
                 }
             }
@@ -40,17 +50,30 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = (userData) => {
+        // Check if there's a stored active role preference
+        const storedActiveRole = localStorage.getItem('activeRole');
+        if (storedActiveRole && userData.roles && userData.roles.includes(storedActiveRole)) {
+            userData.activeRole = storedActiveRole;
+        }
+        
         setUser(userData);
+        
         // Set token in axios defaults when logging in
         const token = localStorage.getItem('token');
         if (token) {
             api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        }
+        
+        // Store active role if it exists
+        if (userData.activeRole) {
+            localStorage.setItem('activeRole', userData.activeRole);
         }
     };
 
     const logout = () => {
         setUser(null);
         localStorage.removeItem('token');
+        localStorage.removeItem('activeRole'); // Clear stored active role
         delete api.defaults.headers.common['Authorization'];
     };
     

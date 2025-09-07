@@ -46,10 +46,24 @@ const Login = () => {
             if (response.data.token) {
                 login(response.data.user);
                 localStorage.setItem('token', response.data.token);
-                if(response.data.user.role === 'admin') {
+                
+                // Enhanced navigation logic for multiple roles
+                const user = response.data.user;
+                const userRoles = user.roles || (user.role ? [user.role] : []);
+                const activeRole = user.activeRole || user.role;
+                
+                // Navigate based on active role, with fallback to primary role
+                if (activeRole === 'admin' || (!activeRole && userRoles.includes('admin'))) {
                     navigate('/admin-dashboard');
-                } else {
+                } else if (activeRole === 'employee' || userRoles.includes('employee')) {
                     navigate('/employee-dashboard');
+                } else {
+                    // Fallback to admin dashboard if user has admin role
+                    if (userRoles.includes('admin')) {
+                        navigate('/admin-dashboard');
+                    } else {
+                        navigate('/employee-dashboard');
+                    }
                 }
             } else {
                 const { message } = handleApiError(response.data);

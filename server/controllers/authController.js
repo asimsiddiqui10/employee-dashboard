@@ -41,6 +41,8 @@ export const login = async (req, res) => {
             { 
                 id: user._id,
                 role: user.role,
+                roles: user.roles,
+                activeRole: user.activeRole,
                 employeeId: employee?._id 
             },
             process.env.JWT_KEY,
@@ -55,6 +57,8 @@ export const login = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                roles: user.roles,
+                activeRole: user.activeRole,
                 employeeId: employee?._id
             },
             token
@@ -85,6 +89,8 @@ export const verify = async (req, res) => {
                 name: user.name,
                 email: user.email,
                 role: user.role,
+                roles: user.roles,
+                activeRole: user.activeRole,
                 employeeId: employee?._id
             }
         });

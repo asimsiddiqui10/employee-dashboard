@@ -1,6 +1,7 @@
 import React from 'react';
 import { useAuth } from '../../context/authContext';
 import { User } from 'lucide-react';
+import RoleSwitcher from './RoleSwitcher';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
@@ -16,6 +17,9 @@ const Navbar = () => {
         
         <div className="flex items-center gap-4 flex-1 justify-end">
           <div className="flex items-center gap-3">
+            {/* Role Switcher */}
+            <RoleSwitcher />
+            
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
               <User className="h-5 w-5 text-gray-600" />
             </div>

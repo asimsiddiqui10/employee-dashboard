@@ -31,6 +31,8 @@ const runAllMigrations = async () => {
     await runMigration('migrateDepartments');
     await runMigration('migrateEmploymentTypes');
     await runMigration('migrateTimeEntryJobCodes');
+    await runMigration('migrateMultipleRoles');
+    await runMigration('migrateUserRoles');
     await runMigration('seedJobCodes');
     await runMigration('seedCompanyDefaults');
     
