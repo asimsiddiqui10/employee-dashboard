@@ -1277,7 +1277,14 @@ const EmployeeDetails = () => {
                     </>
                   ) : (
                     <>
-                      <h1 className="text-2xl font-bold text-foreground">{form?.name}</h1>
+                      <div className="flex items-center gap-2">
+                        <h1 className="text-2xl font-bold text-foreground">{form?.name}</h1>
+                        {form?.roles && form.roles.length > 1 && (
+                          <Badge variant="destructive" className="text-xs">
+                            Admin Access
+                          </Badge>
+                        )}
+                      </div>
                       <span className="text-sm text-muted-foreground">{form?.employeeId}</span>
                     </>
                   )}

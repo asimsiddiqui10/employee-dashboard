@@ -17,7 +17,7 @@ import { Badge } from "../ui/badge";
 import { ChevronDown, UserCheck, Shield, User, RefreshCw } from 'lucide-react';
 
 const RoleSwitcher = ({ className = "" }) => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [roleLoading, setRoleLoading] = useState(false);
@@ -83,6 +83,9 @@ const RoleSwitcher = ({ className = "" }) => {
 
     try {
       await switchRole(newRole);
+      
+      // Refresh user data in context to get updated activeRole
+      await refreshUser();
       
       toast({
         title: "Role Switched",

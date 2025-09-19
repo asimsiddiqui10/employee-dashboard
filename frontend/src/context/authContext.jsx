@@ -77,11 +77,35 @@ export const AuthProvider = ({ children }) => {
         delete api.defaults.headers.common['Authorization'];
     };
     
+    // Add this function to the authContext
+    const refreshUser = async () => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        try {
+          const response = await api.get('/auth/verify');
+          if (response.data.user) {
+            const userData = response.data.user;
+            
+            // Check if there's a stored active role
+            const storedActiveRole = localStorage.getItem('activeRole');
+            if (storedActiveRole && userData.roles && userData.roles.includes(storedActiveRole)) {
+              userData.activeRole = storedActiveRole;
+            }
+            
+            setUser(userData);
+          }
+        } catch (error) {
+          console.error('Error refreshing user:', error);
+        }
+      }
+    };
+
     // Provide a value object with all the context data
     const value = {
         user,
         login,
         logout,
+        refreshUser, // Add this
         loading
     };
 

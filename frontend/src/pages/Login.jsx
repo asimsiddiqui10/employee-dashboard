@@ -60,9 +60,9 @@ const Login = () => {
                 } else {
                     // Fallback to admin dashboard if user has admin role
                     if (userRoles.includes('admin')) {
-                        navigate('/admin-dashboard');
-                    } else {
-                        navigate('/employee-dashboard');
+                    navigate('/admin-dashboard');
+                } else {
+                    navigate('/employee-dashboard');
                     }
                 }
             } else {
