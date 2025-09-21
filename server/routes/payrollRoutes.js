@@ -3,7 +3,12 @@ import {
   uploadPayrollDocument, 
   getEmployeePayrollDocuments, 
   getAllPayrollDocuments,
-  downloadPayrollDocument
+  downloadPayrollDocument,
+  getPayrollCategories,
+  createPayrollPeriod,
+  getPayrollCalendar,
+  updatePayrollPeriod,
+  deletePayrollPeriod
 } from '../controllers/payrollController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { roleMiddleware } from '../middleware/roleMiddleware.js';
@@ -23,6 +28,36 @@ router.get('/all',
   authMiddleware, 
   roleMiddleware(['admin']), 
   getAllPayrollDocuments
+);
+
+router.get('/categories', 
+  authMiddleware, 
+  roleMiddleware(['admin']), 
+  getPayrollCategories
+);
+
+// Payroll Calendar routes (Admin only)
+router.post('/calendar', 
+  authMiddleware, 
+  roleMiddleware(['admin']), 
+  createPayrollPeriod
+);
+
+router.get('/calendar', 
+  authMiddleware, 
+  getPayrollCalendar
+);
+
+router.put('/calendar/:id', 
+  authMiddleware, 
+  roleMiddleware(['admin']), 
+  updatePayrollPeriod
+);
+
+router.delete('/calendar/:id', 
+  authMiddleware, 
+  roleMiddleware(['admin']), 
+  deletePayrollPeriod
 );
 
 // Employee routes

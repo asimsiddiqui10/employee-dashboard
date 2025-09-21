@@ -11,6 +11,11 @@ const payrollSchema = new mongoose.Schema({
     required: true
   },
   description: String,
+  category: {
+    type: String,
+    default: 'General',
+    required: true
+  },
   fileName: {
     type: String,
     required: true
