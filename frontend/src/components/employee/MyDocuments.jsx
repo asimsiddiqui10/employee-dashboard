@@ -190,8 +190,8 @@ export default function MyDocuments() {
 
   const renderDocumentsView = () => {
     const folderInfo = documentTypes.find(type => type.value === selectedFolder);
-    
-    return (
+
+  return (
       <div className="space-y-6">
         {/* Header with back button */}
         <Card>
@@ -206,7 +206,7 @@ export default function MyDocuments() {
                 <ArrowLeft className="h-4 w-4" />
                 Back to Folders
               </Button>
-              <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3">
                 <div className={cn("rounded-full p-2", getDocumentStyle(selectedFolder))}>
                   <folderInfo.icon className="h-5 w-5" />
                 </div>
@@ -219,26 +219,26 @@ export default function MyDocuments() {
               </div>
             </div>
             {selectedFolder !== 'payroll' && (
-              <Select value={selectedTimeFilter} onValueChange={setSelectedTimeFilter}>
+            <Select value={selectedTimeFilter} onValueChange={setSelectedTimeFilter}>
                 <SelectTrigger className="w-[160px]">
-                  <SelectValue placeholder="Select time range" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeFilters.map(filter => (
-                    <SelectItem key={filter.value} value={filter.value}>
-                      {filter.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <SelectValue placeholder="Select time range" />
+              </SelectTrigger>
+              <SelectContent>
+                {timeFilters.map(filter => (
+                  <SelectItem key={filter.value} value={filter.value}>
+                    {filter.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             )}
-          </CardHeader>
+      </CardHeader>
         </Card>
 
         {/* Documents Display */}
         <Card>
-          <CardContent className="p-6">
-            {loading ? (
+      <CardContent className="p-6">
+        {loading ? (
               <div className="flex items-center justify-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               </div>
@@ -249,61 +249,61 @@ export default function MyDocuments() {
                 <p className="text-sm text-muted-foreground">
                   No {folderInfo.label.toLowerCase()} documents available yet.
                 </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
+          </div>
+        ) : (
+          <div className="space-y-4">
                 {filteredDocuments.map((doc) => (
-                  <div
-                    key={doc._id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
-                  >
-                    <div className="flex items-center gap-4">
+              <div
+                key={doc._id}
+                className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-accent/50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
                       <div className={cn("rounded-full p-2", getDocumentStyle(selectedFolder))}>
                         <folderInfo.icon className="h-5 w-5" />
-                      </div>
-                      <div className="space-y-1">
-                        <h4 className="font-medium text-sm">{doc.title}</h4>
-                        {doc.description && (
-                          <p className="text-sm text-muted-foreground">
-                            {doc.description}
-                          </p>
-                        )}
+                  </div>
+                  <div className="space-y-1">
+                    <h4 className="font-medium text-sm">{doc.title}</h4>
+                    {doc.description && (
+                      <p className="text-sm text-muted-foreground">
+                        {doc.description}
+                      </p>
+                    )}
                         {selectedFolder === 'payroll' && doc.payPeriodStart && doc.payPeriodEnd && (
                           <p className="text-sm text-muted-foreground">
                             Pay Period: {new Date(doc.payPeriodStart).toLocaleDateString()} - {new Date(doc.payPeriodEnd).toLocaleDateString()}
                           </p>
                         )}
-                        <div className="flex items-center gap-2">
-                          <Badge 
-                            variant="secondary" 
+                    <div className="flex items-center gap-2">
+                      <Badge 
+                        variant="secondary" 
                             className={cn("capitalize", getDocumentStyle(selectedFolder))}
-                          >
+                      >
                             {folderInfo.label}
-                          </Badge>
-                          <span className="text-sm text-muted-foreground">
-                            • {new Date(doc.uploadedAt).toLocaleDateString()}
-                          </span>
-                          {doc.uploadedBy && (
-                            <span className="text-sm text-muted-foreground">
-                              • Uploaded by {doc.uploadedBy.name}
-                            </span>
-                          )}
-                        </div>
-                      </div>
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        • {new Date(doc.uploadedAt).toLocaleDateString()}
+                      </span>
+                      {doc.uploadedBy && (
+                        <span className="text-sm text-muted-foreground">
+                          • Uploaded by {doc.uploadedBy.name}
+                        </span>
+                      )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleDownload(doc._id)}
-                      className="gap-2"
-                    >
-                      <Download className="h-4 w-4" />
-                      Download
-                    </Button>
                   </div>
-                ))}
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDownload(doc._id)}
+                  className="gap-2"
+                >
+                  <Download className="h-4 w-4" />
+                  Download
+                </Button>
               </div>
-            )}
+            ))}
+          </div>
+        )}
           </CardContent>
         </Card>
       </div>
