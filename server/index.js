@@ -30,7 +30,7 @@ const app = express();
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',  // Local development
-  'http://localhost:3000',  // Local production build
+  'http://localhost:3004',  // Local production build
   'https://act-vj78.onrender.com',  // Render production backend URL
   'https://dev-staging.onrender.com', // Render dev backend URL
   'https://employee-dashboard-sable.vercel.app',  // Main Vercel deployment
@@ -114,7 +114,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3004;
 
 // MongoDB connection with retry logic
 const connectDB = async (retries = 5) => {
