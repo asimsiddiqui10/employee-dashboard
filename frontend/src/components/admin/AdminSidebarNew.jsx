@@ -79,7 +79,7 @@ export function AdminSidebarNew() {
     {
       title: "Schedules",
       icon: Calendar,
-      path: "/admin-dashboard/schedule-assignment"
+      path: "/admin-dashboard/schedules"
     },
     {
       title: "Departments",

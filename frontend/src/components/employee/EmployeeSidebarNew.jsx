@@ -154,22 +154,13 @@ export function EmployeeSidebarNew() {
   const getFilteredSidebarData = () => {
     return sidebarData.map(item => {
       if (item.title === "Hours") {
-        // Show "Hours" for hourly/contract employees, "Schedule" for full-time/part-time
-        if (user?.employmentType === 'hourly' || user?.employmentType === 'contract') {
-          return {
-            ...item,
-            title: "Hours",
-            icon: Clock,
-            path: "/employee-dashboard/time-tracking"
-          };
-        } else {
-          return {
-            ...item,
-            title: "Schedule",
-            icon: Calendar,
-            path: "/employee-dashboard/schedule"
-          };
-        }
+        // Show "Hours" for all employees
+        return {
+          ...item,
+          title: "Hours",
+          icon: Clock,
+          path: "/employee-dashboard/time-tracking"
+        };
       }
       return item;
     });
