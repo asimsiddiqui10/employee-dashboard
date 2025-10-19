@@ -38,13 +38,11 @@ export default defineConfig({
     },
     hmr: {
       overlay: true,
-      clientPort: 5173,
       timeout: 120000,
       host: 'localhost',
     },
     watch: {
-      usePolling: true,
-      interval: 100,
+      usePolling: false,
       ignored: ['**/node_modules/**', '**/dist/**', '**/.git/**'],
     }
   },
