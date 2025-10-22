@@ -16,6 +16,16 @@ import ScheduleForm from './ScheduleForm';
 import ScheduleList from './ScheduleList';
 import ScheduleTimeline from './ScheduleTimeline';
 
+// Utility function to convert 24-hour time to 12-hour format
+const formatTime12Hour = (time24) => {
+  if (!time24) return '';
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 const localizer = momentLocalizer(moment);
 
 const ScheduleManagement = () => {
@@ -147,7 +157,7 @@ const ScheduleManagement = () => {
         
         events.push({
           id: `${schedule._id}-${currentDate.format('YYYY-MM-DD')}`,
-          title: `${schedule.employeeName} - ${schedule.jobCode} (${schedule.hoursPerDay}h)`,
+          title: `${schedule.employeeName} - ${schedule.jobCode} (${schedule.hoursPerDay}h) - ${formatTime12Hour(schedule.startTime)} to ${formatTime12Hour(schedule.endTime)}`,
           start: eventStart,
           end: eventEnd,
           resource: schedule,
@@ -187,36 +197,22 @@ const ScheduleManagement = () => {
       {/* Tabs for Timeline, Calendar and List View */}
       <Tabs defaultValue="timeline" className="w-full">
         <div className="flex items-center justify-between gap-4 mb-6">
-          <TabsList className="grid grid-cols-3 w-[550px]">
-            <TabsTrigger value="timeline">
-              Timeline View
-            </TabsTrigger>
-            <TabsTrigger value="calendar">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Calendar
-            </TabsTrigger>
-            <TabsTrigger value="list">
-              <List className="mr-2 h-4 w-4" />
-              List
-            </TabsTrigger>
-          </TabsList>
-
-          {/* Employee Search Combobox */}
+          {/* Employee Search Combobox - Moved to LEFT */}
           <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
               <Button
                 variant="outline"
                 role="combobox"
                 aria-expanded={open}
-                className="w-[400px] justify-between"
+                className="w-[300px] justify-between"
               >
                 {selectedEmployee
                   ? `${selectedEmployee.name} (${selectedEmployee.employeeId})`
-                  : "Filter by employee..."}
+                  : "Select Employees"}
                 <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
               </Button>
             </PopoverTrigger>
-            <PopoverContent className="w-[400px] p-0">
+            <PopoverContent className="w-[300px] p-0">
               <Command>
                 <CommandInput placeholder="Search employee..." />
                 <CommandEmpty>No employee found.</CommandEmpty>
@@ -258,6 +254,21 @@ const ScheduleManagement = () => {
               </Command>
             </PopoverContent>
           </Popover>
+
+          {/* Tab Switcher - Moved to RIGHT */}
+          <TabsList className="grid grid-cols-3 w-[550px]">
+            <TabsTrigger value="timeline">
+              Timeline View
+            </TabsTrigger>
+            <TabsTrigger value="calendar">
+              <CalendarIcon className="mr-2 h-4 w-4" />
+              Calendar
+            </TabsTrigger>
+            <TabsTrigger value="list">
+              <List className="mr-2 h-4 w-4" />
+              List
+            </TabsTrigger>
+          </TabsList>
         </div>
 
         <TabsContent value="timeline" className="mt-0">
@@ -308,6 +319,9 @@ const ScheduleManagement = () => {
                     agendaDateFormat: 'ddd MMM DD',
                     agendaTimeFormat: 'h:mm A',
                     agendaTimeRangeFormat: ({ start, end }) => 
+                      `${moment(start).format('h:mm A')} - ${moment(end).format('h:mm A')}`,
+                    timeGutterFormat: 'h:mm A',
+                    eventTimeRangeFormat: ({ start, end }) => 
                       `${moment(start).format('h:mm A')} - ${moment(end).format('h:mm A')}`,
                   }}
                   messages={{

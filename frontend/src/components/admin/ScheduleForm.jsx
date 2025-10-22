@@ -179,11 +179,36 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
     return conflicts;
   };
 
+  // Time validation function
+  const validateTimeRange = () => {
+    const startTime = formData.startTime;
+    const endTime = formData.endTime;
+    
+    if (!startTime || !endTime) return true; // Let required validation handle empty fields
+    
+    // Convert to minutes for comparison
+    const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+    const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+    
+    // Check if end time is before or equal to start time
+    if (endMinutes <= startMinutes) {
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     
     if (!formData.employeeId || !formData.jobCode || !formData.startDate || !formData.endDate) {
       alert('Please fill in all required fields');
+      return;
+    }
+    
+    // Validate time range
+    if (!validateTimeRange()) {
+      alert('❌ Invalid Time Range!\n\nEnd time must be after start time.\nPlease select a valid time range.');
       return;
     }
     
@@ -389,7 +414,11 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
                 value={formData.startTime}
                 onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
                 required
+                className={!validateTimeRange() && formData.startTime && formData.endTime ? "border-red-500" : ""}
               />
+              {!validateTimeRange() && formData.startTime && formData.endTime && (
+                <p className="text-sm text-red-600">End time must be after start time</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="endTime">End Time *</Label>
@@ -399,7 +428,11 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
                 value={formData.endTime}
                 onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
                 required
+                className={!validateTimeRange() && formData.startTime && formData.endTime ? "border-red-500" : ""}
               />
+              {!validateTimeRange() && formData.startTime && formData.endTime && (
+                <p className="text-sm text-red-600">End time must be after start time</p>
+              )}
             </div>
           </div>
 

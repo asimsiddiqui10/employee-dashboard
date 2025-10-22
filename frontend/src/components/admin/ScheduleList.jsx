@@ -6,6 +6,16 @@ import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 
+// Utility function to convert 24-hour time to 12-hour format
+const formatTime12Hour = (time24) => {
+  if (!time24) return '';
+  const [hours, minutes] = time24.split(':');
+  const hour = parseInt(hours, 10);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${hour12}:${minutes} ${ampm}`;
+};
+
 const ScheduleList = ({ schedules, onEdit, onDelete }) => {
   const handleDelete = (id) => {
     if (window.confirm('Are you sure you want to delete this schedule?')) {
@@ -63,7 +73,7 @@ const ScheduleList = ({ schedules, onEdit, onDelete }) => {
                       </TableCell>
                       <TableCell>{schedule.hoursPerDay}h</TableCell>
                       <TableCell className="text-sm">
-                        {schedule.startTime} - {schedule.endTime}
+                        {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
                       </TableCell>
                       <TableCell>
                         {schedule.includeWeekends ? (
