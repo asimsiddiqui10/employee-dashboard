@@ -1,33 +1,20 @@
 import mongoose from 'mongoose';
 
-const scheduleSchema = new mongoose.Schema({
-  employee: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Employee',
-    required: true,
-    index: true
-  },
-  employeeId: {
+const scheduleTemplateSchema = new mongoose.Schema({
+  name: {
     type: String,
     required: true,
-    index: true
+    unique: true,
+    trim: true
   },
-  employeeName: {
+  description: {
     type: String,
-    required: true
+    default: ''
   },
   jobCode: {
     type: String,
-    required: true,
+    required: false, // Not compulsory as per requirement
     index: true
-  },
-  startDate: {
-    type: Date,
-    required: true
-  },
-  endDate: {
-    type: Date,
-    required: true
   },
   daysOfWeek: {
     type: {
@@ -63,6 +50,10 @@ const scheduleSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  isActive: {
+    type: Boolean,
+    default: true
+  },
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -77,10 +68,10 @@ const scheduleSchema = new mongoose.Schema({
 });
 
 // Index for efficient querying
-scheduleSchema.index({ startDate: 1, endDate: 1 });
-scheduleSchema.index({ employeeId: 1, startDate: 1 });
+scheduleTemplateSchema.index({ name: 1 });
+scheduleTemplateSchema.index({ isActive: 1 });
 
-const Schedule = mongoose.model('Schedule', scheduleSchema);
+const ScheduleTemplate = mongoose.model('ScheduleTemplate', scheduleTemplateSchema);
 
-export default Schedule;
+export default ScheduleTemplate;
 

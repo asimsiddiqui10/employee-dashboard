@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import moment from 'moment';
+import { getDepartmentConfig } from '../../lib/departments';
 
 const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -33,11 +34,12 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
       
       if (!isInRange) return false;
       
-      // Check if it's a weekend and whether weekends are included
-      const dayOfWeek = current.day();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      // Check if current day is enabled in daysOfWeek
+      const dayOfWeek = current.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+      const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayMap[dayOfWeek];
       
-      if (isWeekend && !schedule.includeWeekends) return false;
+      if (schedule.daysOfWeek && schedule.daysOfWeek[dayName] === false) return false;
       
       return true;
     });
@@ -62,6 +64,27 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
       left: `${startPos}%`,
       width: `${width}%`
     };
+  };
+
+  // Get department color classes - using lighter bgColor for less colorful look
+  const getDepartmentColorClass = (department) => {
+    const deptConfig = getDepartmentConfig(department);
+    return deptConfig.bgColor;
+  };
+  
+  // Get text color for the bar
+  const getDepartmentTextColor = (department) => {
+    const deptConfig = getDepartmentConfig(department);
+    return deptConfig.color;
+  };
+
+  const formatTime = (time24) => {
+    if (!time24) return '';
+    const [hours, minutes] = time24.split(':');
+    const hour = parseInt(hours, 10);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${hour12}:${minutes} ${ampm}`;
   };
 
   const goToPreviousDay = () => {
@@ -150,27 +173,21 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
                       {/* Schedule bars */}
                       {employeeSchedules.map((schedule, idx) => {
                         const style = getScheduleStyle(schedule);
-                        const colors = [
-                          'bg-blue-500 hover:bg-blue-600',
-                          'bg-green-500 hover:bg-green-600',
-                          'bg-purple-500 hover:bg-purple-600',
-                          'bg-orange-500 hover:bg-orange-600',
-                          'bg-pink-500 hover:bg-pink-600',
-                        ];
-                        const colorClass = colors[idx % colors.length];
+                        const bgColorClass = getDepartmentColorClass(schedule.employeeDepartment);
+                        const textColorClass = getDepartmentTextColor(schedule.employeeDepartment);
 
                         return (
                           <div
                             key={schedule._id}
-                            className={`absolute top-2 bottom-2 ${colorClass} rounded cursor-pointer transition-all shadow-sm`}
+                            className={`absolute top-2 bottom-2 ${bgColorClass} rounded cursor-pointer transition-all shadow-sm hover:shadow-md border`}
                             style={style}
                             onClick={() => onSelectSchedule?.(schedule)}
-                            title={`${schedule.jobCode}\n${schedule.startTime} - ${schedule.endTime}\n${schedule.hoursPerDay} hours`}
+                            title={`${schedule.employeeName} - ${schedule.jobCode}\n${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}\n${schedule.hoursPerDay} hours`}
                           >
-                            <div className="px-2 py-1 text-white text-xs font-medium truncate">
-                              <div className="truncate">{schedule.jobCode}</div>
-                              <div className="text-[10px] opacity-90">
-                                {schedule.startTime} - {schedule.endTime}
+                            <div className={`px-2 py-1 text-xs font-medium truncate ${textColorClass}`}>
+                              <div className="truncate font-semibold">{schedule.employeeName} - {schedule.jobCode}</div>
+                              <div className="text-[10px] opacity-80">
+                                {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
                               </div>
                             </div>
                           </div>

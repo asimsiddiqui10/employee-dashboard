@@ -15,6 +15,9 @@ import { useToast } from "@/hooks/use-toast";
 import ScheduleForm from './ScheduleForm';
 import ScheduleList from './ScheduleList';
 import ScheduleTimeline from './ScheduleTimeline';
+import ScheduleWeeklyView from './ScheduleWeeklyView';
+import TemplateManagement from './TemplateManagement';
+import { getDepartmentConfig } from '../../lib/departments';
 
 // Utility function to convert 24-hour time to 12-hour format
 const formatTime12Hour = (time24) => {
@@ -24,6 +27,26 @@ const formatTime12Hour = (time24) => {
   const ampm = hour >= 12 ? 'PM' : 'AM';
   const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
   return `${hour12}:${minutes} ${ampm}`;
+};
+
+// Map Tailwind colors to hex values for calendar
+const tailwindToHex = {
+  'text-purple-500': '#a855f7',
+  'text-blue-500': '#3b82f6',
+  'text-emerald-500': '#10b981',
+  'text-green-500': '#22c55e',
+  'text-teal-500': '#14b8a6',
+  'text-orange-500': '#f97316',
+  'text-indigo-500': '#6366f1',
+  'text-amber-500': '#f59e0b',
+  'text-red-500': '#ef4444',
+  'text-gray-500': '#6b7280'
+};
+
+// Get department color for schedule
+const getDepartmentColor = (department) => {
+  const deptConfig = getDepartmentConfig(department);
+  return tailwindToHex[deptConfig.color] || '#3b82f6';
 };
 
 const localizer = momentLocalizer(moment);
@@ -39,6 +62,7 @@ const ScheduleManagement = () => {
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
+  const [showTemplateManagement, setShowTemplateManagement] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -81,7 +105,17 @@ const ScheduleManagement = () => {
         };
       });
 
-      setSchedules(Array.isArray(schedulesRes.data) ? schedulesRes.data : []);
+      // Enhance schedules with employee department info
+      const schedulesData = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
+      const enhancedSchedules = schedulesData.map(schedule => {
+        const employee = employeesData.find(emp => emp.employeeId === schedule.employeeId);
+        return {
+          ...schedule,
+          employeeDepartment: employee?.department || schedule.employee?.department || 'Other'
+        };
+      });
+
+      setSchedules(enhancedSchedules);
       setEmployees(employeesWithJobCodes);
       setJobCodes(jobCodesData);
       setCompanyDefaults(Array.isArray(defaultsRes.data) ? defaultsRes.data : []);
@@ -134,6 +168,13 @@ const ScheduleManagement = () => {
     }
   };
 
+  // Helper to check if a day should be included
+  const isDayEnabled = (date, daysOfWeek) => {
+    const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const dayName = dayMap[date.day()];
+    return daysOfWeek && daysOfWeek[dayName] === true;
+  };
+
   // Convert schedules to calendar events - generate individual day events
   const events = schedules.flatMap(schedule => {
     const events = [];
@@ -143,11 +184,8 @@ const ScheduleManagement = () => {
     let currentDate = startDate.clone();
     
     while (currentDate.isSameOrBefore(endDate, 'day')) {
-      const dayOfWeek = currentDate.day();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6; // 0 = Sunday, 6 = Saturday
-      
-      // Only add event if includeWeekends is true OR it's not a weekend
-      if (schedule.includeWeekends || !isWeekend) {
+      // Only add event if this day is enabled in daysOfWeek
+      if (isDayEnabled(currentDate, schedule.daysOfWeek)) {
         // Parse start and end times
         const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
         const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
@@ -188,14 +226,20 @@ const ScheduleManagement = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Schedule Management</h1>
-        <Button onClick={() => setShowForm(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          Create Schedule
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowTemplateManagement(true)}>
+            <List className="mr-2 h-4 w-4" />
+            Manage Templates
+          </Button>
+          <Button onClick={() => setShowForm(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Create Schedule
+          </Button>
+        </div>
       </div>
 
-      {/* Tabs for Timeline, Calendar and List View */}
-      <Tabs defaultValue="timeline" className="w-full">
+      {/* Tabs for Daily, Weekly and List View */}
+      <Tabs defaultValue="daily" className="w-full">
         <div className="flex items-center justify-between gap-4 mb-6">
           {/* Employee Search Combobox - Moved to LEFT */}
           <Popover open={open} onOpenChange={setOpen}>
@@ -257,12 +301,12 @@ const ScheduleManagement = () => {
 
           {/* Tab Switcher - Moved to RIGHT */}
           <TabsList className="grid grid-cols-3 w-[550px]">
-            <TabsTrigger value="timeline">
-              Timeline View
+            <TabsTrigger value="daily">
+              Daily
             </TabsTrigger>
-            <TabsTrigger value="calendar">
+            <TabsTrigger value="weekly">
               <CalendarIcon className="mr-2 h-4 w-4" />
-              Calendar
+              Weekly
             </TabsTrigger>
             <TabsTrigger value="list">
               <List className="mr-2 h-4 w-4" />
@@ -271,7 +315,7 @@ const ScheduleManagement = () => {
           </TabsList>
         </div>
 
-        <TabsContent value="timeline" className="mt-0">
+        <TabsContent value="daily" className="mt-0">
           <ScheduleTimeline
             schedules={filteredSchedules}
             employees={employees}
@@ -282,58 +326,14 @@ const ScheduleManagement = () => {
           />
         </TabsContent>
 
-        <TabsContent value="calendar" className="mt-0">
-          <Card>
-            <CardHeader>
-              <CardTitle>Schedule Calendar</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div style={{ height: '600px' }}>
-                <Calendar
-                  localizer={localizer}
-                  events={filteredEvents}
-                  startAccessor="start"
-                  endAccessor="end"
-                  style={{ height: '100%' }}
-                  views={['month', 'week', 'day', 'agenda']}
-                  defaultView="month"
-                  step={30}
-                  timeslots={2}
-                  onSelectEvent={(event) => {
-                    setSelectedSchedule(event.resource);
-                    setShowForm(true);
-                  }}
-                  eventPropGetter={() => ({
-                    style: {
-                      backgroundColor: '#3b82f6',
-                      borderRadius: '5px',
-                      opacity: 0.8,
-                      color: 'white',
-                      border: '0px',
-                      display: 'block'
-                    }
-                  })}
-                  formats={{
-                    agendaHeaderFormat: ({ start, end }) => 
-                      `${moment(start).format('MMM DD')} - ${moment(end).format('MMM DD, YYYY')}`,
-                    agendaDateFormat: 'ddd MMM DD',
-                    agendaTimeFormat: 'h:mm A',
-                    agendaTimeRangeFormat: ({ start, end }) => 
-                      `${moment(start).format('h:mm A')} - ${moment(end).format('h:mm A')}`,
-                    timeGutterFormat: 'h:mm A',
-                    eventTimeRangeFormat: ({ start, end }) => 
-                      `${moment(start).format('h:mm A')} - ${moment(end).format('h:mm A')}`,
-                  }}
-                  messages={{
-                    agenda: 'Schedule List',
-                    date: 'Date',
-                    time: 'Time',
-                    event: 'Schedule',
-                  }}
-                />
-              </div>
-            </CardContent>
-          </Card>
+        <TabsContent value="weekly" className="mt-0">
+          <ScheduleWeeklyView
+            schedules={filteredSchedules}
+            onSelectSchedule={(schedule) => {
+              setSelectedSchedule(schedule);
+              setShowForm(true);
+            }}
+          />
         </TabsContent>
 
         <TabsContent value="list" className="mt-0">
@@ -356,11 +356,21 @@ const ScheduleManagement = () => {
           companyDefaults={companyDefaults}
           existingSchedules={schedules}
           onSubmit={handleCreateSchedule}
+          onDelete={handleDeleteSchedule}
           onClose={() => {
             setShowForm(false);
             setSelectedSchedule(null);
           }}
           initialData={selectedSchedule}
+        />
+      )}
+
+      {/* Template Management Dialog */}
+      {showTemplateManagement && (
+        <TemplateManagement
+          open={showTemplateManagement}
+          onClose={() => setShowTemplateManagement(false)}
+          jobCodes={jobCodes}
         />
       )}
     </div>

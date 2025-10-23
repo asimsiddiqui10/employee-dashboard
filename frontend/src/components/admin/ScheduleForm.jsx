@@ -10,14 +10,24 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Search, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from "@/lib/utils";
+import api from '../../lib/axios';
+import { useToast } from "@/hooks/use-toast";
 
-const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules = [], onSubmit, onClose, initialData }) => {
+const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules = [], onSubmit, onClose, onDelete, initialData }) => {
   const [formData, setFormData] = useState({
     employeeId: '',
     jobCode: '',
     startDate: '',
     endDate: '',
-    includeWeekends: false,
+    daysOfWeek: {
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: false,
+      sunday: false
+    },
     hoursPerDay: '8',
     startTime: '09:00',
     endTime: '17:00',
@@ -29,6 +39,21 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
   const [filteredEmployees, setFilteredEmployees] = useState(employees);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [employeeJobCodes, setEmployeeJobCodes] = useState([]);
+  const [templates, setTemplates] = useState([]);
+  const { toast } = useToast();
+
+  // Fetch templates on mount
+  useEffect(() => {
+    const fetchTemplates = async () => {
+      try {
+        const response = await api.get('/schedule-templates');
+        setTemplates(response.data);
+      } catch (error) {
+        console.error('Error fetching templates:', error);
+      }
+    };
+    fetchTemplates();
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -37,7 +62,15 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
         jobCode: initialData.jobCode,
         startDate: new Date(initialData.startDate).toISOString().split('T')[0],
         endDate: new Date(initialData.endDate).toISOString().split('T')[0],
-        includeWeekends: initialData.includeWeekends,
+        daysOfWeek: initialData.daysOfWeek || {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: false,
+          sunday: false
+        },
         hoursPerDay: initialData.hoursPerDay.toString(),
         startTime: initialData.startTime,
         endTime: initialData.endTime,
@@ -113,6 +146,84 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
     }
   };
 
+  const handleTemplateSelect = (templateId) => {
+    if (!templateId) return;
+
+    const template = templates.find(t => t._id === templateId);
+    if (!template) return;
+
+    // If template has a job code, validate it
+    if (template.jobCode) {
+      // Check if employee is selected
+      if (!selectedEmployee) {
+        toast({
+          title: "Error",
+          description: "Please select an employee first to apply this template",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Check if employee has this job code assigned
+      const hasJobCode = selectedEmployee.jobCodes?.some(jc => jc.code === template.jobCode);
+      if (!hasJobCode) {
+        toast({
+          title: "Error",
+          description: `This template requires job code "${template.jobCode}" which is not assigned to the selected employee. Please assign the job code to the employee first or use a different template.`,
+          variant: "destructive"
+        });
+        return;
+      }
+
+      // Apply template with job code
+      setFormData({
+        ...formData,
+        jobCode: template.jobCode,
+        hoursPerDay: template.hoursPerDay.toString(),
+        startTime: template.startTime,
+        endTime: template.endTime,
+        daysOfWeek: template.daysOfWeek || {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: false,
+          sunday: false
+        },
+        notes: template.notes || formData.notes
+      });
+
+      toast({
+        title: "Success",
+        description: `Template "${template.name}" applied successfully`,
+      });
+    } else {
+      // Template without job code - only apply time settings
+      setFormData({
+        ...formData,
+        hoursPerDay: template.hoursPerDay.toString(),
+        startTime: template.startTime,
+        endTime: template.endTime,
+        daysOfWeek: template.daysOfWeek || {
+          monday: true,
+          tuesday: true,
+          wednesday: true,
+          thursday: true,
+          friday: true,
+          saturday: false,
+          sunday: false
+        },
+        notes: template.notes || formData.notes
+      });
+
+      toast({
+        title: "Success",
+        description: `Template "${template.name}" applied. Please select a job code for this schedule.`,
+      });
+    }
+  };
+
   // Strict conflict detection - no overlaps allowed
   const checkConflicts = () => {
     const newStart = new Date(formData.startDate);
@@ -133,16 +244,20 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
     const newStartMin = toMinutes(formData.startTime);
     const newEndMin = toMinutes(formData.endTime);
     
+    // Helper to check if a day is enabled in daysOfWeek
+    const isDayEnabled = (date, daysOfWeek) => {
+      const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+      const dayName = dayMap[date.getDay()];
+      return daysOfWeek && daysOfWeek[dayName] === true;
+    };
+
     // Check each day in the new schedule range
     const conflicts = [];
     let currentDate = new Date(newStart);
     
     while (currentDate <= newEnd) {
-      const dayOfWeek = currentDate.getDay();
-      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-      
-      // Only check days that will actually have schedules
-      if (formData.includeWeekends || !isWeekend) {
+      // Only check days that are enabled in the new schedule
+      if (isDayEnabled(currentDate, formData.daysOfWeek)) {
         // Check against existing schedules
         for (const schedule of employeeSchedules) {
           const existingStart = new Date(schedule.startDate);
@@ -150,11 +265,8 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
           
           // Check if current date falls within existing schedule
           if (currentDate >= existingStart && currentDate <= existingEnd) {
-            const existingDayOfWeek = currentDate.getDay();
-            const existingIsWeekend = existingDayOfWeek === 0 || existingDayOfWeek === 6;
-            
             // Check if existing schedule includes this day
-            if (schedule.includeWeekends || !existingIsWeekend) {
+            if (isDayEnabled(currentDate, schedule.daysOfWeek)) {
               // Times overlap check
               const existingStartMin = toMinutes(schedule.startTime);
               const existingEndMin = toMinutes(schedule.endTime);
@@ -201,7 +313,7 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    if (!formData.employeeId || !formData.jobCode || !formData.startDate || !formData.endDate) {
+    if (!formData.employeeId || !formData.jobCode) {
       alert('Please fill in all required fields');
       return;
     }
@@ -212,8 +324,8 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
       return;
     }
     
-    // Check for conflicts - strict mode, no overlaps allowed
-    const conflicts = checkConflicts();
+    // Check for conflicts - strict mode, no overlaps allowed (only if dates provided)
+    const conflicts = (formData.startDate && formData.endDate) ? checkConflicts() : [];
     
     if (conflicts.length > 0) {
       const firstConflict = conflicts[0];
@@ -251,21 +363,37 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Company Default Selector */}
+          {/* Template Selector */}
           <div className="space-y-2">
-            <Label>Quick Apply Company Default (Optional)</Label>
-            <Select onValueChange={handleCompanyDefaultSelect}>
+            <Label>Apply Template (Optional)</Label>
+            <Select onValueChange={handleTemplateSelect}>
               <SelectTrigger>
-                <SelectValue placeholder="Select a company default" />
+                <SelectValue placeholder="Select a template to import settings" />
               </SelectTrigger>
-              <SelectContent>
-                {companyDefaults.map(def => (
-                  <SelectItem key={def._id} value={def._id}>
-                    {def.name} ({def.hoursPerDay}h, {def.startTime}-{def.endTime})
-                  </SelectItem>
-                ))}
+              <SelectContent className="max-h-[300px]">
+                {templates.length === 0 ? (
+                  <div className="p-2 text-center text-sm text-muted-foreground">
+                    No templates available. Create one in Manage Templates.
+                  </div>
+                ) : (
+                  templates.map(template => (
+                    <SelectItem key={template._id} value={template._id}>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{template.name}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {template.jobCode ? `Job Code: ${template.jobCode} • ` : ''}
+                          {template.hoursPerDay}h ({template.startTime}-{template.endTime})
+                          {template.includeWeekends ? ' • Includes Weekends' : ''}
+                        </span>
+                      </div>
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Templates will auto-fill schedule settings. If a template has a job code, employee must have it assigned.
+            </p>
           </div>
 
           {/* Employee Search and Select */}
@@ -368,27 +496,50 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
           </div>
 
           {/* Date Range */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="startDate">Start Date *</Label>
-              <Input
-                id="startDate"
-                type="date"
-                value={formData.startDate}
-                onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                required
-              />
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Date Range (Optional)</Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  const today = new Date();
+                  const oneYearFromNow = new Date();
+                  oneYearFromNow.setFullYear(today.getFullYear() + 1);
+                  setFormData({
+                    ...formData,
+                    startDate: today.toISOString().split('T')[0],
+                    endDate: oneYearFromNow.toISOString().split('T')[0]
+                  });
+                }}
+              >
+                From Today Till 1 Year
+              </Button>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="endDate">End Date *</Label>
-              <Input
-                id="endDate"
-                type="date"
-                value={formData.endDate}
-                onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                required
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={formData.startDate}
+                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+                  placeholder="Start date"
+                />
+              </div>
+              <div className="space-y-2">
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={formData.endDate}
+                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+                  placeholder="End date"
+                />
+              </div>
             </div>
+            <p className="text-xs text-muted-foreground">
+              Leave empty or use button for foreseeable future (defaults to today + 1 year)
+            </p>
           </div>
 
           {/* Time Range */}
@@ -436,16 +587,40 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
             </div>
           </div>
 
-          {/* Include Weekends */}
-          <div className="flex items-center space-x-2">
-            <Checkbox
-              id="includeWeekends"
-              checked={formData.includeWeekends}
-              onCheckedChange={(checked) => setFormData({ ...formData, includeWeekends: checked })}
-            />
-            <Label htmlFor="includeWeekends" className="cursor-pointer">
-              Include Weekends
-            </Label>
+          {/* Days of Week */}
+          <div className="space-y-3">
+            <Label>Days of Week</Label>
+            <div className="flex gap-2">
+              {[
+                { key: 'monday', label: 'M' },
+                { key: 'tuesday', label: 'T' },
+                { key: 'wednesday', label: 'W' },
+                { key: 'thursday', label: 'T' },
+                { key: 'friday', label: 'F' },
+                { key: 'saturday', label: 'S' },
+                { key: 'sunday', label: 'S' }
+              ].map(({ key, label }) => (
+                <div key={key} className="flex flex-col items-center gap-1">
+                  <Label htmlFor={key} className="text-xs text-muted-foreground cursor-pointer">
+                    {label}
+                  </Label>
+                  <Checkbox
+                    id={key}
+                    checked={formData.daysOfWeek[key]}
+                    onCheckedChange={(checked) => setFormData({
+                      ...formData,
+                      daysOfWeek: {
+                        ...formData.daysOfWeek,
+                        [key]: checked
+                      }
+                    })}
+                  />
+                </div>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              M T W T F are selected by default
+            </p>
           </div>
 
           {/* Notes */}
@@ -461,13 +636,32 @@ const ScheduleForm = ({ employees, jobCodes, companyDefaults, existingSchedules 
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancel
-            </Button>
-            <Button type="submit">
-              {initialData ? 'Update' : 'Create'} Schedule
-            </Button>
+          <div className="flex justify-between items-center gap-2 pt-4">
+            {/* Delete button - only show when editing */}
+            {initialData && onDelete ? (
+              <Button 
+                type="button" 
+                variant="destructive" 
+                onClick={() => {
+                  if (window.confirm('Are you sure you want to delete this schedule? This action cannot be undone.')) {
+                    onDelete(initialData._id);
+                  }
+                }}
+              >
+                Delete Schedule
+              </Button>
+            ) : (
+              <div />
+            )}
+            
+            <div className="flex gap-2">
+              <Button type="button" variant="outline" onClick={onClose}>
+                Cancel
+              </Button>
+              <Button type="submit">
+                {initialData ? 'Update' : 'Create'} Schedule
+              </Button>
+            </div>
           </div>
         </form>
       </DialogContent>

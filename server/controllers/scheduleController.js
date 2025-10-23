@@ -2,33 +2,30 @@ import Schedule from '../models/Schedule.js';
 import Employee from '../models/Employee.js';
 import CompanyDefault from '../models/CompanyDefault.js';
 
-// Helper function to generate dates between start and end
-const generateDates = (startDate, endDate, includeWeekends) => {
-  const dates = [];
-  const current = new Date(startDate);
-  const end = new Date(endDate);
+// Helper function to check if a day should be included based on daysOfWeek
+const shouldIncludeDay = (date, daysOfWeek) => {
+  const dayOfWeek = date.getDay(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  const dayMap = {
+    0: 'sunday',
+    1: 'monday',
+    2: 'tuesday',
+    3: 'wednesday',
+    4: 'thursday',
+    5: 'friday',
+    6: 'saturday'
+  };
   
-  while (current <= end) {
-    const dayOfWeek = current.getDay();
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    
-    if (includeWeekends || !isWeekend) {
-      dates.push(new Date(current));
-    }
-    
-    current.setDate(current.getDate() + 1);
-  }
-  
-  return dates;
+  const dayName = dayMap[dayOfWeek];
+  return daysOfWeek && daysOfWeek[dayName] === true;
 };
 
 // Create a new schedule
 export const createSchedule = async (req, res) => {
   try {
-    const { employeeId, jobCode, startDate, endDate, includeWeekends, hoursPerDay, startTime, endTime, notes } = req.body;
+    const { employeeId, jobCode, startDate, endDate, daysOfWeek, hoursPerDay, startTime, endTime, notes } = req.body;
     
     // Validate required fields
-    if (!employeeId || !jobCode || !startDate || !endDate || !hoursPerDay || !startTime || !endTime) {
+    if (!employeeId || !jobCode || !hoursPerDay || !startTime || !endTime) {
       return res.status(400).json({ message: 'Missing required fields' });
     }
     
@@ -38,15 +35,27 @@ export const createSchedule = async (req, res) => {
       return res.status(404).json({ message: 'Employee not found' });
     }
     
+    // Handle date defaults - if not provided, use today to 1 year from now
+    const scheduleStartDate = startDate ? new Date(startDate) : new Date();
+    const scheduleEndDate = endDate ? new Date(endDate) : new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+    
     // Create schedule
     const schedule = new Schedule({
       employee: employee._id,
       employeeId: employee.employeeId,
       employeeName: employee.name,
       jobCode,
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      includeWeekends: includeWeekends || false,
+      startDate: scheduleStartDate,
+      endDate: scheduleEndDate,
+      daysOfWeek: daysOfWeek || {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false
+      },
       hoursPerDay,
       startTime,
       endTime,
@@ -70,7 +79,7 @@ export const createSchedule = async (req, res) => {
 export const getAllSchedules = async (req, res) => {
   try {
     const schedules = await Schedule.find()
-      .populate('employee', 'name employeeId')
+      .populate('employee', 'name employeeId department')
       .sort({ startDate: -1 });
     
     res.json(schedules);
