@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,6 +61,7 @@ const ScheduleFormNew = ({
   const [employeeJobCodes, setEmployeeJobCodes] = useState([]);
   const [templates, setTemplates] = useState([]);
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showModifyDatePicker, setShowModifyDatePicker] = useState(false);
   const [selectedDates, setSelectedDates] = useState([]);
   const { toast } = useToast();
 
@@ -80,13 +81,18 @@ const ScheduleFormNew = ({
   // Initialize form with existing data
   useEffect(() => {
     if (initialData) {
+      console.log('Initializing form with data:', initialData);
       setEditMode({ isEditing: true, modifySpecificDates: false, datesToModify: [] });
       setScheduleType(initialData.scheduleType || 'pattern');
       
       const employee = employees.find(emp => emp.employeeId === initialData.employeeId);
+      console.log('Found employee for edit:', employee);
       if (employee) {
         setSelectedEmployee(employee);
         setEmployeeJobCodes(employee.jobCodes || []);
+        console.log('Employee job codes:', employee.jobCodes);
+      } else {
+        console.log('Employee not found for ID:', initialData.employeeId);
       }
 
       setFormData({
@@ -195,6 +201,28 @@ const ScheduleFormNew = ({
     setFormData({ ...formData, specificDates: newDates });
   };
 
+  // Auto-calculate hours when time changes
+  useEffect(() => {
+    console.log('Time change detected:', { startTime: formData.startTime, endTime: formData.endTime });
+    
+    if (formData.startTime && formData.endTime) {
+      const startMinutes = parseInt(formData.startTime.split(':')[0]) * 60 + parseInt(formData.startTime.split(':')[1]);
+      const endMinutes = parseInt(formData.endTime.split(':')[0]) * 60 + parseInt(formData.endTime.split(':')[1]);
+      
+      console.log('Calculating hours:', { startMinutes, endMinutes });
+      
+      if (endMinutes > startMinutes) {
+        const totalMinutes = endMinutes - startMinutes;
+        const hours = totalMinutes / 60;
+        console.log('Setting hours to:', hours);
+        setFormData(prev => ({
+          ...prev,
+          hoursPerDay: hours.toString()
+        }));
+      }
+    }
+  }, [formData.startTime, formData.endTime]);
+
   // Time validation
   const validateTimeRange = () => {
     const startTime = formData.startTime;
@@ -302,7 +330,13 @@ const ScheduleFormNew = ({
   const handleSubmit = (e) => {
     e.preventDefault();
     
+    console.log('Form submission started', { formData, scheduleType, editMode });
+    
     if (!formData.employeeId || !formData.jobCode) {
+      console.log('Missing fields validation failed:', { 
+        employeeId: formData.employeeId, 
+        jobCode: formData.jobCode 
+      });
       toast({
         title: "Missing Fields",
         description: "Please fill in all required fields",
@@ -311,7 +345,10 @@ const ScheduleFormNew = ({
       return;
     }
     
+    console.log('Missing fields validation passed');
+    
     if (!validateTimeRange()) {
+      console.log('Time validation failed');
       toast({
         title: "Invalid Time Range",
         description: "End time must be after start time",
@@ -319,6 +356,8 @@ const ScheduleFormNew = ({
       });
       return;
     }
+    
+    console.log('Time validation passed');
 
     if (scheduleType === 'specific_dates' && selectedDates.length === 0) {
       toast({
@@ -363,8 +402,18 @@ const ScheduleFormNew = ({
       };
     }
 
+    console.log('Submitting data:', submissionData);
     onSubmit(submissionData);
   };
+
+  console.log('ScheduleFormNew rendering', { 
+    editMode, 
+    formData, 
+    scheduleType, 
+    selectedEmployee: selectedEmployee?.name, 
+    employeeJobCodes: employeeJobCodes.length,
+    jobCodeValue: formData.jobCode
+  });
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
@@ -373,6 +422,12 @@ const ScheduleFormNew = ({
           <DialogTitle>
             {editMode.isEditing ? 'Edit Schedule' : 'Create New Schedule'}
           </DialogTitle>
+          <DialogDescription>
+            {editMode.isEditing 
+              ? 'Modify schedule details or update specific dates from a recurring pattern.'
+              : 'Create a new schedule for an employee with specific dates or recurring pattern.'
+            }
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -595,13 +650,24 @@ const ScheduleFormNew = ({
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => setShowDatePicker(!showDatePicker)}
+                        onClick={() => setShowModifyDatePicker(!showModifyDatePicker)}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         Select Dates to Modify
                       </Button>
-                      {showDatePicker && (
+                      {showModifyDatePicker && (
                         <div className="border rounded-lg p-4">
+                          <div className="flex justify-between items-center mb-2">
+                            <Label className="text-sm font-medium">Select dates to modify:</Label>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowModifyDatePicker(false)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
                           <DayPicker
                             mode="multiple"
                             selected={editMode.datesToModify}
@@ -754,7 +820,10 @@ const ScheduleFormNew = ({
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button type="submit">
+              <Button 
+                type="submit"
+                onClick={() => console.log('Submit button clicked')}
+              >
                 {editMode.isEditing ? 'Update' : 'Create'} Schedule
               </Button>
             </div>

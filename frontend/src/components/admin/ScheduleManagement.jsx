@@ -1,7 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +9,7 @@ import { Plus, Search, Calendar as CalendarIcon, List, Check, ChevronsUpDown } f
 import { cn } from "@/lib/utils";
 import api from '../../lib/axios';
 import { useToast } from "@/hooks/use-toast";
-import ScheduleForm from './ScheduleForm';
+import ScheduleForm from './ScheduleFormNew';
 import ScheduleList from './ScheduleList';
 import ScheduleTimeline from './ScheduleTimeline';
 import ScheduleWeeklyView from './ScheduleWeeklyView';
@@ -48,8 +45,6 @@ const getDepartmentColor = (department) => {
   const deptConfig = getDepartmentConfig(department);
   return tailwindToHex[deptConfig.color] || '#3b82f6';
 };
-
-const localizer = momentLocalizer(moment);
 
 const ScheduleManagement = () => {
   const [schedules, setSchedules] = useState([]);
@@ -133,18 +128,31 @@ const ScheduleManagement = () => {
 
   const handleCreateSchedule = async (scheduleData) => {
     try {
-      await api.post('/schedules', scheduleData);
-      toast({
-        title: "Success",
-        description: "Schedule created successfully"
-      });
+      if (selectedSchedule) {
+        // Update existing schedule
+        await api.put(`/schedules/${selectedSchedule._id}`, scheduleData);
+        toast({
+          title: "Success",
+          description: scheduleData.modifySpecificDates 
+            ? "Schedule updated with specific date modifications"
+            : "Schedule updated successfully"
+        });
+      } else {
+        // Create new schedule
+        await api.post('/schedules', scheduleData);
+        toast({
+          title: "Success",
+          description: "Schedule created successfully"
+        });
+      }
       fetchData();
       setShowForm(false);
+      setSelectedSchedule(null);
     } catch (error) {
-      console.error('Error creating schedule:', error);
+      console.error('Error saving schedule:', error);
       toast({
         title: "Error",
-        description: error.response?.data?.message || "Failed to create schedule",
+        description: error.response?.data?.message || "Failed to save schedule",
         variant: "destructive"
       });
     }
@@ -168,55 +176,12 @@ const ScheduleManagement = () => {
     }
   };
 
-  // Helper to check if a day should be included
-  const isDayEnabled = (date, daysOfWeek) => {
-    const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-    const dayName = dayMap[date.day()];
-    return daysOfWeek && daysOfWeek[dayName] === true;
-  };
-
-  // Convert schedules to calendar events - generate individual day events
-  const events = schedules.flatMap(schedule => {
-    const events = [];
-    const startDate = moment(schedule.startDate);
-    const endDate = moment(schedule.endDate);
-    
-    let currentDate = startDate.clone();
-    
-    while (currentDate.isSameOrBefore(endDate, 'day')) {
-      // Only add event if this day is enabled in daysOfWeek
-      if (isDayEnabled(currentDate, schedule.daysOfWeek)) {
-        // Parse start and end times
-        const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
-        const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
-        
-        const eventStart = currentDate.clone().hour(startHour).minute(startMinute).toDate();
-        const eventEnd = currentDate.clone().hour(endHour).minute(endMinute).toDate();
-        
-        events.push({
-          id: `${schedule._id}-${currentDate.format('YYYY-MM-DD')}`,
-          title: `${schedule.employeeName} - ${schedule.jobCode} (${schedule.hoursPerDay}h) - ${formatTime12Hour(schedule.startTime)} to ${formatTime12Hour(schedule.endTime)}`,
-          start: eventStart,
-          end: eventEnd,
-          resource: schedule,
-          allDay: false
-        });
-      }
-      
-      currentDate.add(1, 'day');
-    }
-    
-    return events;
-  });
+  // Removed unused event generation code - we now use ScheduleWeeklyView component
 
   // Filter schedules based on selected employee
   const filteredSchedules = selectedEmployee
     ? schedules.filter(schedule => schedule.employeeId === selectedEmployee.employeeId)
     : schedules;
-
-  const filteredEvents = selectedEmployee
-    ? events.filter(event => event.resource.employeeId === selectedEmployee.employeeId)
-    : events;
 
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;

@@ -2,7 +2,17 @@ import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import moment from 'moment';
+import { 
+  formatDate, 
+  formatTime12Hour, 
+  isDayEnabled,
+  goToPreviousDay,
+  goToNextDay,
+  isWithinInterval,
+  startOfDay,
+  endOfDay,
+  getEffectiveDates
+} from '../../lib/date-utils';
 import { getDepartmentConfig } from '../../lib/departments';
 
 const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
@@ -12,9 +22,11 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
   const timeSlots = useMemo(() => {
     const slots = [];
     for (let hour = 0; hour < 24; hour++) {
+      const ampm = hour >= 12 ? 'PM' : 'AM';
+      const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
       slots.push({
         hour,
-        label: moment().hour(hour).minute(0).format('h A')
+        label: `${hour12} ${ampm}`
       });
     }
     return slots;
@@ -22,26 +34,33 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
 
   // Filter schedules for current date
   const todaySchedules = useMemo(() => {
-    const dateStr = moment(currentDate).format('YYYY-MM-DD');
+    const current = startOfDay(currentDate);
     
     return schedules.filter(schedule => {
-      const startDate = moment(schedule.startDate);
-      const endDate = moment(schedule.endDate);
-      const current = moment(currentDate);
+      // Handle specific dates schedules
+      if (schedule.scheduleType === 'specific_dates') {
+        const effectiveDates = getEffectiveDates(schedule);
+        return effectiveDates.some(d => startOfDay(d).getTime() === current.getTime());
+      }
+      
+      // Handle pattern schedules
+      const scheduleStart = startOfDay(new Date(schedule.startDate));
+      const scheduleEnd = startOfDay(new Date(schedule.endDate));
       
       // Check if current date is within schedule range
-      const isInRange = current.isSameOrAfter(startDate, 'day') && current.isSameOrBefore(endDate, 'day');
-      
+      const isInRange = current >= scheduleStart && current <= scheduleEnd;
       if (!isInRange) return false;
       
+      // Check if this day is excluded
+      if (schedule.excludedDates && schedule.excludedDates.length > 0) {
+        const isExcluded = schedule.excludedDates.some(
+          d => startOfDay(new Date(d)).getTime() === current.getTime()
+        );
+        if (isExcluded) return false;
+      }
+      
       // Check if current day is enabled in daysOfWeek
-      const dayOfWeek = current.day(); // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
-      const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-      const dayName = dayMap[dayOfWeek];
-      
-      if (schedule.daysOfWeek && schedule.daysOfWeek[dayName] === false) return false;
-      
-      return true;
+      return isDayEnabled(current, schedule.daysOfWeek);
     });
   }, [schedules, currentDate]);
 
@@ -78,24 +97,15 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
     return deptConfig.color;
   };
 
-  const formatTime = (time24) => {
-    if (!time24) return '';
-    const [hours, minutes] = time24.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${hour12}:${minutes} ${ampm}`;
+  const handleGoToPreviousDay = () => {
+    setCurrentDate(prev => goToPreviousDay(prev));
   };
 
-  const goToPreviousDay = () => {
-    setCurrentDate(prev => moment(prev).subtract(1, 'day').toDate());
+  const handleGoToNextDay = () => {
+    setCurrentDate(prev => goToNextDay(prev));
   };
 
-  const goToNextDay = () => {
-    setCurrentDate(prev => moment(prev).add(1, 'day').toDate());
-  };
-
-  const goToToday = () => {
+  const handleGoToToday = () => {
     setCurrentDate(new Date());
   };
 
@@ -105,16 +115,16 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
         <div className="flex items-center justify-between">
           <CardTitle>Daily Schedule Timeline</CardTitle>
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={goToPreviousDay}>
+            <Button variant="outline" size="sm" onClick={handleGoToPreviousDay}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="sm" onClick={goToToday}>
+            <Button variant="outline" size="sm" onClick={handleGoToToday}>
               Today
             </Button>
             <div className="text-sm font-semibold min-w-[180px] text-center">
-              {moment(currentDate).format('dddd, MMMM D, YYYY')}
+              {formatDate(currentDate, 'EEEE, MMMM d, yyyy')}
             </div>
-            <Button variant="outline" size="sm" onClick={goToNextDay}>
+            <Button variant="outline" size="sm" onClick={handleGoToNextDay}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -182,12 +192,12 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
                             className={`absolute top-2 bottom-2 ${bgColorClass} rounded cursor-pointer transition-all shadow-sm hover:shadow-md border`}
                             style={style}
                             onClick={() => onSelectSchedule?.(schedule)}
-                            title={`${schedule.employeeName} - ${schedule.jobCode}\n${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}\n${schedule.hoursPerDay} hours`}
+                            title={`${schedule.employeeName} - ${schedule.jobCode}\n${formatTime12Hour(schedule.startTime)} - ${formatTime12Hour(schedule.endTime)}\n${schedule.hoursPerDay} hours`}
                           >
                             <div className={`px-2 py-1 text-xs font-medium truncate ${textColorClass}`}>
                               <div className="truncate font-semibold">{schedule.employeeName} - {schedule.jobCode}</div>
                               <div className="text-[10px] opacity-80">
-                                {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                                {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
                               </div>
                             </div>
                           </div>

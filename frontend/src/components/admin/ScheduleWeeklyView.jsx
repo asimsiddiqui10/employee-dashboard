@@ -3,32 +3,47 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import moment from 'moment';
+import { 
+  formatDate, 
+  formatTime12Hour, 
+  getStartOfWeek, 
+  getEndOfWeek,
+  generateWeekDays,
+  goToPreviousWeek,
+  goToNextWeek,
+  isSameDay,
+  isDayEnabled,
+  isWithinInterval,
+  startOfDay,
+  getEffectiveDates
+} from '../../lib/date-utils';
 import { getDepartmentConfig } from '../../lib/departments';
 import { cn } from "@/lib/utils";
 
 const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
   // Start week on Monday
-  const [currentWeek, setCurrentWeek] = useState(moment().startOf('isoWeek'));
+  const [currentWeek, setCurrentWeek] = useState(getStartOfWeek(new Date()));
   const [displayWeekends, setDisplayWeekends] = useState(true);
 
   // Generate week days (Monday to Sunday, or Mon-Fri if weekends hidden)
   const weekDays = useMemo(() => {
-    const days = [];
-    const totalDays = displayWeekends ? 7 : 5;
-    for (let i = 0; i < totalDays; i++) {
-      days.push(currentWeek.clone().add(i, 'days'));
-    }
-    return days;
+    return generateWeekDays(currentWeek, displayWeekends);
   }, [currentWeek, displayWeekends]);
 
   // Filter schedules for current week
   const weekSchedules = useMemo(() => {
-    const weekEnd = currentWeek.clone().endOf('isoWeek');
+    const weekEnd = getEndOfWeek(currentWeek);
     return schedules.filter(schedule => {
-      const scheduleStart = moment(schedule.startDate);
-      const scheduleEnd = moment(schedule.endDate);
-      return scheduleStart.isSameOrBefore(weekEnd) && scheduleEnd.isSameOrAfter(currentWeek);
+      if (schedule.scheduleType === 'specific_dates') {
+        const effectiveDates = getEffectiveDates(schedule);
+        return effectiveDates.some(d => 
+          d >= currentWeek && d <= weekEnd
+        );
+      }
+      
+      const scheduleStart = new Date(schedule.startDate);
+      const scheduleEnd = new Date(schedule.endDate);
+      return scheduleStart <= weekEnd && scheduleEnd >= currentWeek;
     });
   }, [schedules, currentWeek]);
 
@@ -41,14 +56,33 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
 
     weekSchedules.forEach(schedule => {
       weekDays.forEach((day, index) => {
-        const dayOfWeek = day.day(); // 0 = Sunday
-        const dayMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
-        const dayName = dayMap[dayOfWeek];
-
-        // Check if this day is enabled in the schedule
-        if (schedule.daysOfWeek && schedule.daysOfWeek[dayName]) {
-          // Check if day is within schedule range
-          if (day.isBetween(moment(schedule.startDate), moment(schedule.endDate), 'day', '[]')) {
+        const dayStart = startOfDay(day);
+        
+        // Handle specific dates schedules
+        if (schedule.scheduleType === 'specific_dates') {
+          const effectiveDates = getEffectiveDates(schedule);
+          if (effectiveDates.some(d => startOfDay(d).getTime() === dayStart.getTime())) {
+            grouped[index].push(schedule);
+          }
+          return;
+        }
+        
+        // Handle pattern schedules
+        const scheduleStart = startOfDay(new Date(schedule.startDate));
+        const scheduleEnd = startOfDay(new Date(schedule.endDate));
+        
+        // Check if day is within schedule range
+        if (dayStart >= scheduleStart && dayStart <= scheduleEnd) {
+          // Check if this day is excluded
+          if (schedule.excludedDates && schedule.excludedDates.length > 0) {
+            const isExcluded = schedule.excludedDates.some(
+              d => startOfDay(new Date(d)).getTime() === dayStart.getTime()
+            );
+            if (isExcluded) return;
+          }
+          
+          // Check if this day is enabled in the schedule
+          if (isDayEnabled(day, schedule.daysOfWeek)) {
             grouped[index].push(schedule);
           }
         }
@@ -58,30 +92,21 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
     return grouped;
   }, [weekSchedules, weekDays]);
 
-  const formatTime = (time24) => {
-    if (!time24) return '';
-    const [hours, minutes] = time24.split(':');
-    const hour = parseInt(hours, 10);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const hour12 = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${hour12}:${minutes} ${ampm}`;
-  };
-
   const getDepartmentColor = (department) => {
     const deptConfig = getDepartmentConfig(department);
     return deptConfig.bgColor;
   };
 
-  const goToPreviousWeek = () => {
-    setCurrentWeek(currentWeek.clone().subtract(1, 'week'));
+  const handleGoToPreviousWeek = () => {
+    setCurrentWeek(prev => goToPreviousWeek(prev));
   };
 
-  const goToNextWeek = () => {
-    setCurrentWeek(currentWeek.clone().add(1, 'week'));
+  const handleGoToNextWeek = () => {
+    setCurrentWeek(prev => goToNextWeek(prev));
   };
 
-  const goToToday = () => {
-    setCurrentWeek(moment().startOf('isoWeek'));
+  const handleGoToToday = () => {
+    setCurrentWeek(getStartOfWeek(new Date()));
   };
 
   return (
@@ -89,7 +114,7 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
       <CardHeader>
         <div className="flex items-center justify-between mb-2">
           <CardTitle>
-            {currentWeek.format('MMM D')} - {currentWeek.clone().endOf('isoWeek').format('MMM D, YYYY')}
+            {formatDate(currentWeek, 'MMM d')} - {formatDate(getEndOfWeek(currentWeek), 'MMM d, yyyy')}
           </CardTitle>
           <div className="flex items-center gap-4">
             {/* Display Weekends Toggle */}
@@ -104,13 +129,13 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
               </label>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={goToPreviousWeek}>
+              <Button variant="outline" size="sm" onClick={handleGoToPreviousWeek}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <Button variant="outline" size="sm" onClick={goToToday}>
+              <Button variant="outline" size="sm" onClick={handleGoToToday}>
                 Today
               </Button>
-              <Button variant="outline" size="sm" onClick={goToNextWeek}>
+              <Button variant="outline" size="sm" onClick={handleGoToNextWeek}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
@@ -120,7 +145,7 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
       <CardContent>
         <div className={cn("grid gap-2", displayWeekends ? "grid-cols-7" : "grid-cols-5")}>
           {weekDays.map((day, index) => {
-            const isToday = day.isSame(moment(), 'day');
+            const isToday = isSameDay(day, new Date());
             const daySchedules = schedulesByDay[index] || [];
             
             return (
@@ -130,12 +155,12 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
                   "p-3 text-center border-b",
                   isToday ? "bg-blue-500 text-white" : "bg-muted"
                 )}>
-                  <div className="text-xs font-medium">{day.format('ddd')}</div>
+                  <div className="text-xs font-medium">{formatDate(day, 'EEE')}</div>
                   <div className={cn(
                     "text-lg font-bold mt-1",
                     !isToday && daySchedules.length === 0 && "text-muted-foreground"
                   )}>
-                    {day.format('D')}
+                    {formatDate(day, 'd')}
                   </div>
                 </div>
 
@@ -143,7 +168,7 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
                 <div className="flex-1 p-2 space-y-2 min-h-[200px]">
                   {daySchedules.length === 0 ? (
                     <div className="text-xs text-muted-foreground text-center mt-4">
-                      {day.format('h:mm A')}
+                      {formatDate(day, 'h:mm a')}
                     </div>
                   ) : (
                     daySchedules.map((schedule, scheduleIndex) => (
@@ -156,7 +181,7 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
                         onClick={() => onSelectSchedule(schedule)}
                       >
                         <div className="text-xs font-medium truncate">
-                          {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
+                          {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
                         </div>
                         <div className="text-xs text-muted-foreground truncate mt-1">
                           {schedule.employeeName}

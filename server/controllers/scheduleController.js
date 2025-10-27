@@ -22,7 +22,19 @@ const shouldIncludeDay = (date, daysOfWeek) => {
 // Create a new schedule
 export const createSchedule = async (req, res) => {
   try {
-    const { employeeId, jobCode, startDate, endDate, daysOfWeek, hoursPerDay, startTime, endTime, notes } = req.body;
+    const { 
+      employeeId, 
+      jobCode, 
+      scheduleType, 
+      startDate, 
+      endDate, 
+      daysOfWeek, 
+      specificDates,
+      hoursPerDay, 
+      startTime, 
+      endTime, 
+      notes 
+    } = req.body;
     
     // Validate required fields
     if (!employeeId || !jobCode || !hoursPerDay || !startTime || !endTime) {
@@ -35,19 +47,39 @@ export const createSchedule = async (req, res) => {
       return res.status(404).json({ message: 'Employee not found' });
     }
     
-    // Handle date defaults - if not provided, use today to 1 year from now
-    const scheduleStartDate = startDate ? new Date(startDate) : new Date();
-    const scheduleEndDate = endDate ? new Date(endDate) : new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+    const type = scheduleType || 'pattern';
     
-    // Create schedule
-    const schedule = new Schedule({
+    // Build schedule object based on type
+    const scheduleData = {
       employee: employee._id,
       employeeId: employee.employeeId,
       employeeName: employee.name,
       jobCode,
-      startDate: scheduleStartDate,
-      endDate: scheduleEndDate,
-      daysOfWeek: daysOfWeek || {
+      scheduleType: type,
+      hoursPerDay,
+      startTime,
+      endTime,
+      createdBy: req.user._id,
+      notes: notes || ''
+    };
+    
+    if (type === 'specific_dates') {
+      // For specific dates schedule
+      if (!specificDates || specificDates.length === 0) {
+        return res.status(400).json({ message: 'Specific dates are required for specific_dates schedule type' });
+      }
+      scheduleData.specificDates = specificDates.map(d => ({
+        date: new Date(d),
+        enabled: true
+      }));
+    } else {
+      // For pattern-based schedule
+      const scheduleStartDate = startDate ? new Date(startDate) : new Date();
+      const scheduleEndDate = endDate ? new Date(endDate) : new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+      
+      scheduleData.startDate = scheduleStartDate;
+      scheduleData.endDate = scheduleEndDate;
+      scheduleData.daysOfWeek = daysOfWeek || {
         monday: true,
         tuesday: true,
         wednesday: true,
@@ -55,14 +87,10 @@ export const createSchedule = async (req, res) => {
         friday: true,
         saturday: false,
         sunday: false
-      },
-      hoursPerDay,
-      startTime,
-      endTime,
-      createdBy: req.user._id,
-      notes: notes || ''
-    });
+      };
+    }
     
+    const schedule = new Schedule(scheduleData);
     await schedule.save();
     
     res.status(201).json({
@@ -129,25 +157,69 @@ export const getSchedulesByDateRange = async (req, res) => {
   }
 };
 
-// Update a schedule
+// Update a schedule with smart editing support
 export const updateSchedule = async (req, res) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const { 
+      modifySpecificDates, 
+      datesToModify, 
+      modificationData,
+      ...updates 
+    } = req.body;
     
-    const schedule = await Schedule.findByIdAndUpdate(
-      id,
-      { ...updates, updatedAt: new Date() },
-      { new: true, runValidators: true }
-    );
+    const existingSchedule = await Schedule.findById(id);
     
-    if (!schedule) {
+    if (!existingSchedule) {
       return res.status(404).json({ message: 'Schedule not found' });
     }
     
+    // If modifying specific dates from a pattern schedule
+    if (modifySpecificDates && datesToModify && datesToModify.length > 0 && existingSchedule.scheduleType === 'pattern') {
+      // Create a new schedule for the specific dates with modifications
+      const employee = await Employee.findOne({ employeeId: existingSchedule.employeeId });
+      
+      const newSchedule = new Schedule({
+        employee: employee._id,
+        employeeId: existingSchedule.employeeId,
+        employeeName: existingSchedule.employeeName,
+        scheduleType: 'specific_dates',
+        specificDates: datesToModify.map(d => ({
+          date: new Date(d),
+          enabled: true
+        })),
+        jobCode: modificationData.jobCode || existingSchedule.jobCode,
+        hoursPerDay: modificationData.hoursPerDay || existingSchedule.hoursPerDay,
+        startTime: modificationData.startTime || existingSchedule.startTime,
+        endTime: modificationData.endTime || existingSchedule.endTime,
+        notes: modificationData.notes || `Modified from schedule ${existingSchedule._id}`,
+        createdBy: req.user._id,
+        parentSchedule: existingSchedule._id
+      });
+      
+      await newSchedule.save();
+      
+      // Add these dates to the excluded dates of the original schedule
+      existingSchedule.excludedDates = [
+        ...existingSchedule.excludedDates,
+        ...datesToModify.map(d => new Date(d))
+      ];
+      await existingSchedule.save();
+      
+      return res.json({
+        message: 'Schedule updated with specific date modifications',
+        originalSchedule: existingSchedule,
+        newSchedule
+      });
+    }
+    
+    // Regular update for all other cases
+    Object.assign(existingSchedule, updates);
+    await existingSchedule.save();
+    
     res.json({
       message: 'Schedule updated successfully',
-      schedule
+      schedule: existingSchedule
     });
   } catch (error) {
     console.error('Update schedule error:', error);

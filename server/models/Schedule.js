@@ -21,13 +21,23 @@ const scheduleSchema = new mongoose.Schema({
     required: true,
     index: true
   },
+  
+  // Schedule type: pattern (recurring) or specific_dates (selected dates)
+  scheduleType: {
+    type: String,
+    enum: ['pattern', 'specific_dates'],
+    default: 'pattern',
+    required: true
+  },
+  
+  // For pattern-based schedules
   startDate: {
     type: Date,
-    required: true
+    required: function() { return this.scheduleType === 'pattern'; }
   },
   endDate: {
     type: Date,
-    required: true
+    required: function() { return this.scheduleType === 'pattern'; }
   },
   daysOfWeek: {
     type: {
@@ -39,16 +49,34 @@ const scheduleSchema = new mongoose.Schema({
       saturday: { type: Boolean, default: false },
       sunday: { type: Boolean, default: false }
     },
-    default: {
-      monday: true,
-      tuesday: true,
-      wednesday: true,
-      thursday: true,
-      friday: true,
-      saturday: false,
-      sunday: false
+    default: function() {
+      return this.scheduleType === 'pattern' ? {
+        monday: true,
+        tuesday: true,
+        wednesday: true,
+        thursday: true,
+        friday: true,
+        saturday: false,
+        sunday: false
+      } : undefined;
     }
   },
+  
+  // For specific date selections
+  specificDates: {
+    type: [{
+      date: { type: Date, required: true },
+      enabled: { type: Boolean, default: true }
+    }],
+    default: []
+  },
+  
+  // Dates to exclude from pattern-based schedules (for editing specific days)
+  excludedDates: {
+    type: [Date],
+    default: []
+  },
+  
   hoursPerDay: {
     type: Number,
     required: true,
@@ -71,6 +99,12 @@ const scheduleSchema = new mongoose.Schema({
   notes: {
     type: String,
     default: ''
+  },
+  
+  // Track if this was created from splitting/editing another schedule
+  parentSchedule: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Schedule'
   }
 }, {
   timestamps: true
@@ -79,6 +113,8 @@ const scheduleSchema = new mongoose.Schema({
 // Index for efficient querying
 scheduleSchema.index({ startDate: 1, endDate: 1 });
 scheduleSchema.index({ employeeId: 1, startDate: 1 });
+scheduleSchema.index({ 'specificDates.date': 1 });
+scheduleSchema.index({ scheduleType: 1 });
 
 const Schedule = mongoose.model('Schedule', scheduleSchema);
 
