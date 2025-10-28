@@ -30,7 +30,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
   const [editingTemplate, setEditingTemplate] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
-    description: '',
     jobCode: '',
     daysOfWeek: {
       monday: true,
@@ -41,11 +40,11 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
       saturday: false,
       sunday: false
     },
-    hoursPerDay: '8',
     startTime: '09:00',
     endTime: '17:00',
     notes: ''
   });
+  const [calculatedHours, setCalculatedHours] = useState(8);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -53,6 +52,20 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
       fetchTemplates();
     }
   }, [open]);
+
+  // Auto-calculate hours when time changes
+  useEffect(() => {
+    if (formData.startTime && formData.endTime) {
+      const startMinutes = parseInt(formData.startTime.split(':')[0]) * 60 + parseInt(formData.startTime.split(':')[1]);
+      const endMinutes = parseInt(formData.endTime.split(':')[0]) * 60 + parseInt(formData.endTime.split(':')[1]);
+      
+      if (endMinutes > startMinutes) {
+        const totalMinutes = endMinutes - startMinutes;
+        const hours = totalMinutes / 60;
+        setCalculatedHours(hours);
+      }
+    }
+  }, [formData.startTime, formData.endTime]);
 
   const fetchTemplates = async () => {
     try {
@@ -74,7 +87,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
   const resetForm = () => {
     setFormData({
       name: '',
-      description: '',
       jobCode: '',
       daysOfWeek: {
         monday: true,
@@ -85,7 +97,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
         saturday: false,
         sunday: false
       },
-      hoursPerDay: '8',
       startTime: '09:00',
       endTime: '17:00',
       notes: ''
@@ -97,7 +108,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
     setEditingTemplate(template);
     setFormData({
       name: template.name,
-      description: template.description || '',
       jobCode: template.jobCode || '',
       daysOfWeek: template.daysOfWeek || {
         monday: true,
@@ -108,7 +118,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
         saturday: false,
         sunday: false
       },
-      hoursPerDay: template.hoursPerDay.toString(),
       startTime: template.startTime,
       endTime: template.endTime,
       notes: template.notes || ''
@@ -171,7 +180,7 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (!formData.name || !formData.hoursPerDay || !formData.startTime || !formData.endTime) {
+    if (!formData.name || !formData.startTime || !formData.endTime) {
       toast({
         title: "Error",
         description: "Please fill in all required fields",
@@ -190,14 +199,19 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
     }
 
     try {
+      const templateData = {
+        ...formData,
+        hoursPerDay: calculatedHours
+      };
+
       if (editingTemplate) {
-        await api.put(`/schedule-templates/${editingTemplate._id}`, formData);
+        await api.put(`/schedule-templates/${editingTemplate._id}`, templateData);
         toast({
           title: "Success",
           description: "Template updated successfully"
         });
       } else {
-        await api.post('/schedule-templates', formData);
+        await api.post('/schedule-templates', templateData);
         toast({
           title: "Success",
           description: "Template created successfully"
@@ -270,16 +284,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
                     />
                   </div>
 
-                  {/* Description */}
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Input
-                      id="description"
-                      value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                      placeholder="Brief description of this template"
-                    />
-                  </div>
 
                   {/* Job Code (Optional) */}
                   <div className="space-y-2">
@@ -313,17 +317,11 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
                   {/* Time Configuration */}
                   <div className="grid grid-cols-3 gap-4">
                     <div className="space-y-2">
-                      <Label htmlFor="hoursPerDay">Hours Per Day *</Label>
-                      <Input
-                        id="hoursPerDay"
-                        type="number"
-                        min="0"
-                        max="24"
-                        step="0.5"
-                        value={formData.hoursPerDay}
-                        onChange={(e) => setFormData({ ...formData, hoursPerDay: e.target.value })}
-                        required
-                      />
+                      <Label>Hours Per Day</Label>
+                      <div className="p-3 bg-muted rounded-md">
+                        <span className="text-lg font-medium">{calculatedHours.toFixed(1)} hours</span>
+                        <span className="text-sm text-muted-foreground ml-2">(Auto-calculated)</span>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label htmlFor="startTime">Start Time *</Label>
@@ -439,7 +437,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Name</TableHead>
-                        <TableHead>Description</TableHead>
                         <TableHead>Job Code</TableHead>
                         <TableHead>Hours/Day</TableHead>
                         <TableHead>Time</TableHead>
@@ -451,9 +448,6 @@ const TemplateManagement = ({ open, onClose, jobCodes = [] }) => {
                       {templates.map((template) => (
                         <TableRow key={template._id}>
                           <TableCell className="font-medium">{template.name}</TableCell>
-                          <TableCell className="text-sm text-muted-foreground">
-                            {template.description || '-'}
-                          </TableCell>
                           <TableCell>
                             {template.jobCode ? (
                               <Badge variant="secondary">{template.jobCode}</Badge>

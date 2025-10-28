@@ -5,15 +5,24 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { 
   formatDate, 
   formatTime12Hour, 
-  isDayEnabled,
   goToPreviousDay,
   goToNextDay,
-  isWithinInterval,
-  startOfDay,
-  endOfDay,
-  getEffectiveDates
+  startOfDay
 } from '../../lib/date-utils';
+import { format } from 'date-fns';
 import { getDepartmentConfig } from '../../lib/departments';
+
+// Calculate hours from start and end time
+const calculateHours = (startTime, endTime) => {
+  const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+  const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+  
+  if (endMinutes > startMinutes) {
+    const totalMinutes = endMinutes - startMinutes;
+    return (totalMinutes / 60).toFixed(1);
+  }
+  return 0;
+};
 
 const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -34,33 +43,12 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
 
   // Filter schedules for current date
   const todaySchedules = useMemo(() => {
-    const current = startOfDay(currentDate);
+    const currentDateStr = format(currentDate, 'yyyy-MM-dd');
     
     return schedules.filter(schedule => {
-      // Handle specific dates schedules
-      if (schedule.scheduleType === 'specific_dates') {
-        const effectiveDates = getEffectiveDates(schedule);
-        return effectiveDates.some(d => startOfDay(d).getTime() === current.getTime());
-      }
-      
-      // Handle pattern schedules
-      const scheduleStart = startOfDay(new Date(schedule.startDate));
-      const scheduleEnd = startOfDay(new Date(schedule.endDate));
-      
-      // Check if current date is within schedule range
-      const isInRange = current >= scheduleStart && current <= scheduleEnd;
-      if (!isInRange) return false;
-      
-      // Check if this day is excluded
-      if (schedule.excludedDates && schedule.excludedDates.length > 0) {
-        const isExcluded = schedule.excludedDates.some(
-          d => startOfDay(new Date(d)).getTime() === current.getTime()
-        );
-        if (isExcluded) return false;
-      }
-      
-      // Check if current day is enabled in daysOfWeek
-      return isDayEnabled(current, schedule.daysOfWeek);
+      // Compare date strings directly to avoid timezone issues
+      const scheduleDateStr = schedule.date.split('T')[0];
+      return scheduleDateStr === currentDateStr;
     });
   }, [schedules, currentDate]);
 
@@ -192,7 +180,7 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
                             className={`absolute top-2 bottom-2 ${bgColorClass} rounded cursor-pointer transition-all shadow-sm hover:shadow-md border`}
                             style={style}
                             onClick={() => onSelectSchedule?.(schedule)}
-                            title={`${schedule.employeeName} - ${schedule.jobCode}\n${formatTime12Hour(schedule.startTime)} - ${formatTime12Hour(schedule.endTime)}\n${schedule.hoursPerDay} hours`}
+                            title={`${schedule.employeeName} - ${schedule.jobCode}\n${formatTime12Hour(schedule.startTime)} - ${formatTime12Hour(schedule.endTime)}\n${calculateHours(schedule.startTime, schedule.endTime)} hours`}
                           >
                             <div className={`px-2 py-1 text-xs font-medium truncate ${textColorClass}`}>
                               <div className="truncate font-semibold">{schedule.employeeName} - {schedule.jobCode}</div>

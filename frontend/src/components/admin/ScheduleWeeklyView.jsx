@@ -12,13 +12,23 @@ import {
   goToPreviousWeek,
   goToNextWeek,
   isSameDay,
-  isDayEnabled,
-  isWithinInterval,
-  startOfDay,
-  getEffectiveDates
+  startOfDay
 } from '../../lib/date-utils';
+import { format } from 'date-fns';
 import { getDepartmentConfig } from '../../lib/departments';
 import { cn } from "@/lib/utils";
+
+// Calculate hours from start and end time
+const calculateHours = (startTime, endTime) => {
+  const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+  const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+  
+  if (endMinutes > startMinutes) {
+    const totalMinutes = endMinutes - startMinutes;
+    return (totalMinutes / 60).toFixed(1);
+  }
+  return 0;
+};
 
 const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
   // Start week on Monday
@@ -32,18 +42,13 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
 
   // Filter schedules for current week
   const weekSchedules = useMemo(() => {
-    const weekEnd = getEndOfWeek(currentWeek);
+    const weekStartStr = format(currentWeek, 'yyyy-MM-dd');
+    const weekEndStr = format(getEndOfWeek(currentWeek), 'yyyy-MM-dd');
+    
     return schedules.filter(schedule => {
-      if (schedule.scheduleType === 'specific_dates') {
-        const effectiveDates = getEffectiveDates(schedule);
-        return effectiveDates.some(d => 
-          d >= currentWeek && d <= weekEnd
-        );
-      }
-      
-      const scheduleStart = new Date(schedule.startDate);
-      const scheduleEnd = new Date(schedule.endDate);
-      return scheduleStart <= weekEnd && scheduleEnd >= currentWeek;
+      // Compare date strings directly to avoid timezone issues
+      const scheduleDateStr = schedule.date.split('T')[0];
+      return scheduleDateStr >= weekStartStr && scheduleDateStr <= weekEndStr;
     });
   }, [schedules, currentWeek]);
 
@@ -56,35 +61,12 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
 
     weekSchedules.forEach(schedule => {
       weekDays.forEach((day, index) => {
-        const dayStart = startOfDay(day);
+        const dayStr = format(day, 'yyyy-MM-dd');
+        const scheduleDateStr = schedule.date.split('T')[0];
         
-        // Handle specific dates schedules
-        if (schedule.scheduleType === 'specific_dates') {
-          const effectiveDates = getEffectiveDates(schedule);
-          if (effectiveDates.some(d => startOfDay(d).getTime() === dayStart.getTime())) {
-            grouped[index].push(schedule);
-          }
-          return;
-        }
-        
-        // Handle pattern schedules
-        const scheduleStart = startOfDay(new Date(schedule.startDate));
-        const scheduleEnd = startOfDay(new Date(schedule.endDate));
-        
-        // Check if day is within schedule range
-        if (dayStart >= scheduleStart && dayStart <= scheduleEnd) {
-          // Check if this day is excluded
-          if (schedule.excludedDates && schedule.excludedDates.length > 0) {
-            const isExcluded = schedule.excludedDates.some(
-              d => startOfDay(new Date(d)).getTime() === dayStart.getTime()
-            );
-            if (isExcluded) return;
-          }
-          
-          // Check if this day is enabled in the schedule
-          if (isDayEnabled(day, schedule.daysOfWeek)) {
-            grouped[index].push(schedule);
-          }
+        // Compare date strings directly to avoid timezone issues
+        if (scheduleDateStr === dayStr) {
+          grouped[index].push(schedule);
         }
       });
     });
@@ -188,6 +170,9 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
                         </div>
                         <div className="text-xs font-medium mt-1">
                           {schedule.jobCode}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {calculateHours(schedule.startTime, schedule.endTime)}h
                         </div>
                       </div>
                     ))

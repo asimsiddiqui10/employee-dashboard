@@ -5,15 +5,15 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Calendar as CalendarIcon, List, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, List, Check, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import api from '../../lib/axios';
 import { useToast } from "@/hooks/use-toast";
-import ScheduleForm from './ScheduleFormNew';
-import ScheduleList from './ScheduleList';
+import ScheduleForm from './ScheduleForm';
 import ScheduleTimeline from './ScheduleTimeline';
 import ScheduleWeeklyView from './ScheduleWeeklyView';
 import TemplateManagement from './TemplateManagement';
+import ConflictResolutionDialog from './ConflictResolutionDialog';
 import { getDepartmentConfig } from '../../lib/departments';
 
 // Utility function to convert 24-hour time to 12-hour format
@@ -50,7 +50,7 @@ const ScheduleManagement = () => {
   const [schedules, setSchedules] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [jobCodes, setJobCodes] = useState([]);
-  const [companyDefaults, setCompanyDefaults] = useState([]);
+  const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [open, setOpen] = useState(false);
@@ -58,20 +58,33 @@ const ScheduleManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [showTemplateManagement, setShowTemplateManagement] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: 50,
+    total: 0,
+    pages: 0
+  });
+  const [conflictDialog, setConflictDialog] = useState({
+    open: false,
+    conflicts: [],
+    newSchedule: null,
+    pendingSchedule: null
+  });
   const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currentPage]);
 
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [schedulesRes, employeesRes, jobCodesRes, defaultsRes] = await Promise.all([
-        api.get('/schedules'),
+      const [schedulesRes, employeesRes, jobCodesRes, templatesRes] = await Promise.all([
+        api.get(`/schedules?page=${currentPage}&limit=${pagination.limit}`),
         api.get('/employees'),
         api.get('/job-codes?limit=1000'), // Get all job codes
-        api.get('/schedules/company-defaults')
+        api.get('/schedule-templates')
       ]);
 
       // Get employees data
@@ -101,7 +114,15 @@ const ScheduleManagement = () => {
       });
 
       // Enhance schedules with employee department info
-      const schedulesData = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
+      // Get schedules data with pagination
+      let schedulesData = [];
+      if (schedulesRes.data.schedules) {
+        schedulesData = schedulesRes.data.schedules;
+        setPagination(schedulesRes.data.pagination);
+      } else {
+        schedulesData = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
+      }
+      
       const enhancedSchedules = schedulesData.map(schedule => {
         const employee = employeesData.find(emp => emp.employeeId === schedule.employeeId);
         return {
@@ -113,7 +134,7 @@ const ScheduleManagement = () => {
       setSchedules(enhancedSchedules);
       setEmployees(employeesWithJobCodes);
       setJobCodes(jobCodesData);
-      setCompanyDefaults(Array.isArray(defaultsRes.data) ? defaultsRes.data : []);
+      setTemplates(Array.isArray(templatesRes.data) ? templatesRes.data : []);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -137,8 +158,18 @@ const ScheduleManagement = () => {
             ? "Schedule updated with specific date modifications"
             : "Schedule updated successfully"
         });
+      } else if (scheduleData.isBatch) {
+        // Create batch schedules
+        const response = await api.post('/schedules/batch', {
+          schedules: scheduleData.schedules
+        });
+        toast({
+          title: "Success",
+          description: `Created ${response.data.schedules.length} schedules`,
+          variant: "default"
+        });
       } else {
-        // Create new schedule
+        // Create single schedule
         await api.post('/schedules', scheduleData);
         toast({
           title: "Success",
@@ -150,11 +181,28 @@ const ScheduleManagement = () => {
       setSelectedSchedule(null);
     } catch (error) {
       console.error('Error saving schedule:', error);
-      toast({
-        title: "Error",
-        description: error.response?.data?.message || "Failed to save schedule",
-        variant: "destructive"
-      });
+      
+      // Handle conflict errors specifically
+      if (error.response?.status === 409) {
+        const conflicts = error.response.data.conflicts;
+        
+        console.log('Conflict data received:', conflicts);
+        console.log('Schedule data:', scheduleData);
+        
+        // Show conflict resolution dialog instead of toast
+        setConflictDialog({
+          open: true,
+          conflicts: conflicts,
+          newSchedule: scheduleData,
+          pendingSchedule: scheduleData
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: error.response?.data?.message || "Failed to save schedule",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -174,6 +222,60 @@ const ScheduleManagement = () => {
         variant: "destructive"
       });
     }
+  };
+
+  const handleOverrideConflict = async () => {
+    try {
+      const { pendingSchedule } = conflictDialog;
+      
+      console.log('Override conflict - pendingSchedule:', pendingSchedule);
+      console.log('Override conflict - conflicts:', conflictDialog.conflicts);
+      
+      // First, delete conflicting schedules one by one
+      const conflicts = conflictDialog.conflicts;
+      console.log('Conflicts to delete:', conflicts);
+      
+      for (const conflict of conflicts) {
+        if (conflict._id) {
+          await api.delete(`/schedules/${conflict._id}`);
+        }
+      }
+      
+      // Then create the new schedule
+      if (pendingSchedule.isBatch) {
+        await api.post('/schedules/batch', {
+          schedules: pendingSchedule.schedules
+        });
+        toast({
+          title: "Success",
+          description: `Overrode conflicts and created ${pendingSchedule.schedules.length} schedules`,
+          variant: "default"
+        });
+      } else {
+        await api.post('/schedules', pendingSchedule);
+        toast({
+          title: "Success",
+          description: "Overrode conflicts and created schedule successfully"
+        });
+      }
+      
+      // Close dialog and refresh data
+      setConflictDialog({ open: false, conflicts: [], newSchedule: null, pendingSchedule: null });
+      fetchData();
+      setShowForm(false);
+      setSelectedSchedule(null);
+    } catch (error) {
+      console.error('Error overriding conflict:', error);
+      toast({
+        title: "Error",
+        description: "Failed to override conflicting schedules",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleCancelConflict = () => {
+    setConflictDialog({ open: false, conflicts: [], newSchedule: null, pendingSchedule: null });
   };
 
   // Removed unused event generation code - we now use ScheduleWeeklyView component
@@ -265,17 +367,13 @@ const ScheduleManagement = () => {
           </Popover>
 
           {/* Tab Switcher - Moved to RIGHT */}
-          <TabsList className="grid grid-cols-3 w-[550px]">
+          <TabsList className="grid grid-cols-2 w-[400px]">
             <TabsTrigger value="daily">
               Daily
             </TabsTrigger>
             <TabsTrigger value="weekly">
               <CalendarIcon className="mr-2 h-4 w-4" />
               Weekly
-            </TabsTrigger>
-            <TabsTrigger value="list">
-              <List className="mr-2 h-4 w-4" />
-              List
             </TabsTrigger>
           </TabsList>
         </div>
@@ -300,26 +398,59 @@ const ScheduleManagement = () => {
             }}
           />
         </TabsContent>
-
-        <TabsContent value="list" className="mt-0">
-          <ScheduleList
-            schedules={filteredSchedules}
-            onDelete={handleDeleteSchedule}
-            onEdit={(schedule) => {
-              setSelectedSchedule(schedule);
-              setShowForm(true);
-            }}
-          />
-        </TabsContent>
       </Tabs>
+
+      {/* Pagination Controls */}
+      {pagination.pages > 1 && (
+        <div className="flex items-center justify-between mt-4">
+          <div className="text-sm text-muted-foreground">
+            Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} schedules
+          </div>
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Button>
+            <div className="flex items-center space-x-1">
+              {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
+                const pageNum = i + 1;
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCurrentPage(pageNum)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.pages))}
+              disabled={currentPage === pagination.pages}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Schedule Form Dialog */}
       {showForm && (
         <ScheduleForm
           employees={employees}
           jobCodes={jobCodes}
-          companyDefaults={companyDefaults}
-          existingSchedules={schedules}
+          templates={templates}
           onSubmit={handleCreateSchedule}
           onDelete={handleDeleteSchedule}
           onClose={() => {
@@ -338,6 +469,16 @@ const ScheduleManagement = () => {
           jobCodes={jobCodes}
         />
       )}
+
+      {/* Conflict Resolution Dialog */}
+      <ConflictResolutionDialog
+        open={conflictDialog.open}
+        onClose={handleCancelConflict}
+        conflicts={conflictDialog.conflicts}
+        newSchedule={conflictDialog.newSchedule}
+        onOverride={handleOverrideConflict}
+        onCancel={handleCancelConflict}
+      />
     </div>
   );
 };
