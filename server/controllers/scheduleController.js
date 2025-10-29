@@ -11,7 +11,8 @@ export const createSchedule = async (req, res) => {
       date, 
       startTime, 
       endTime, 
-      notes 
+      notes,
+      skipConflictCheck = false
     } = req.body;
     
     // Validate required fields
@@ -19,38 +20,40 @@ export const createSchedule = async (req, res) => {
       return res.status(400).json({ message: 'Missing required fields' });
     }
     
-    // Check for conflicts before creating
-    const timeToMinutes = (timeStr) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
-    
-    const newStartMinutes = timeToMinutes(startTime);
-    const newEndMinutes = timeToMinutes(endTime);
-    
-    const existingSchedules = await Schedule.find({
-      employeeId,
-      date: date
-    }).populate('employee', 'name employeeId');
-    
-    const conflicts = existingSchedules.filter(schedule => {
-      const existingStartMinutes = timeToMinutes(schedule.startTime);
-      const existingEndMinutes = timeToMinutes(schedule.endTime);
-      return !(newEndMinutes <= existingStartMinutes || newStartMinutes >= existingEndMinutes);
-    });
-    
-    if (conflicts.length > 0) {
-      return res.status(409).json({ 
-        message: 'Schedule conflict detected',
-        conflicts: conflicts.map(c => ({
-          _id: c._id,
-          startTime: c.startTime,
-          endTime: c.endTime,
-          employeeName: c.employee?.name || c.employeeName || 'Unknown Employee',
-          jobCode: c.jobCode,
-          date: c.date
-        }))
+    // Check for conflicts before creating (unless skipping)
+    if (!skipConflictCheck) {
+      const timeToMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
+      
+      const newStartMinutes = timeToMinutes(startTime);
+      const newEndMinutes = timeToMinutes(endTime);
+      
+      const existingSchedules = await Schedule.find({
+        employeeId,
+        date: date
+      }).populate('employee', 'name employeeId');
+      
+      const conflicts = existingSchedules.filter(schedule => {
+        const existingStartMinutes = timeToMinutes(schedule.startTime);
+        const existingEndMinutes = timeToMinutes(schedule.endTime);
+        return !(newEndMinutes <= existingStartMinutes || newStartMinutes >= existingEndMinutes);
       });
+      
+      if (conflicts.length > 0) {
+        return res.status(409).json({ 
+          message: 'Schedule conflict detected',
+          conflicts: conflicts.map(c => ({
+            _id: c._id,
+            startTime: c.startTime,
+            endTime: c.endTime,
+            employeeName: c.employee?.name || c.employeeName || 'Unknown Employee',
+            jobCode: c.jobCode,
+            date: c.date
+          }))
+        });
+      }
     }
     
     // Find employee
@@ -87,7 +90,7 @@ export const createSchedule = async (req, res) => {
 // Create multiple schedules (batch)
 export const createBatchSchedules = async (req, res) => {
   try {
-    const { schedules } = req.body;
+    const { schedules, skipConflictCheck = false } = req.body;
     
     if (!schedules || !Array.isArray(schedules) || schedules.length === 0) {
       return res.status(400).json({ message: 'Schedules array is required' });
@@ -105,38 +108,45 @@ export const createBatchSchedules = async (req, res) => {
       return res.status(400).json({ errors: validationErrors });
     }
     
-    // Check for conflicts before creating batch schedules
-    const timeToMinutes = (timeStr) => {
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      return hours * 60 + minutes;
-    };
-    
-    for (const schedule of schedules) {
-      const newStartMinutes = timeToMinutes(schedule.startTime);
-      const newEndMinutes = timeToMinutes(schedule.endTime);
+    // Check for conflicts before creating batch schedules (unless skipping)
+    if (!skipConflictCheck) {
+      const timeToMinutes = (timeStr) => {
+        const [hours, minutes] = timeStr.split(':').map(Number);
+        return hours * 60 + minutes;
+      };
       
-             const existingSchedules = await Schedule.find({
-               employeeId: schedule.employeeId,
-               date: schedule.date
-             }).populate('employee', 'name employeeId');
+      const allConflicts = [];
       
-      const conflicts = existingSchedules.filter(existingSchedule => {
-        const existingStartMinutes = timeToMinutes(existingSchedule.startTime);
-        const existingEndMinutes = timeToMinutes(existingSchedule.endTime);
-        return !(newEndMinutes <= existingStartMinutes || newStartMinutes >= existingEndMinutes);
-      });
+      for (const schedule of schedules) {
+        const newStartMinutes = timeToMinutes(schedule.startTime);
+        const newEndMinutes = timeToMinutes(schedule.endTime);
+        
+        const existingSchedules = await Schedule.find({
+          employeeId: schedule.employeeId,
+          date: schedule.date
+        }).populate('employee', 'name employeeId');
+        
+        const conflicts = existingSchedules.filter(existingSchedule => {
+          const existingStartMinutes = timeToMinutes(existingSchedule.startTime);
+          const existingEndMinutes = timeToMinutes(existingSchedule.endTime);
+          return !(newEndMinutes <= existingStartMinutes || newStartMinutes >= existingEndMinutes);
+        });
+        
+        // Add conflicts to the collection
+        allConflicts.push(...conflicts.map(c => ({
+          _id: c._id,
+          startTime: c.startTime,
+          endTime: c.endTime,
+          employeeName: c.employee?.name || c.employeeName || 'Unknown Employee',
+          jobCode: c.jobCode,
+          date: c.date
+        })));
+      }
       
-      if (conflicts.length > 0) {
+      if (allConflicts.length > 0) {
         return res.status(409).json({ 
-          message: `Schedule conflict detected for ${schedule.date}`,
-          conflicts: conflicts.map(c => ({
-            _id: c._id,
-            startTime: c.startTime,
-            endTime: c.endTime,
-            employeeName: c.employee?.name || c.employeeName || 'Unknown Employee',
-            jobCode: c.jobCode,
-            date: c.date
-          }))
+          message: `Schedule conflicts detected for ${allConflicts.length} date(s)`,
+          conflicts: allConflicts
         });
       }
     }

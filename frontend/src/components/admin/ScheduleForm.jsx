@@ -24,7 +24,7 @@ const ScheduleForm = ({
   initialData 
 }) => {
   const [formData, setFormData] = useState({
-    employeeId: '',
+    employeeIds: [],
     jobCode: '',
     date: '',
     startTime: '09:00',
@@ -47,7 +47,8 @@ const ScheduleForm = ({
   });
   
   const [open, setOpen] = useState(false);
-  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedEmployees, setSelectedEmployees] = useState([]);
+  const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [employeeJobCodes, setEmployeeJobCodes] = useState([]);
   const [calculatedHours, setCalculatedHours] = useState(8);
   const { toast } = useToast();
@@ -56,7 +57,7 @@ const ScheduleForm = ({
   useEffect(() => {
     if (initialData) {
       setFormData({
-        employeeId: initialData.employeeId || '',
+        employeeIds: initialData.employeeId ? [initialData.employeeId] : [],
         jobCode: initialData.jobCode || '',
         date: initialData.date ? initialData.date.split('T')[0] : '',
         startTime: initialData.startTime || '09:00',
@@ -65,18 +66,29 @@ const ScheduleForm = ({
       
       const employee = employees.find(emp => emp.employeeId === initialData.employeeId);
       if (employee) {
-        setSelectedEmployee(employee);
+        setSelectedEmployees([employee]);
         setEmployeeJobCodes(employee.jobCodes || []);
       }
     }
   }, [initialData, employees]);
 
-  // Update employee job codes when employee changes
+  // Update employee job codes when employees change - find common job codes
   useEffect(() => {
-    if (selectedEmployee) {
-      setEmployeeJobCodes(selectedEmployee.jobCodes || []);
+    if (selectedEmployees.length > 0) {
+      if (selectedEmployees.length === 1) {
+        setEmployeeJobCodes(selectedEmployees[0].jobCodes || []);
+      } else {
+        // Find common job codes across all selected employees
+        const allJobCodes = selectedEmployees.map(emp => emp.jobCodes || []);
+        const commonJobCodes = allJobCodes.reduce((common, current) => 
+          common.filter(jobCode => current.some(jc => jc.code === jobCode.code))
+        );
+        setEmployeeJobCodes(commonJobCodes);
+      }
+    } else {
+      setEmployeeJobCodes([]);
     }
-  }, [selectedEmployee]);
+  }, [selectedEmployees]);
 
   // Auto-calculate hours when time changes
   useEffect(() => {
@@ -93,31 +105,55 @@ const ScheduleForm = ({
   }, [formData.startTime, formData.endTime]);
 
   const handleEmployeeSelect = (employee) => {
-    setSelectedEmployee(employee);
+    const isAlreadySelected = selectedEmployees.some(emp => emp.employeeId === employee.employeeId);
+    
+    if (isAlreadySelected) {
+      // Remove employee if already selected
+      setSelectedEmployees(prev => prev.filter(emp => emp.employeeId !== employee.employeeId));
+      setFormData(prev => ({
+        ...prev,
+        employeeIds: prev.employeeIds.filter(id => id !== employee.employeeId)
+      }));
+    } else {
+      // Add employee if not selected
+      setSelectedEmployees(prev => [...prev, employee]);
+      setFormData(prev => ({
+        ...prev,
+        employeeIds: [...prev.employeeIds, employee.employeeId]
+      }));
+    }
+    
     // Preserve existing job code in edit mode, only clear in create mode
     const newJobCode = initialData ? formData.jobCode : '';
-    setFormData({ ...formData, employeeId: employee.employeeId, jobCode: newJobCode });
+    setFormData(prev => ({ ...prev, jobCode: newJobCode }));
     setOpen(false);
   };
 
   const handleTemplateSelect = async (templateId) => {
     try {
+      // If same template is selected, unselect it
+      if (selectedTemplate && selectedTemplate._id === templateId) {
+        setSelectedTemplate(null);
+        return;
+      }
+
       const template = templates.find(t => t._id === templateId);
       if (!template) return;
 
-      // Check if employee has the job code from template
-      if (template.jobCode && selectedEmployee) {
+      // Check if any selected employee has the job code from template
+      if (template.jobCode && selectedEmployees.length > 0) {
         const hasJobCode = employeeJobCodes.some(jc => jc.code === template.jobCode);
         if (!hasJobCode) {
           toast({
             title: "Job Code Mismatch",
-            description: `Employee doesn't have job code "${template.jobCode}" from this template`,
+            description: `Selected employees don't have job code "${template.jobCode}" from this template`,
             variant: "destructive"
           });
           return;
         }
       }
 
+      setSelectedTemplate(template);
       setFormData({
         ...formData,
         jobCode: template.jobCode || formData.jobCode,
@@ -169,9 +205,9 @@ const ScheduleForm = ({
     
     if (!isRecurring) {
       // Single schedule validation
-      if (!formData.employeeId || !formData.jobCode || !formData.date) {
+      if (formData.employeeIds.length === 0 || !formData.jobCode || !formData.date) {
         const missingFields = [];
-        if (!formData.employeeId) missingFields.push('Employee');
+        if (formData.employeeIds.length === 0) missingFields.push('Employee(s)');
         if (!formData.jobCode) missingFields.push('Job Code');
         if (!formData.date) missingFields.push('Date');
         
@@ -184,9 +220,9 @@ const ScheduleForm = ({
       }
     } else {
       // Recurring schedule validation
-      if (!formData.employeeId || !formData.jobCode || !recurringData.startDate || !recurringData.endDate) {
+      if (formData.employeeIds.length === 0 || !formData.jobCode || !recurringData.startDate || !recurringData.endDate) {
         const missingFields = [];
-        if (!formData.employeeId) missingFields.push('Employee');
+        if (formData.employeeIds.length === 0) missingFields.push('Employee(s)');
         if (!formData.jobCode) missingFields.push('Job Code');
         if (!recurringData.startDate) missingFields.push('Start Date');
         if (!recurringData.endDate) missingFields.push('End Date');
@@ -201,28 +237,46 @@ const ScheduleForm = ({
     }
 
     if (!isRecurring) {
-      // Single schedule
-      const scheduleData = {
-        ...formData,
-        date: formData.date
-      };
-      onSubmit(scheduleData);
+      // Single schedule - create for each selected employee
+      const schedules = formData.employeeIds.map(employeeId => {
+        const employee = selectedEmployees.find(emp => emp.employeeId === employeeId);
+        return {
+          employeeId: employeeId,
+          employeeName: employee.name,
+          date: formData.date,
+          jobCode: formData.jobCode,
+          startTime: formData.startTime,
+          endTime: formData.endTime
+        };
+      });
+
+      if (schedules.length === 1) {
+        onSubmit(schedules[0]);
+      } else {
+        onSubmit({ schedules: schedules, isBatch: true });
+      }
     } else {
-      // Recurring schedule
+      // Recurring schedule - create for each selected employee
       const dates = generateDatesInRange(
         recurringData.startDate,
         recurringData.endDate,
         recurringData.daysOfWeek
       );
 
-      const batchSchedules = dates.map(date => ({
-        employeeId: formData.employeeId,
-        employeeName: selectedEmployee.name,
-        date: date,
-        jobCode: formData.jobCode,
-        startTime: formData.startTime,
-        endTime: formData.endTime
-      }));
+      const batchSchedules = [];
+      formData.employeeIds.forEach(employeeId => {
+        const employee = selectedEmployees.find(emp => emp.employeeId === employeeId);
+        dates.forEach(date => {
+          batchSchedules.push({
+            employeeId: employeeId,
+            employeeName: employee.name,
+            date: date,
+            jobCode: formData.jobCode,
+            startTime: formData.startTime,
+            endTime: formData.endTime
+          });
+        });
+      });
 
       try {
         // Call the parent's onSubmit function to handle the batch creation
@@ -264,24 +318,37 @@ const ScheduleForm = ({
           {templates.length > 0 && (
             <div className="space-y-2">
               <Label>Import Template (Optional)</Label>
-              <Select onValueChange={handleTemplateSelect}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a template..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {templates.map((template) => (
-                    <SelectItem key={template._id} value={template._id}>
-                      {template.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select onValueChange={handleTemplateSelect} value={selectedTemplate?._id || ""}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {templates.map((template) => (
+                      <SelectItem key={template._id} value={template._id}>
+                        {template.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setSelectedTemplate(null)}
+                    className="px-3"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
           {/* Employee Selection */}
           <div className="space-y-2">
-            <Label>Employee *</Label>
+            <Label>Employee(s) *</Label>
             <Popover open={open} onOpenChange={setOpen}>
               <PopoverTrigger asChild>
                 <Button
@@ -290,7 +357,10 @@ const ScheduleForm = ({
                   aria-expanded={open}
                   className="w-full justify-between"
                 >
-                  {selectedEmployee ? selectedEmployee.name : "Select employee..."}
+                  {selectedEmployees.length > 0 
+                    ? `${selectedEmployees.length} employee(s) selected`
+                    : "Select employee(s)..."
+                  }
                   <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
                 </Button>
               </PopoverTrigger>
@@ -299,25 +369,49 @@ const ScheduleForm = ({
                   <CommandInput placeholder="Search employee..." />
                   <CommandEmpty>No employee found.</CommandEmpty>
                   <CommandGroup>
-                    {employees.map((employee) => (
-                      <CommandItem
-                        key={employee._id}
-                        value={employee.name}
-                        onSelect={() => handleEmployeeSelect(employee)}
-                      >
-                        <Check
-                          className={cn(
-                            "mr-2 h-4 w-4",
-                            selectedEmployee?._id === employee._id ? "opacity-100" : "opacity-0"
-                          )}
-                        />
-                        {employee.name} ({employee.employeeId})
-                      </CommandItem>
-                    ))}
+                    {employees.map((employee) => {
+                      const isSelected = selectedEmployees.some(emp => emp._id === employee._id);
+                      return (
+                        <CommandItem
+                          key={employee._id}
+                          value={employee.name}
+                          onSelect={() => handleEmployeeSelect(employee)}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              isSelected ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          {employee.name} ({employee.employeeId})
+                        </CommandItem>
+                      );
+                    })}
                   </CommandGroup>
                 </Command>
               </PopoverContent>
             </Popover>
+            {selectedEmployees.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-2">
+                {selectedEmployees.map((employee) => (
+                  <div
+                    key={employee._id}
+                    className="flex items-center gap-1 bg-primary/10 text-primary px-2 py-1 rounded-md text-sm"
+                  >
+                    {employee.name}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-4 w-4 p-0 hover:bg-primary/20"
+                      onClick={() => handleEmployeeSelect(employee)}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Job Code */}
@@ -326,7 +420,7 @@ const ScheduleForm = ({
             <Select
               value={formData.jobCode}
               onValueChange={(value) => setFormData({ ...formData, jobCode: value })}
-              disabled={!selectedEmployee}
+              disabled={selectedEmployees.length === 0}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select job code..." />
@@ -423,7 +517,7 @@ const ScheduleForm = ({
           )}
 
           {/* Time and Hours */}
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label>Start Time *</Label>
               <Input
@@ -444,14 +538,12 @@ const ScheduleForm = ({
                 required
               />
             </div>
-          </div>
-
-          {/* Calculated Hours Display */}
-          <div className="space-y-2">
-            <Label>Hours per Day</Label>
-            <div className="p-3 bg-muted rounded-md">
-              <span className="text-lg font-medium">{calculatedHours.toFixed(1)} hours</span>
-              <span className="text-sm text-muted-foreground ml-2">(Auto-calculated)</span>
+            <div className="space-y-2">
+              <Label>Hours per Day</Label>
+              <div className="p-3 bg-muted rounded-md">
+                <span className="text-lg font-medium">{calculatedHours.toFixed(1)} hours</span>
+                <span className="text-sm text-muted-foreground ml-2">(Auto-calculated)</span>
+              </div>
             </div>
           </div>
 

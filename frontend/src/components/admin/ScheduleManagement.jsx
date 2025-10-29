@@ -231,31 +231,49 @@ const ScheduleManagement = () => {
       console.log('Override conflict - pendingSchedule:', pendingSchedule);
       console.log('Override conflict - conflicts:', conflictDialog.conflicts);
       
-      // First, delete conflicting schedules one by one
+      // First, delete conflicting schedules - handle errors gracefully
       const conflicts = conflictDialog.conflicts;
       console.log('Conflicts to delete:', conflicts);
       
-      for (const conflict of conflicts) {
-        if (conflict._id) {
-          await api.delete(`/schedules/${conflict._id}`);
-        }
+      const deletePromises = conflicts
+        .filter(conflict => conflict._id)
+        .map(async (conflict) => {
+          try {
+            await api.delete(`/schedules/${conflict._id}`);
+            return { success: true, id: conflict._id };
+          } catch (error) {
+            console.warn(`Failed to delete schedule ${conflict._id}:`, error.message);
+            return { success: false, id: conflict._id, error: error.message };
+          }
+        });
+      
+      const deleteResults = await Promise.all(deletePromises);
+      const successfulDeletes = deleteResults.filter(result => result.success).length;
+      const failedDeletes = deleteResults.filter(result => !result.success);
+      
+      if (failedDeletes.length > 0) {
+        console.warn('Some conflicts could not be deleted:', failedDeletes);
       }
       
       // Then create the new schedule
       if (pendingSchedule.isBatch) {
         await api.post('/schedules/batch', {
-          schedules: pendingSchedule.schedules
+          schedules: pendingSchedule.schedules,
+          skipConflictCheck: true
         });
         toast({
           title: "Success",
-          description: `Overrode conflicts and created ${pendingSchedule.schedules.length} schedules`,
+          description: `Overrode ${successfulDeletes} conflicts and created ${pendingSchedule.schedules.length} schedules`,
           variant: "default"
         });
       } else {
-        await api.post('/schedules', pendingSchedule);
+        await api.post('/schedules', {
+          ...pendingSchedule,
+          skipConflictCheck: true
+        });
         toast({
           title: "Success",
-          description: "Overrode conflicts and created schedule successfully"
+          description: `Overrode ${successfulDeletes} conflicts and created schedule successfully`
         });
       }
       
