@@ -30,7 +30,13 @@ const calculateHours = (startTime, endTime) => {
   return 0;
 };
 
-const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
+const ScheduleWeeklyView = ({ 
+  schedules, 
+  onSelectSchedule, 
+  selectedSchedules = [], 
+  onScheduleSelect,
+  onSelectAll 
+}) => {
   // Start week on Monday
   const [currentWeek, setCurrentWeek] = useState(getStartOfWeek(new Date()));
   const [displayWeekends, setDisplayWeekends] = useState(true);
@@ -153,29 +159,47 @@ const ScheduleWeeklyView = ({ schedules, onSelectSchedule }) => {
                       {formatDate(day, 'h:mm a')}
                     </div>
                   ) : (
-                    daySchedules.map((schedule, scheduleIndex) => (
-                      <div
-                        key={`${schedule._id}-${scheduleIndex}`}
-                        className={cn(
-                          "p-2 rounded border cursor-pointer hover:shadow-md transition-shadow",
-                          getDepartmentColor(schedule.employeeDepartment)
-                        )}
-                        onClick={() => onSelectSchedule(schedule)}
-                      >
-                        <div className="text-xs font-medium truncate">
-                          {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
+                    daySchedules.map((schedule, scheduleIndex) => {
+                      const isSelected = selectedSchedules.includes(schedule._id);
+                      
+                      return (
+                        <div
+                          key={`${schedule._id}-${scheduleIndex}`}
+                          className={cn(
+                            "p-2 rounded border hover:shadow-md transition-shadow",
+                            getDepartmentColor(schedule.employeeDepartment),
+                            isSelected ? "ring-2 ring-blue-500 ring-offset-1" : "cursor-pointer"
+                          )}
+                          onClick={() => onSelectSchedule(schedule)}
+                        >
+                          <div className="flex items-start gap-2">
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                onScheduleSelect?.(schedule._id, e.target.checked);
+                              }}
+                              className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-0.5"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="text-xs font-medium truncate">
+                                {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate mt-1">
+                                {schedule.employeeName}
+                              </div>
+                              <div className="text-xs font-medium mt-1">
+                                {schedule.jobCode}
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {calculateHours(schedule.startTime, schedule.endTime)}h
+                              </div>
+                            </div>
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground truncate mt-1">
-                          {schedule.employeeName}
-                        </div>
-                        <div className="text-xs font-medium mt-1">
-                          {schedule.jobCode}
-                        </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {calculateHours(schedule.startTime, schedule.endTime)}h
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>

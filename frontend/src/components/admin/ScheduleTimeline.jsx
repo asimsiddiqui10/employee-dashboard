@@ -24,7 +24,14 @@ const calculateHours = (startTime, endTime) => {
   return 0;
 };
 
-const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
+const ScheduleTimeline = ({ 
+  schedules, 
+  employees, 
+  onSelectSchedule, 
+  selectedSchedules = [], 
+  onScheduleSelect,
+  onSelectAll 
+}) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
   // Generate time slots (every hour from 12 AM to 11 PM)
@@ -128,7 +135,19 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
             <div className="min-w-[1200px]">
               {/* Time header */}
               <div className="flex border-b border-border">
-                <div className="w-[200px] flex-shrink-0 p-3 font-semibold bg-muted/50 border-r border-border">
+                <div className="w-[200px] flex-shrink-0 p-3 font-semibold bg-muted/50 border-r border-border flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={todaySchedules.length > 0 && todaySchedules.every(s => selectedSchedules.includes(s._id))}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        onSelectAll?.(todaySchedules);
+                      } else {
+                        onSelectAll?.([]);
+                      }
+                    }}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
                   Employee
                 </div>
                 <div className="flex-1 relative" style={{ height: '50px' }}>
@@ -173,19 +192,33 @@ const ScheduleTimeline = ({ schedules, employees, onSelectSchedule }) => {
                         const style = getScheduleStyle(schedule);
                         const bgColorClass = getDepartmentColorClass(schedule.employeeDepartment);
                         const textColorClass = getDepartmentTextColor(schedule.employeeDepartment);
+                        const isSelected = selectedSchedules.includes(schedule._id);
 
                         return (
                           <div
                             key={schedule._id}
-                            className={`absolute top-2 bottom-2 ${bgColorClass} rounded cursor-pointer transition-all shadow-sm hover:shadow-md border`}
+                            className={`absolute top-2 bottom-2 ${bgColorClass} rounded transition-all shadow-sm hover:shadow-md border ${
+                              isSelected ? 'ring-2 ring-blue-500 ring-offset-1' : 'cursor-pointer'
+                            }`}
                             style={style}
                             onClick={() => onSelectSchedule?.(schedule)}
                             title={`${schedule.employeeName} - ${schedule.jobCode}\n${formatTime12Hour(schedule.startTime)} - ${formatTime12Hour(schedule.endTime)}\n${calculateHours(schedule.startTime, schedule.endTime)} hours`}
                           >
-                            <div className={`px-2 py-1 text-xs font-medium truncate ${textColorClass}`}>
-                              <div className="truncate font-semibold">{schedule.employeeName} - {schedule.jobCode}</div>
-                              <div className="text-[10px] opacity-80">
-                                {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
+                            <div className={`px-2 py-1 text-xs font-medium truncate ${textColorClass} flex items-center gap-1`}>
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  onScheduleSelect?.(schedule._id, e.target.checked);
+                                }}
+                                className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                              />
+                              <div className="flex-1 min-w-0">
+                                <div className="truncate font-semibold">{schedule.employeeName} - {schedule.jobCode}</div>
+                                <div className="text-[10px] opacity-80">
+                                  {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
+                                </div>
                               </div>
                             </div>
                           </div>

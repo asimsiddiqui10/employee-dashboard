@@ -423,4 +423,124 @@ export const bulkDeleteSchedules = async (req, res) => {
   }
 };
 
+// Bulk delete schedules by IDs
+export const bulkDeleteSchedulesByIds = async (req, res) => {
+  try {
+    const { scheduleIds } = req.body;
+    
+    if (!scheduleIds || !Array.isArray(scheduleIds) || scheduleIds.length === 0) {
+      return res.status(400).json({ message: 'Schedule IDs array is required' });
+    }
+    
+    // Validate ObjectIds
+    const validIds = scheduleIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+    
+    if (validIds.length === 0) {
+      return res.status(400).json({ message: 'No valid schedule IDs provided' });
+    }
+    
+    const result = await Schedule.deleteMany({
+      _id: { $in: validIds }
+    });
+    
+    res.json({
+      message: `Deleted ${result.deletedCount} schedules`,
+      deletedCount: result.deletedCount
+    });
+  } catch (error) {
+    console.error('Bulk delete schedules by IDs error:', error);
+    res.status(500).json({ message: 'Error deleting schedules', error: error.message });
+  }
+};
+
+// Bulk update schedules by IDs
+export const bulkUpdateSchedules = async (req, res) => {
+  try {
+    const { scheduleIds, updates } = req.body;
+    
+    if (!scheduleIds || !Array.isArray(scheduleIds) || scheduleIds.length === 0) {
+      return res.status(400).json({ message: 'Schedule IDs array is required' });
+    }
+    
+    if (!updates || Object.keys(updates).length === 0) {
+      return res.status(400).json({ message: 'Updates object is required' });
+    }
+    
+    // Validate ObjectIds
+    const validIds = scheduleIds.filter(id => mongoose.Types.ObjectId.isValid(id));
+    
+    if (validIds.length === 0) {
+      return res.status(400).json({ message: 'No valid schedule IDs provided' });
+    }
+    
+    // Only allow certain fields to be updated
+    const allowedFields = ['jobCode', 'startTime', 'endTime'];
+    const filteredUpdates = Object.keys(updates)
+      .filter(key => allowedFields.includes(key))
+      .reduce((obj, key) => {
+        obj[key] = updates[key];
+        return obj;
+      }, {});
+    
+    if (Object.keys(filteredUpdates).length === 0) {
+      return res.status(400).json({ message: 'No valid fields to update' });
+    }
+    
+    const result = await Schedule.updateMany(
+      { _id: { $in: validIds } },
+      { $set: filteredUpdates }
+    );
+    
+    res.json({
+      message: `Updated ${result.modifiedCount} schedules`,
+      updatedCount: result.modifiedCount
+    });
+  } catch (error) {
+    console.error('Bulk update schedules error:', error);
+    res.status(500).json({ message: 'Error updating schedules', error: error.message });
+  }
+};
+
+// Get schedules by date range for bulk operations
+export const getSchedulesByDateRangeForBulk = async (req, res) => {
+  try {
+    const { startDate, endDate, employeeId } = req.query;
+    
+    if (!startDate || !endDate) {
+      return res.status(400).json({ message: 'Start date and end date are required' });
+    }
+    
+    const query = {
+      date: {
+        $gte: new Date(startDate),
+        $lte: new Date(endDate)
+      }
+    };
+    
+    if (employeeId) {
+      query.employeeId = employeeId;
+    }
+    
+    const schedules = await Schedule.find(query)
+      .populate('employee', 'name employeeId department')
+      .sort({ date: 1, startTime: 1 });
+    
+    res.json({
+      schedules: schedules.map(schedule => ({
+        _id: schedule._id,
+        employeeId: schedule.employeeId,
+        employeeName: schedule.employee?.name || schedule.employeeName,
+        department: schedule.employee?.department,
+        date: schedule.date,
+        jobCode: schedule.jobCode,
+        startTime: schedule.startTime,
+        endTime: schedule.endTime
+      }))
+    });
+  } catch (error) {
+    console.error('Get schedules by date range error:', error);
+    res.status(500).json({ message: 'Error fetching schedules' });
+  }
+};
+
 

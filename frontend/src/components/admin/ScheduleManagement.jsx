@@ -14,6 +14,8 @@ import ScheduleTimeline from './ScheduleTimeline';
 import ScheduleWeeklyView from './ScheduleWeeklyView';
 import TemplateManagement from './TemplateManagement';
 import ConflictResolutionDialog from './ConflictResolutionDialog';
+import BulkUpdateDialog from './BulkUpdateDialog';
+import BulkDeleteDialog from './BulkDeleteDialog';
 import { getDepartmentConfig } from '../../lib/departments';
 
 // Utility function to convert 24-hour time to 12-hour format
@@ -71,6 +73,21 @@ const ScheduleManagement = () => {
     newSchedule: null,
     pendingSchedule: null
   });
+  
+  // Bulk operations state
+  const [selectedSchedules, setSelectedSchedules] = useState([]);
+  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [showBulkActions, setShowBulkActions] = useState(false);
+  const [bulkUpdateDialog, setBulkUpdateDialog] = useState({ 
+    open: false, 
+    schedules: [], 
+    updates: {} 
+  });
+  const [bulkDeleteDialog, setBulkDeleteDialog] = useState({ 
+    open: false, 
+    schedules: [] 
+  });
+  
   const { toast } = useToast();
 
   useEffect(() => {
@@ -296,6 +313,127 @@ const ScheduleManagement = () => {
     setConflictDialog({ open: false, conflicts: [], newSchedule: null, pendingSchedule: null });
   };
 
+  // Bulk operations functions
+  const handleScheduleSelect = (scheduleId, isSelected) => {
+    if (isSelected) {
+      setSelectedSchedules(prev => [...prev, scheduleId]);
+    } else {
+      setSelectedSchedules(prev => prev.filter(id => id !== scheduleId));
+    }
+  };
+
+  const handleSelectAll = (schedulesToSelect) => {
+    const scheduleIds = schedulesToSelect.map(s => s._id);
+    setSelectedSchedules(scheduleIds);
+  };
+
+  const handleClearSelection = () => {
+    setSelectedSchedules([]);
+  };
+
+  const handleDateRangeSelect = async () => {
+    if (!dateRange.start || !dateRange.end) {
+      toast({
+        title: "Error",
+        description: "Please select both start and end dates",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    try {
+      const response = await api.get(`/schedules/bulk/date-range?startDate=${dateRange.start}&endDate=${dateRange.end}`);
+      const scheduleIds = response.data.schedules.map(s => s._id);
+      setSelectedSchedules(scheduleIds);
+      
+      toast({
+        title: "Success",
+        description: `Selected ${scheduleIds.length} schedules in date range`,
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Error selecting date range:', error);
+      toast({
+        title: "Error",
+        description: "Failed to select schedules in date range",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const handleBulkUpdate = () => {
+    const selectedScheduleData = schedules.filter(s => selectedSchedules.includes(s._id));
+    setBulkUpdateDialog({
+      open: true,
+      schedules: selectedScheduleData,
+      updates: {}
+    });
+  };
+
+  const handleBulkDelete = () => {
+    const selectedScheduleData = schedules.filter(s => selectedSchedules.includes(s._id));
+    setBulkDeleteDialog({
+      open: true,
+      schedules: selectedScheduleData
+    });
+  };
+
+  const executeBulkUpdate = async (updates) => {
+    try {
+      await api.put('/schedules/bulk-update', {
+        scheduleIds: selectedSchedules,
+        updates: updates
+      });
+
+      toast({
+        title: "Success",
+        description: `Updated ${selectedSchedules.length} schedules`,
+        variant: "default"
+      });
+
+      setBulkUpdateDialog({ open: false, schedules: [], updates: {} });
+      setSelectedSchedules([]);
+      fetchData();
+    } catch (error) {
+      console.error('Error updating schedules:', error);
+      toast({
+        title: "Error",
+        description: "Failed to update schedules",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const executeBulkDelete = async () => {
+    try {
+      await api.delete('/schedules/bulk-delete-by-ids', {
+        data: { scheduleIds: selectedSchedules }
+      });
+
+      toast({
+        title: "Success",
+        description: `Deleted ${selectedSchedules.length} schedules`,
+        variant: "default"
+      });
+
+      setBulkDeleteDialog({ open: false, schedules: [] });
+      setSelectedSchedules([]);
+      fetchData();
+    } catch (error) {
+      console.error('Error deleting schedules:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete schedules",
+        variant: "destructive"
+      });
+    }
+  };
+
+  // Update showBulkActions based on selectedSchedules
+  useEffect(() => {
+    setShowBulkActions(selectedSchedules.length > 0);
+  }, [selectedSchedules]);
+
   // Removed unused event generation code - we now use ScheduleWeeklyView component
 
   // Filter schedules based on selected employee
@@ -322,6 +460,88 @@ const ScheduleManagement = () => {
           </Button>
         </div>
       </div>
+
+      {/* Bulk Operations Controls */}
+      <Card>
+        <CardContent className="p-4">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            {/* Date Range Selector */}
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                <span className="text-sm font-medium">Date Range:</span>
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  type="date"
+                  value={dateRange.start}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
+                  className="w-40"
+                  placeholder="Start Date"
+                />
+                <Input
+                  type="date"
+                  value={dateRange.end}
+                  onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
+                  className="w-40"
+                  placeholder="End Date"
+                />
+                <Button 
+                  onClick={handleDateRangeSelect}
+                  variant="outline"
+                  size="sm"
+                  disabled={!dateRange.start || !dateRange.end}
+                >
+                  Select Range
+                </Button>
+              </div>
+            </div>
+
+            {/* Selection Actions */}
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleClearSelection}
+                variant="outline"
+                size="sm"
+                disabled={selectedSchedules.length === 0}
+              >
+                Clear Selection ({selectedSchedules.length})
+              </Button>
+            </div>
+          </div>
+
+          {/* Bulk Action Bar */}
+          {showBulkActions && (
+            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Check className="h-4 w-4 text-blue-600" />
+                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                    {selectedSchedules.length} schedule{selectedSchedules.length !== 1 ? 's' : ''} selected
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <Button 
+                    onClick={handleBulkUpdate}
+                    variant="outline"
+                    size="sm"
+                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                  >
+                    Bulk Update
+                  </Button>
+                  <Button 
+                    onClick={handleBulkDelete}
+                    variant="destructive"
+                    size="sm"
+                  >
+                    Bulk Delete
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Tabs for Daily, Weekly and List View */}
       <Tabs defaultValue="daily" className="w-full">
@@ -404,6 +624,9 @@ const ScheduleManagement = () => {
               setSelectedSchedule(schedule);
               setShowForm(true);
             }}
+            selectedSchedules={selectedSchedules}
+            onScheduleSelect={handleScheduleSelect}
+            onSelectAll={handleSelectAll}
           />
         </TabsContent>
 
@@ -414,6 +637,9 @@ const ScheduleManagement = () => {
               setSelectedSchedule(schedule);
               setShowForm(true);
             }}
+            selectedSchedules={selectedSchedules}
+            onScheduleSelect={handleScheduleSelect}
+            onSelectAll={handleSelectAll}
           />
         </TabsContent>
       </Tabs>
@@ -496,6 +722,23 @@ const ScheduleManagement = () => {
         newSchedule={conflictDialog.newSchedule}
         onOverride={handleOverrideConflict}
         onCancel={handleCancelConflict}
+      />
+
+      {/* Bulk Update Dialog */}
+      <BulkUpdateDialog
+        open={bulkUpdateDialog.open}
+        onClose={() => setBulkUpdateDialog({ open: false, schedules: [], updates: {} })}
+        schedules={bulkUpdateDialog.schedules}
+        onConfirm={executeBulkUpdate}
+        jobCodes={jobCodes}
+      />
+
+      {/* Bulk Delete Dialog */}
+      <BulkDeleteDialog
+        open={bulkDeleteDialog.open}
+        onClose={() => setBulkDeleteDialog({ open: false, schedules: [] })}
+        schedules={bulkDeleteDialog.schedules}
+        onConfirm={executeBulkDelete}
       />
     </div>
   );

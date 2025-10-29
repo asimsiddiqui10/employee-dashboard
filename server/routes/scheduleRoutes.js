@@ -9,7 +9,10 @@ import {
   getScheduleById,
   updateSchedule,
   deleteSchedule,
-  bulkDeleteSchedules
+  bulkDeleteSchedules,
+  bulkDeleteSchedulesByIds,
+  bulkUpdateSchedules,
+  getSchedulesByDateRangeForBulk
 } from '../controllers/scheduleController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { roleMiddleware } from '../middleware/roleMiddleware.js';
@@ -23,10 +26,13 @@ router.post('/check-conflicts', authMiddleware, checkTimeConflicts);
 router.get('/', authMiddleware, getAllSchedules);
 router.get('/employee/:id', authMiddleware, getSchedulesByEmployee);
 router.get('/date-range', authMiddleware, getSchedulesByDateRange);
+router.get('/bulk/date-range', authMiddleware, getSchedulesByDateRangeForBulk);
+router.delete('/bulk-delete', authMiddleware, roleMiddleware(['admin']), bulkDeleteSchedules);
+router.delete('/bulk-delete-by-ids', authMiddleware, roleMiddleware(['admin']), bulkDeleteSchedulesByIds);
+router.put('/bulk-update', authMiddleware, roleMiddleware(['admin']), bulkUpdateSchedules);
 router.get('/:id', authMiddleware, getScheduleById);
 router.put('/:id', authMiddleware, roleMiddleware(['admin']), updateSchedule);
 router.delete('/:id', authMiddleware, roleMiddleware(['admin']), deleteSchedule);
-router.delete('/bulk-delete', authMiddleware, roleMiddleware(['admin']), bulkDeleteSchedules);
 
 export default router;
 
