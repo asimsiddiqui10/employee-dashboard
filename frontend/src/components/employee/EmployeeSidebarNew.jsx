@@ -71,7 +71,11 @@ const sidebarData = [
     icon: CalendarDays,
     path: "/employee-dashboard/leave"
   },
-
+  {
+    title: "Schedule",
+    icon: Calendar,
+    path: "/employee-dashboard/schedule"
+  },
   {
     title: "Documents",
     icon: FileText,

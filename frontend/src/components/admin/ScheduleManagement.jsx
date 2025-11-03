@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Calendar as CalendarIcon, List, Check, ChevronsUpDown, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, List, Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import api from '../../lib/axios';
 import { useToast } from "@/hooks/use-toast";
@@ -60,13 +60,6 @@ const ScheduleManagement = () => {
   const [showForm, setShowForm] = useState(false);
   const [selectedSchedule, setSelectedSchedule] = useState(null);
   const [showTemplateManagement, setShowTemplateManagement] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pagination, setPagination] = useState({
-    page: 1,
-    limit: 50,
-    total: 0,
-    pages: 0
-  });
   const [conflictDialog, setConflictDialog] = useState({
     open: false,
     conflicts: [],
@@ -92,13 +85,13 @@ const ScheduleManagement = () => {
 
   useEffect(() => {
     fetchData();
-  }, [currentPage]);
+  }, []);
 
   const fetchData = async () => {
     try {
       setLoading(true);
       const [schedulesRes, employeesRes, jobCodesRes, templatesRes] = await Promise.all([
-        api.get(`/schedules?page=${currentPage}&limit=${pagination.limit}`),
+        api.get('/schedules'),
         api.get('/employees'),
         api.get('/job-codes?limit=1000'), // Get all job codes
         api.get('/schedule-templates')
@@ -131,14 +124,8 @@ const ScheduleManagement = () => {
       });
 
       // Enhance schedules with employee department info
-      // Get schedules data with pagination
-      let schedulesData = [];
-      if (schedulesRes.data.schedules) {
-        schedulesData = schedulesRes.data.schedules;
-        setPagination(schedulesRes.data.pagination);
-      } else {
-        schedulesData = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
-      }
+      // Get all schedules data (now returns array directly)
+      const schedulesData = Array.isArray(schedulesRes.data) ? schedulesRes.data : [];
       
       const enhancedSchedules = schedulesData.map(schedule => {
         const employee = employeesData.find(emp => emp.employeeId === schedule.employeeId);
@@ -152,6 +139,9 @@ const ScheduleManagement = () => {
       setEmployees(employeesWithJobCodes);
       setJobCodes(jobCodesData);
       setTemplates(Array.isArray(templatesRes.data) ? templatesRes.data : []);
+      
+      console.log('Schedules loaded:', enhancedSchedules.length);
+      console.log('Sample schedule:', enhancedSchedules[0]);
     } catch (error) {
       console.error('Error fetching data:', error);
       toast({
@@ -296,9 +286,19 @@ const ScheduleManagement = () => {
       
       // Close dialog and refresh data
       setConflictDialog({ open: false, conflicts: [], newSchedule: null, pendingSchedule: null });
-      fetchData();
       setShowForm(false);
       setSelectedSchedule(null);
+      
+      // Add a small delay to ensure backend operations complete
+      setTimeout(async () => {
+        console.log('Refreshing data after override...');
+        try {
+          await fetchData();
+          console.log('Data refresh completed successfully');
+        } catch (error) {
+          console.error('Error during data refresh:', error);
+        }
+      }, 500);
     } catch (error) {
       console.error('Error overriding conflict:', error);
       toast({
@@ -644,50 +644,6 @@ const ScheduleManagement = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Pagination Controls */}
-      {pagination.pages > 1 && (
-        <div className="flex items-center justify-between mt-4">
-          <div className="text-sm text-muted-foreground">
-            Showing {((currentPage - 1) * pagination.limit) + 1} to {Math.min(currentPage * pagination.limit, pagination.total)} of {pagination.total} schedules
-          </div>
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-              disabled={currentPage === 1}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Button>
-            <div className="flex items-center space-x-1">
-              {Array.from({ length: Math.min(5, pagination.pages) }, (_, i) => {
-                const pageNum = i + 1;
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => setCurrentPage(pageNum)}
-                    className="w-8 h-8 p-0"
-                  >
-                    {pageNum}
-                  </Button>
-                );
-              })}
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.pages))}
-              disabled={currentPage === pagination.pages}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      )}
 
       {/* Schedule Form Dialog */}
       {showForm && (

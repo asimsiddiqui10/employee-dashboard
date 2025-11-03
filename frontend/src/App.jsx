@@ -33,6 +33,7 @@ import Reimbursements from './components/employee/Reimbursements';
 import ReimbursementManagement from './components/admin/ReimbursementManagement';
 import JobCodes from './components/admin/JobCodes';
 import ScheduleManagement from './components/admin/ScheduleManagement';
+import EmployeeSchedule from './components/employee/EmployeeSchedule';
 
 
 // Error Boundary Component
@@ -118,6 +119,7 @@ function App() {
               <Route path="payroll" element={<PayrollDocuments />} />
               <Route path="time-tracking" element={<TimeTrackingWrapper />} />
               <Route path="leave" element={<LeaveRequest />} />
+              <Route path="schedule" element={<EmployeeSchedule />} />
               <Route path="meetings" element={<UnderProgress />} />
               <Route path="requests" element={<Requests />} />
               <Route path="tasks" element={<UnderProgress />} />

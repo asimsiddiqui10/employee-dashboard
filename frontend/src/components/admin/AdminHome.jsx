@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../ui/card";
 import { Badge } from "../ui/badge";
-import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building, Bell, Calendar, Clock, FileText, UserCog, MoreHorizontal, Shield, GraduationCap, Laptop, MapPin, Briefcase } from "lucide-react";
+import { Button } from "../ui/button";
+import { ArrowUpIcon, ArrowDownIcon, Users, DollarSign, Building, Bell, Calendar, Clock, FileText, UserCog, MoreHorizontal, Shield, GraduationCap, Laptop, MapPin, Briefcase, Inbox as InboxIcon, ChevronRight } from "lucide-react";
 import { DonutChartComponent } from '../charts/DonutChart';
 import { RevenueBarChart } from '../charts/BarChart';
 import { VisitorsAreaChart } from '../charts/AreaChart';
@@ -13,6 +14,7 @@ import { handleApiError } from '@/utils/errorHandler';
 import { format } from 'date-fns';
 import PageLoader from '../common/PageLoader';
 import LoadingBar from '../common/LoadingBar';
+import ScheduleWidget from './ScheduleWidget';
 
 
 
@@ -205,7 +207,9 @@ const AdminHome = () => {
   return (
     <>
       {loading && <LoadingBar />}
-      <div className="flex flex-col-reverse gap-4 lg:flex-row min-w-0 animate-in fade-in duration-500">
+      <div className="flex flex-col gap-4 min-w-0 animate-in fade-in duration-500">
+      {/* Top Section: Main Content and Requests Widget */}
+      <div className="flex flex-col-reverse gap-4 lg:flex-row min-w-0 items-start">
       {/* Main Content */}
       <div className="flex w-full flex-col gap-4 lg:w-3/4 min-w-0">
         {/* Stats Section */}
@@ -309,71 +313,11 @@ const AdminHome = () => {
           </div>
         </div>
 
-        {/* Leave Requests Section */}
-        {leaveRequests.length > 0 && (
-          <div className="grid gap-4 animate-in slide-in-from-bottom-4 duration-700 delay-500">
-            <Card className="cursor-pointer hover:shadow-md transition-all duration-200 hover:border-primary/20" onClick={() => navigate('/admin-dashboard/leave')}>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <CardTitle className="text-xl font-semibold">Pending Leave Requests</CardTitle>
-                    <CardDescription>Recent leave requests awaiting approval</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant="secondary" className="font-normal">
-                      {leaveRequests.length} Pending
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      Click to view all
-                    </Badge>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <ScrollArea className="h-64 pr-4">
-                  <div className="flex flex-col gap-3">
-                    {leaveRequests.map((request) => (
-                      <div
-                        key={request._id}
-                        className="flex items-center justify-between p-4 rounded-lg border bg-card text-card-foreground shadow-sm"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <div>
-                              <div className="font-medium text-sm">
-                                {request.employee?.name || 'Unknown Employee'}
-                              </div>
-                              <div className="text-xs text-muted-foreground">
-                                {request.employee?.employeeId || 'No ID'} • {request.leaveType}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className="text-sm font-medium">
-                              {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d, yyyy')}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              {request.totalDays} days
-                            </div>
-                          </div>
-                          {getStatusBadge(request.status)}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </div>
-        )}
       </div>
 
-      {/* Requests Card */}
-      <Card className="w-full lg:w-1/4 min-w-0 overflow-hidden">
-        <CardHeader>
+      {/* Requests Card - Fixed height to match Attendance trends */}
+      <Card className="w-full lg:w-1/4 min-w-0 overflow-hidden flex flex-col h-full">
+        <CardHeader className="flex-shrink-0 pb-6">
           <div className="flex items-center justify-between">
             <CardTitle 
               className="text-xl font-semibold cursor-pointer hover:text-primary transition-colors"
@@ -385,57 +329,139 @@ const AdminHome = () => {
               {requests.length} Pending
             </Badge>
           </div>
-          <CardDescription>Pending employee requests</CardDescription>
+          <CardDescription className="mt-2">Pending employee requests</CardDescription>
         </CardHeader>
-        <CardContent className="p-2">
-          <div className="px-3 flex flex-col gap-3">
-            {requests.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">No pending requests</p>
-              </div>
-            ) : (
-              <>
-                {requests.slice(0, 5).map((request) => (
-                  <div
-                    key={request._id}
-                    className="flex flex-col gap-1 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-muted/30 w-full p-3"
-                    onClick={() => navigate('/admin-dashboard/requests')}
-                  >
-                    <div className="flex items-start gap-1 w-full min-w-0">
-                      <div className="p-1.5 rounded-full bg-muted/50 flex-shrink-0">
-                        {getRequestTypeIcon(request.type)}
-                      </div>
-                      <div className="flex-1 min-w-0 overflow-hidden">
-                        <h4 className="font-medium text-sm truncate pr-1">{request.title}</h4>
-                        <p className="text-xs text-muted-foreground truncate pr-1">
-                          {request.employee?.name || 'Unknown Employee'}
-                        </p>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground break-words overflow-hidden pr-1" 
-                      style={{
-                        display: '-webkit-box',
-                        WebkitLineClamp: 2,
-                        WebkitBoxOrient: 'vertical'
-                      }}>
-                      {request.description}
-                    </p>
-                  </div>
-                ))}
-                <div className="text-center py-2">
-                  <button 
-                    className="text-xs text-primary hover:underline"
-                    onClick={() => navigate('/admin-dashboard/requests')}
-                  >
-                    View all {requests.length} requests
-                  </button>
+        <CardContent className="flex-1 overflow-hidden p-4">
+          <ScrollArea className="h-full">
+            <div className="px-3 flex flex-col gap-3">
+              {requests.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileText className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No pending requests</p>
                 </div>
-              </>
-            )}
-          </div>
+              ) : (
+                <>
+                  {requests.slice(0, 5).map((request) => (
+                    <div
+                      key={request._id}
+                      className="flex flex-col gap-1 rounded-lg border shadow-sm hover:shadow-md transition-shadow cursor-pointer hover:bg-muted/30 w-full p-3"
+                      onClick={() => navigate('/admin-dashboard/requests')}
+                    >
+                      <div className="flex items-start gap-1 w-full min-w-0">
+                        <div className="p-1.5 rounded-full bg-muted/50 flex-shrink-0">
+                          {getRequestTypeIcon(request.type)}
+                        </div>
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <h4 className="font-medium text-sm truncate pr-1">{request.title}</h4>
+                          <p className="text-xs text-muted-foreground truncate pr-1">
+                            {request.employee?.name || 'Unknown Employee'}
+                          </p>
+                        </div>
+                      </div>
+                      <p className="text-xs text-muted-foreground break-words overflow-hidden pr-1" 
+                        style={{
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical'
+                        }}>
+                        {request.description}
+                      </p>
+                    </div>
+                  ))}
+                  <div className="text-center py-2">
+                    <button 
+                      className="text-xs text-primary hover:underline"
+                      onClick={() => navigate('/admin-dashboard/requests')}
+                    >
+                      View all {requests.length} requests
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </ScrollArea>
         </CardContent>
       </Card>
+      </div>
+
+      {/* Bottom Section: Schedule Widget and Pending Requests */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 min-w-0 animate-in slide-in-from-bottom-4 duration-700 delay-500">
+        {/* Schedule Widget */}
+        <ScheduleWidget />
+
+        {/* Pending Leave Requests Widget */}
+        <Card className="w-full min-w-0 overflow-hidden">
+          <CardHeader className="flex-shrink-0 pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle 
+                className="text-lg font-semibold cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
+                onClick={() => navigate('/admin-dashboard/leave')}
+              >
+                <Calendar className="h-5 w-5 text-primary" />
+                Pending Leave Requests
+              </CardTitle>
+              <Badge variant="secondary" className="text-xs font-medium">
+                {leaveRequests.length}
+              </Badge>
+            </div>
+            <CardDescription className="text-xs mt-1">Leave requests awaiting approval</CardDescription>
+          </CardHeader>
+          <CardContent className="flex-1 overflow-hidden p-0">
+            <ScrollArea className="h-full px-3 pb-3">
+              <div className="flex flex-col gap-2">
+                {leaveRequests.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No pending leave requests</p>
+                  </div>
+                ) : (
+                  <>
+                    {leaveRequests.slice(0, 6).map((request) => (
+                      <div
+                        key={request._id}
+                        className="flex items-start gap-3 rounded-lg border p-3 hover:bg-accent/50 transition-colors cursor-pointer group"
+                        onClick={() => navigate('/admin-dashboard/leave')}
+                      >
+                        <div className="p-2 rounded-md bg-primary/10 text-primary flex-shrink-0 group-hover:bg-primary/20 transition-colors">
+                          <Calendar className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2 mb-1">
+                            <h4 className="font-medium text-sm truncate">
+                              {request.employee?.name || 'Unknown Employee'}
+                            </h4>
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex-shrink-0">
+                              {request.leaveType}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mb-1">
+                            {request.employee?.employeeId || 'No ID'}
+                          </p>
+                          <p className="text-xs text-muted-foreground line-clamp-2">
+                            {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d, yyyy')} • {request.totalDays} days
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {leaveRequests.length > 6 && (
+                      <div className="text-center pt-2 border-t">
+                        <Button 
+                          variant="ghost"
+                          className="text-xs h-auto py-1"
+                          onClick={() => navigate('/admin-dashboard/leave')}
+                        >
+                          View all {leaveRequests.length} requests
+                          <ChevronRight className="h-3 w-3 ml-1" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      </div>
     </div>
     </>
   );

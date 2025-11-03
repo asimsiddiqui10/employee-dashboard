@@ -223,10 +223,10 @@ export const checkTimeConflicts = async (req, res) => {
   }
 };
 
-// Get all schedules with pagination
+// Get all schedules
 export const getAllSchedules = async (req, res) => {
   try {
-    const { page = 1, limit = 50, startDate, endDate } = req.query;
+    const { startDate, endDate } = req.query;
     
     const query = {};
     if (startDate && endDate) {
@@ -238,21 +238,9 @@ export const getAllSchedules = async (req, res) => {
     
     const schedules = await Schedule.find(query)
       .populate('employee', 'name employeeId department')
-      .sort({ date: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .sort({ date: -1 });
     
-    const total = await Schedule.countDocuments(query);
-    
-    res.json({
-      schedules,
-      pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
-        total,
-        pages: Math.ceil(total / limit)
-      }
-    });
+    res.json(schedules);
   } catch (error) {
     console.error('Get schedules error:', error);
     res.status(500).json({ message: 'Server error fetching schedules' });
