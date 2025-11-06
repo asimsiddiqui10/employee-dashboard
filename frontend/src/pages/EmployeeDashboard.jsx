@@ -10,16 +10,21 @@ import {
 } from "../components/ui/sidebar";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import TimeOffCard from '../components/employee/TimeOffCard';
 import NotificationsCard from '../components/employee/NotificationsCard';
 import MyTeamCard from '../components/employee/MyTeamCard';
 import TimeClockCard from '../components/employee/TimeClockCard';
+import EmployeeScheduleWidget from '../components/employee/EmployeeScheduleWidget';
 import PageLoader from '../components/common/PageLoader';
 import LoadingBar from '../components/common/LoadingBar';
 import RoleSwitcher from '../components/common/RoleSwitcher';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import api from '@/lib/axios';
 
 const EmployeeDashboard = () => {
   const { user } = useAuth();
+  const [profilePic, setProfilePic] = useState(null);
   const location = useLocation();
   const [displayText, setDisplayText] = useState('');
   const [showEmoji, setShowEmoji] = useState(false);
@@ -75,6 +80,23 @@ const EmployeeDashboard = () => {
     }
   }, [user?.name]);
 
+  useEffect(() => {
+    fetchProfilePic();
+  }, []);
+
+  const fetchProfilePic = async () => {
+    try {
+      const response = await api.get('/employees/me');
+      const employee = response.data;
+      
+      if (employee && employee.profilePic) {
+        setProfilePic(employee.profilePic);
+      }
+    } catch (error) {
+      // Silently fail - fallback icon will show
+    }
+  };
+
   // Only show the dashboard content on the main route
   const showDashboard = location.pathname === '/employee-dashboard';
 
@@ -95,9 +117,15 @@ const EmployeeDashboard = () => {
           <div className="flex items-center gap-4 px-4">
             <RoleSwitcher />
             <ThemeToggle />
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
-              <User className="h-5 w-5 text-muted-foreground" />
-            </div>
+            <Avatar className="h-8 w-8">
+              <AvatarImage 
+                src={profilePic} 
+                alt={user?.name || 'User'} 
+              />
+              <AvatarFallback className="bg-muted">
+                <User className="h-5 w-5 text-muted-foreground" />
+              </AvatarFallback>
+            </Avatar>
           </div>
         </nav>
         
@@ -136,6 +164,32 @@ const EmployeeDashboard = () => {
                 </div>
                 <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
                   <MyTeamCard isLoading={loading} />
+                </div>
+                {/* Schedule Widget Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0 animate-in slide-in-from-bottom-4 duration-700 delay-500">
+                  <div className="min-w-0">
+                    <EmployeeScheduleWidget />
+                  </div>
+                  <div className="min-w-0">
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold">Placeholder</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-5rem)]">
+                        <p className="text-muted-foreground text-sm">Coming soon</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  <div className="min-w-0">
+                    <Card className="h-96">
+                      <CardHeader>
+                        <CardTitle className="text-lg font-semibold">Placeholder</CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex items-center justify-center h-[calc(100%-5rem)]">
+                        <p className="text-muted-foreground text-sm">Coming soon</p>
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               </div>
             </div>

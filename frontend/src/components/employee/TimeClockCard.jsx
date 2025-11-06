@@ -13,7 +13,7 @@ import { Clock, PlayCircle, StopCircle, PauseCircle, PlayCircleIcon, History, Al
 import { useToast } from "../../hooks/use-toast";
 import api from '../../lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
-import TimesheetForm from './TimesheetForm';
+import HoursForm from './HoursForm';
 
 const TimeClockCard = ({ isLoading = false }) => {
   const { toast } = useToast();
@@ -332,8 +332,8 @@ const TimeClockCard = ({ isLoading = false }) => {
         </CardContent>
       </Card>
 
-      {/* Timesheet Form */}
-      <TimesheetForm
+      {/* Hours Form */}
+      <HoursForm
         isOpen={showTimesheetForm}
         onClose={() => setShowTimesheetForm(false)}
         onSubmit={handleTimesheetSubmit}

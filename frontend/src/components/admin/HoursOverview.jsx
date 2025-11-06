@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Users, Clock, Bell } from "lucide-react";
-import TimesheetTable from './TimesheetTable';
-import TimesheetSearch from './TimesheetSearch';
+import HoursTable from './HoursTable';
+import HoursSearch from './HoursSearch';
 
-const TimeSheetsOverview = () => {
+const HoursOverview = () => {
   const [timeEntries, setTimeEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isActionLoading, setIsActionLoading] = useState(false);
@@ -75,14 +75,14 @@ const TimeSheetsOverview = () => {
       });
       toast({
         title: "Success",
-        description: "Timesheet approved successfully",
+        description: "Hours record approved successfully",
       });
       fetchTimeEntries();
     } catch (error) {
       handleApiError(error);
       toast({
         title: "Error",
-        description: "Failed to approve timesheet",
+        description: "Failed to approve hours record",
         variant: "destructive",
       });
     } finally {
@@ -98,14 +98,14 @@ const TimeSheetsOverview = () => {
       });
       toast({
         title: "Success",
-        description: "Timesheet rejected successfully",
+        description: "Hours record rejected successfully",
       });
       fetchTimeEntries();
     } catch (error) {
       handleApiError(error);
       toast({
         title: "Error",
-        description: "Failed to reject timesheet",
+        description: "Failed to reject hours record",
         variant: "destructive",
       });
     } finally {
@@ -173,13 +173,13 @@ const TimeSheetsOverview = () => {
           <CardTitle>Time Sheets</CardTitle>
         </CardHeader>
         <CardContent>
-          <TimesheetSearch
+          <HoursSearch
             filters={filters}
             onFilterChange={handleFilterChange}
             onClearFilters={handleClearFilters}
           />
           <div className="mt-6">
-            <TimesheetTable
+            <HoursTable
               data={timeEntries}
               onApprove={handleApprove}
               onReject={handleReject}
@@ -192,4 +192,4 @@ const TimeSheetsOverview = () => {
   );
 };
 
-export default TimeSheetsOverview; 
+export default HoursOverview; 

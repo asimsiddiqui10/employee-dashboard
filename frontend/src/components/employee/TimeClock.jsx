@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import TimesheetForm from './TimesheetForm';
+import HoursForm from './HoursForm';
 import {
   Clock,
   PlayCircle,
@@ -719,8 +719,8 @@ const TimeClock = () => {
         </CardContent>
       </Card>
 
-      {/* Timesheet Form */}
-      <TimesheetForm
+      {/* Hours Form */}
+      <HoursForm
         isOpen={showTimesheetForm}
         onClose={() => setShowTimesheetForm(false)}
         onSubmit={handleTimesheetSubmit}

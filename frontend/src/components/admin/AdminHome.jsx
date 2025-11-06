@@ -236,7 +236,7 @@ const AdminHome = () => {
             onClick={() => navigate('/admin-dashboard/time-tracking')}
           >
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Pending Timesheets</CardTitle>
+              <CardTitle className="text-xs font-medium text-muted-foreground">Pending Hours</CardTitle>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
                 "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",

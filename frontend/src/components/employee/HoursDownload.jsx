@@ -4,7 +4,7 @@ import { Download } from "lucide-react";
 import axios from '@/lib/axios';
 import { useToast } from "@/hooks/use-toast";
 
-const TimesheetDownload = ({ timeEntry }) => {
+const HoursDownload = ({ timeEntry }) => {
   const { toast } = useToast();
   const [loading, setLoading] = React.useState(false);
 
@@ -22,7 +22,7 @@ const TimesheetDownload = ({ timeEntry }) => {
       // Create a temporary link and trigger download
       const link = document.createElement('a');
       link.href = url;
-      link.download = `timesheet-${timeEntry._id}.pdf`;
+      link.download = `hours-${timeEntry._id}.pdf`;
       document.body.appendChild(link);
       link.click();
       
@@ -32,13 +32,13 @@ const TimesheetDownload = ({ timeEntry }) => {
 
       toast({
         title: "Success",
-        description: "Timesheet downloaded successfully",
+        description: "Hours record downloaded successfully",
       });
     } catch (error) {
-      console.error('Error downloading timesheet:', error);
+      console.error('Error downloading hours record:', error);
       toast({
         title: "Error",
-        description: "Failed to download timesheet",
+        description: "Failed to download hours record",
         variant: "destructive",
       });
     } finally {
@@ -46,7 +46,7 @@ const TimesheetDownload = ({ timeEntry }) => {
     }
   };
 
-  // Only show download button for approved timesheets
+  // Only show download button for approved hours records
   if (timeEntry.status !== 'approved') {
     return null;
   }
@@ -65,4 +65,4 @@ const TimesheetDownload = ({ timeEntry }) => {
   );
 };
 
-export default TimesheetDownload; 
+export default HoursDownload; 

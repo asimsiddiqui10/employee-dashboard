@@ -25,13 +25,13 @@ const ApprovalStatus = ({ timeEntry }) => {
         icon: XCircle,
         variant: "bg-red-500/10 text-red-500 hover:bg-red-500/20",
         label: "Rejected",
-        tooltip: "Timesheet rejected"
+        tooltip: "Hours record rejected"
       },
       completed: {
         icon: Clock,
         variant: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
         label: "Completed",
-        tooltip: "Timesheet completed, pending your approval"
+        tooltip: "Hours record completed, pending your approval"
       }
     };
 

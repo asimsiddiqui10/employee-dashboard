@@ -173,15 +173,23 @@ const ScheduleWeeklyView = ({
                           onClick={() => onSelectSchedule(schedule)}
                         >
                           <div className="flex items-start gap-2">
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
+                            <div
+                              onClick={(e) => {
                                 e.stopPropagation();
-                                onScheduleSelect?.(schedule._id, e.target.checked);
                               }}
-                              className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-0.5"
-                            />
+                              className="cursor-pointer"
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={(e) => {
+                                  e.stopPropagation();
+                                  onScheduleSelect?.(schedule._id, e.target.checked);
+                                }}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 mt-0.5 cursor-pointer"
+                              />
+                            </div>
                             <div className="flex-1 min-w-0">
                               <div className="text-xs font-medium truncate">
                                 {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}

@@ -19,7 +19,7 @@ import {
 } from "@tanstack/react-table";
 import { getDepartmentConfig } from '@/lib/departments';
 
-const TimesheetTable = ({ 
+const HoursTable = ({ 
   data, 
   onApprove, 
   onReject, 
@@ -252,7 +252,7 @@ const TimesheetTable = ({
           ) : (
             <TableRow>
               <TableCell colSpan={columns.length} className="h-24 text-center">
-                No timesheets found
+                No hours records found
               </TableCell>
             </TableRow>
           )}
@@ -262,4 +262,4 @@ const TimesheetTable = ({
   );
 };
 
-export default TimesheetTable; 
+export default HoursTable; 

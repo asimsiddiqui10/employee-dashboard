@@ -5,13 +5,14 @@ import { Input } from "@/components/ui/input";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, Search, Calendar as CalendarIcon, List, Check, ChevronsUpDown } from 'lucide-react';
+import { Plus, Search, Calendar as CalendarIcon, List, Check, ChevronsUpDown, X } from 'lucide-react';
 import { cn } from "@/lib/utils";
 import api from '../../lib/axios';
 import { useToast } from "@/hooks/use-toast";
 import ScheduleForm from './ScheduleForm';
 import ScheduleTimeline from './ScheduleTimeline';
 import ScheduleWeeklyView from './ScheduleWeeklyView';
+import ScheduleUpcomingView from './ScheduleUpcomingView';
 import TemplateManagement from './TemplateManagement';
 import ConflictResolutionDialog from './ConflictResolutionDialog';
 import BulkUpdateDialog from './BulkUpdateDialog';
@@ -345,12 +346,6 @@ const ScheduleManagement = () => {
       const response = await api.get(`/schedules/bulk/date-range?startDate=${dateRange.start}&endDate=${dateRange.end}`);
       const scheduleIds = response.data.schedules.map(s => s._id);
       setSelectedSchedules(scheduleIds);
-      
-      toast({
-        title: "Success",
-        description: `Selected ${scheduleIds.length} schedules in date range`,
-        variant: "default"
-      });
     } catch (error) {
       console.error('Error selecting date range:', error);
       toast({
@@ -446,175 +441,187 @@ const ScheduleManagement = () => {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold">Schedule Management</h1>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowTemplateManagement(true)}>
-            <List className="mr-2 h-4 w-4" />
-            Manage Templates
-          </Button>
-          <Button onClick={() => setShowForm(true)}>
-            <Plus className="mr-2 h-4 w-4" />
-            Create Schedule
-          </Button>
+    <div className="space-y-4 p-4 md:p-6">
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Schedule Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">Manage and view employee schedules</p>
         </div>
-      </div>
-
-      {/* Bulk Operations Controls */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-            {/* Date Range Selector */}
-            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center">
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                <span className="text-sm font-medium">Date Range:</span>
-              </div>
-              <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          {/* Compact Select Controls */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-medium text-muted-foreground hidden sm:inline">Select:</span>
+            <div className="flex items-center gap-1">
+              <div className="relative">
                 <Input
                   type="date"
                   value={dateRange.start}
                   onChange={(e) => setDateRange(prev => ({ ...prev, start: e.target.value }))}
-                  className="w-40"
-                  placeholder="Start Date"
+                  className="w-[120px] h-9 pr-8 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full cursor-pointer"
                 />
+                <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              </div>
+              <span className="text-xs text-muted-foreground">to</span>
+              <div className="relative">
                 <Input
                   type="date"
                   value={dateRange.end}
                   onChange={(e) => setDateRange(prev => ({ ...prev, end: e.target.value }))}
-                  className="w-40"
-                  placeholder="End Date"
+                  className="w-[120px] h-9 pr-8 [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-full [&::-webkit-calendar-picker-indicator]:h-full cursor-pointer"
                 />
-                <Button 
-                  onClick={handleDateRangeSelect}
-                  variant="outline"
-                  size="sm"
-                  disabled={!dateRange.start || !dateRange.end}
-                >
-                  Select Range
-                </Button>
+                <CalendarIcon className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               </div>
-            </div>
-
-            {/* Selection Actions */}
-            <div className="flex gap-2">
               <Button 
-                onClick={handleClearSelection}
+                onClick={handleDateRangeSelect}
                 variant="outline"
                 size="sm"
-                disabled={selectedSchedules.length === 0}
+                disabled={!dateRange.start || !dateRange.end}
+                className="h-9"
               >
-                Clear Selection ({selectedSchedules.length})
+                Select Range
               </Button>
+              {selectedSchedules.length > 0 && (
+                <Button 
+                  onClick={handleClearSelection}
+                  variant="ghost"
+                  size="sm"
+                  className="h-9"
+                >
+                  <X className="h-3 w-3 mr-1" />
+                  Clear ({selectedSchedules.length})
+                </Button>
+              )}
             </div>
           </div>
+          <div className="flex gap-2 ml-auto lg:ml-0">
+            <Button variant="outline" size="sm" onClick={() => setShowTemplateManagement(true)}>
+              <List className="mr-2 h-4 w-4" />
+              Templates
+            </Button>
+            <Button size="sm" onClick={() => setShowForm(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create
+            </Button>
+          </div>
+        </div>
+      </div>
 
-          {/* Bulk Action Bar */}
-          {showBulkActions && (
-            <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Check className="h-4 w-4 text-blue-600" />
-                  <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+      {/* Bulk Action Bar - Fixed space to prevent layout shift */}
+      <div className="h-[30px] transition-opacity duration-200">
+        {showBulkActions ? (
+          <Card className="h-full">
+            <CardContent className="p-1.5 h-full flex items-center">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2 w-full">
+                <div className="flex items-center gap-1.5">
+                  <Check className="h-3 w-3 text-primary" />
+                  <span className="text-xs font-medium">
                     {selectedSchedules.length} schedule{selectedSchedules.length !== 1 ? 's' : ''} selected
                   </span>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5">
                   <Button 
                     onClick={handleBulkUpdate}
                     variant="outline"
                     size="sm"
-                    className="border-blue-300 text-blue-700 hover:bg-blue-100"
+                    className="h-7 px-2 text-xs"
                   >
-                    Bulk Update
+                    Update
                   </Button>
                   <Button 
                     onClick={handleBulkDelete}
                     variant="destructive"
                     size="sm"
+                    className="h-7 px-2 text-xs"
                   >
-                    Bulk Delete
+                    Delete
                   </Button>
                 </div>
               </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="h-full" />
+        )}
+      </div>
 
       {/* Tabs for Daily, Weekly and List View */}
-      <Tabs defaultValue="daily" className="w-full">
-        <div className="flex items-center justify-between gap-4 mb-6">
-          {/* Employee Search Combobox - Moved to LEFT */}
-          <Popover open={open} onOpenChange={setOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                role="combobox"
-                aria-expanded={open}
-                className="w-[300px] justify-between"
-              >
-                {selectedEmployee
-                  ? `${selectedEmployee.name} (${selectedEmployee.employeeId})`
-                  : "Select Employees"}
-                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-[300px] p-0">
-              <Command>
-                <CommandInput placeholder="Search employee..." />
-                <CommandEmpty>No employee found.</CommandEmpty>
-                <CommandGroup className="max-h-[300px] overflow-y-auto">
-                  <CommandItem
-                    value="all"
-                    onSelect={() => {
-                      setSelectedEmployee(null);
-                      setOpen(false);
-                    }}
-                  >
-                    <Check
-                      className={cn(
-                        "mr-2 h-4 w-4",
-                        !selectedEmployee ? "opacity-100" : "opacity-0"
-                      )}
-                    />
-                    All Employees
-                  </CommandItem>
-                  {employees.map((emp) => (
-                    <CommandItem
-                      key={emp._id}
-                      value={`${emp.name} ${emp.employeeId}`}
-                      onSelect={() => {
-                        setSelectedEmployee(emp);
-                        setOpen(false);
-                      }}
+      <Card>
+        <CardContent className="p-6">
+          <Tabs defaultValue="daily" className="w-full">
+            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+              {/* Employee Search Combobox */}
+              <div className="w-full lg:w-auto">
+                <Popover open={open} onOpenChange={setOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={open}
+                      className="w-full lg:w-[300px] justify-between"
                     >
-                      <Check
-                        className={cn(
-                          "mr-2 h-4 w-4",
-                          selectedEmployee?.employeeId === emp.employeeId ? "opacity-100" : "opacity-0"
-                        )}
-                      />
-                      {emp.name} ({emp.employeeId})
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </Command>
-            </PopoverContent>
-          </Popover>
+                      {selectedEmployee
+                        ? `${selectedEmployee.name} (${selectedEmployee.employeeId})`
+                        : "Filter by Employee"}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[300px] p-0">
+                    <Command>
+                      <CommandInput placeholder="Search employee..." />
+                      <CommandEmpty>No employee found.</CommandEmpty>
+                      <CommandGroup className="max-h-[300px] overflow-y-auto">
+                        <CommandItem
+                          value="all"
+                          onSelect={() => {
+                            setSelectedEmployee(null);
+                            setOpen(false);
+                          }}
+                        >
+                          <Check
+                            className={cn(
+                              "mr-2 h-4 w-4",
+                              !selectedEmployee ? "opacity-100" : "opacity-0"
+                            )}
+                          />
+                          All Employees
+                        </CommandItem>
+                        {employees.map((emp) => (
+                          <CommandItem
+                            key={emp._id}
+                            value={`${emp.name} ${emp.employeeId}`}
+                            onSelect={() => {
+                              setSelectedEmployee(emp);
+                              setOpen(false);
+                            }}
+                          >
+                            <Check
+                              className={cn(
+                                "mr-2 h-4 w-4",
+                                selectedEmployee?.employeeId === emp.employeeId ? "opacity-100" : "opacity-0"
+                              )}
+                            />
+                            {emp.name} ({emp.employeeId})
+                          </CommandItem>
+                        ))}
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-          {/* Tab Switcher - Moved to RIGHT */}
-          <TabsList className="grid grid-cols-2 w-[400px]">
-            <TabsTrigger value="daily">
-              Daily
-            </TabsTrigger>
-            <TabsTrigger value="weekly">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Weekly
-            </TabsTrigger>
-          </TabsList>
-        </div>
+              {/* Tab Switcher */}
+              <TabsList className="grid grid-cols-3 w-full lg:w-auto lg:min-w-[400px]">
+                <TabsTrigger value="daily">Daily</TabsTrigger>
+                <TabsTrigger value="weekly">
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  Weekly
+                </TabsTrigger>
+                <TabsTrigger value="upcoming">
+                  <List className="mr-2 h-4 w-4" />
+                  Upcoming
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
         <TabsContent value="daily" className="mt-0">
           <ScheduleTimeline
@@ -642,7 +649,19 @@ const ScheduleManagement = () => {
             onSelectAll={handleSelectAll}
           />
         </TabsContent>
-      </Tabs>
+
+        <TabsContent value="upcoming" className="mt-0">
+          <ScheduleUpcomingView
+            schedules={filteredSchedules}
+            onSelectSchedule={(schedule) => {
+              setSelectedSchedule(schedule);
+              setShowForm(true);
+            }}
+          />
+        </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
 
 
       {/* Schedule Form Dialog */}

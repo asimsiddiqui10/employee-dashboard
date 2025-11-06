@@ -146,7 +146,7 @@ export default function AdminTimeTracking() {
       
       toast({
         title: "Success",
-        description: `Timesheet ${status} successfully`,
+        description: `Hours record ${status} successfully`,
       });
       
       // Refresh the data
@@ -401,7 +401,7 @@ export default function AdminTimeTracking() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingRequests}</div>
             <p className="text-xs text-muted-foreground">
-              Timesheets awaiting approval
+              Hours records awaiting approval
             </p>
           </CardContent>
         </Card>
@@ -440,7 +440,7 @@ export default function AdminTimeTracking() {
         <CardHeader>
           <CardTitle>Employee Time Entries</CardTitle>
           <CardDescription>
-            Manage and approve employee timesheets
+            Manage and approve employee hours records
           </CardDescription>
         </CardHeader>
         <CardContent>

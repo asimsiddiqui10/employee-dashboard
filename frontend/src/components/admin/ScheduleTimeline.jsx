@@ -205,15 +205,25 @@ const ScheduleTimeline = ({
                             title={`${schedule.employeeName} - ${schedule.jobCode}\n${formatTime12Hour(schedule.startTime)} - ${formatTime12Hour(schedule.endTime)}\n${calculateHours(schedule.startTime, schedule.endTime)} hours`}
                           >
                             <div className={`px-2 py-1 text-xs font-medium truncate ${textColorClass} flex items-center gap-1`}>
-                              <input
-                                type="checkbox"
-                                checked={isSelected}
-                                onChange={(e) => {
+                              <div
+                                onClick={(e) => {
                                   e.stopPropagation();
-                                  onScheduleSelect?.(schedule._id, e.target.checked);
                                 }}
-                                className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                              />
+                                className="cursor-pointer"
+                              >
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    onScheduleSelect?.(schedule._id, e.target.checked);
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                  }}
+                                  className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                />
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="truncate font-semibold">{schedule.employeeName} - {schedule.jobCode}</div>
                                 <div className="text-[10px] opacity-80">

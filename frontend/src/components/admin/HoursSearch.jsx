@@ -11,7 +11,7 @@ import {
 import { departments } from '@/lib/departments';
 import { Search, X } from "lucide-react";
 
-const TimesheetSearch = ({ filters, onFilterChange, onClearFilters }) => {
+const HoursSearch = ({ filters, onFilterChange, onClearFilters }) => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     onFilterChange({ ...filters, [name]: value });
@@ -103,4 +103,4 @@ const TimesheetSearch = ({ filters, onFilterChange, onClearFilters }) => {
   );
 };
 
-export default TimesheetSearch; 
+export default HoursSearch; 

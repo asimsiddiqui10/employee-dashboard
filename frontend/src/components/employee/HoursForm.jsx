@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 
-const TimesheetForm = ({ 
+const HoursForm = ({ 
   isOpen, 
   onClose, 
   onSubmit, 
@@ -75,9 +75,9 @@ const TimesheetForm = ({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Complete Timesheet</DialogTitle>
+          <DialogTitle>Complete Hours Record</DialogTitle>
           <DialogDescription>
-            Please fill in the required timesheet details before clocking out.
+            Please fill in the required hours details before clocking out.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-4">
@@ -127,7 +127,7 @@ const TimesheetForm = ({
               onCheckedChange={handleApprovalChange}
             />
             <Label htmlFor="employeeApproval" className="text-sm">
-              I confirm that this timesheet is accurate
+              I confirm that this hours record is accurate
             </Label>
           </div>
 
@@ -144,7 +144,7 @@ const TimesheetForm = ({
               type="submit"
               disabled={loading || !formData.jobCode || !formData.rate}
             >
-              {loading ? "Submitting..." : "Submit Timesheet"}
+              {loading ? "Submitting..." : "Submit Hours"}
             </Button>
           </div>
         </form>
@@ -153,4 +153,4 @@ const TimesheetForm = ({
   );
 };
 
-export default TimesheetForm; 
+export default HoursForm; 

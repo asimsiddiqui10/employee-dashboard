@@ -30,30 +30,49 @@ const EmployeeSchedule = () => {
     try {
       setLoading(true);
       
-      // First, fetch employee data to get employeeId
-      let employeeId = user?.employeeId;
-      if (!employeeId) {
+      // Fetch employee data to get employeeId (string, not ObjectId)
+      // The backend endpoint expects employeeId as a string like "E001", not ObjectId
+      let employeeId = null;
+      
+      try {
         const employeeResponse = await api.get('/employees/me');
-        employeeId = employeeResponse.data?.employeeId;
+        // The response is the Employee object directly
+        const employee = employeeResponse.data?.data || employeeResponse.data;
+        employeeId = employee?.employeeId; // This is the string ID like "E001"
+        
+        console.log('Employee data:', employee);
+        console.log('Employee ID:', employeeId);
+      } catch (empError) {
+        console.error('Error fetching employee data:', empError);
       }
 
       if (!employeeId) {
         toast({
           title: "Error",
-          description: "Employee ID not found",
+          description: "Employee ID not found. Please ensure your employee profile is set up correctly.",
           variant: "destructive"
         });
+        setLoading(false);
         return;
       }
 
+      console.log('Fetching schedules for employeeId:', employeeId);
       const response = await api.get(`/schedules/employee/${employeeId}`);
-      const schedulesData = Array.isArray(response.data) ? response.data : (response.data.schedules || []);
-      setSchedules(schedulesData);
+      console.log('Schedules response:', response.data);
+      
+      // Backend returns { schedules: [...], pagination: {...} }
+      const schedulesData = response.data?.schedules || response.data || [];
+      const schedulesArray = Array.isArray(schedulesData) ? schedulesData : [];
+      
+      console.log('Parsed schedules:', schedulesArray);
+      setSchedules(schedulesArray);
     } catch (error) {
       console.error('Error fetching schedules:', error);
+      console.error('Error response:', error.response);
+      console.error('Error details:', error.response?.data);
       toast({
         title: "Error",
-        description: "Failed to load schedules",
+        description: error.response?.data?.message || "Failed to load schedules",
         variant: "destructive"
       });
     } finally {
@@ -158,22 +177,26 @@ const EmployeeSchedule = () => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 p-4 md:p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold">My Schedule</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">My Schedule</h1>
+          <p className="text-sm text-muted-foreground mt-1">View your work schedule</p>
+        </div>
       </div>
 
-      <Tabs defaultValue="daily" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
-          <TabsTrigger value="daily">Daily</TabsTrigger>
-          <TabsTrigger value="weekly">Weekly</TabsTrigger>
-        </TabsList>
+      <Card>
+        <CardContent className="p-4">
+          <Tabs defaultValue="daily" className="w-full">
+            <div className="flex items-center justify-between mb-4">
+              <TabsList className="grid w-full max-w-xs grid-cols-2">
+                <TabsTrigger value="daily">Daily</TabsTrigger>
+                <TabsTrigger value="weekly">Weekly</TabsTrigger>
+              </TabsList>
+            </div>
 
-        <TabsContent value="daily" className="mt-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Daily Schedule</CardTitle>
+            <TabsContent value="daily" className="mt-0">
+              <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={handleGoToPreviousDay}>
                     <ChevronLeft className="h-4 w-4" />
@@ -181,43 +204,41 @@ const EmployeeSchedule = () => {
                   <Button variant="outline" size="sm" onClick={handleGoToToday}>
                     Today
                   </Button>
-                  <div className="text-sm font-semibold min-w-[180px] text-center">
-                    {formatDate(currentDate, 'EEEE, MMMM d, yyyy')}
+                  <div className="text-sm font-medium min-w-[160px] text-center">
+                    {formatDate(currentDate, 'MMM d, yyyy')}
                   </div>
                   <Button variant="outline" size="sm" onClick={handleGoToNextDay}>
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
               {todaySchedules.length === 0 ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <CalendarIcon className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>No schedules for this date</p>
+                <div className="text-center py-8 text-muted-foreground">
+                  <CalendarIcon className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p className="text-sm">No schedules for this date</p>
                 </div>
               ) : (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   {todaySchedules.map((schedule) => (
                     <div
                       key={schedule._id}
                       className={cn(
-                        "p-4 rounded-lg border transition-shadow",
+                        "p-3 rounded-lg border transition-shadow",
                         getDepartmentColor(schedule.employeeDepartment || user?.department)
                       )}
                     >
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant="secondary" className="font-medium">
-                              {schedule.jobCode}
-                            </Badge>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <Badge variant="secondary" className="font-medium">
+                            {schedule.jobCode}
+                          </Badge>
+                          <div className="flex flex-col">
                             <span className="text-sm font-medium">
                               {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
                             </span>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            {calculateHours(schedule.startTime, schedule.endTime)} hours
+                            <span className="text-xs text-muted-foreground">
+                              {calculateHours(schedule.startTime, schedule.endTime)} hours
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -225,17 +246,13 @@ const EmployeeSchedule = () => {
                   ))}
                 </div>
               )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+            </TabsContent>
 
-        <TabsContent value="weekly" className="mt-6">
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>
+            <TabsContent value="weekly" className="mt-0">
+              <div className="flex items-center justify-between mb-4">
+                <div className="text-sm font-medium">
                   {format(currentWeek, 'MMM d')} - {format(endOfWeek(currentWeek, { weekStartsOn: 1 }), 'MMM d, yyyy')}
-                </CardTitle>
+                </div>
                 <div className="flex items-center gap-2">
                   <Button variant="outline" size="sm" onClick={handleGoToPreviousWeek}>
                     <ChevronLeft className="h-4 w-4" />
@@ -248,9 +265,7 @@ const EmployeeSchedule = () => {
                   </Button>
                 </div>
               </div>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-7 gap-2">
+              <div className="grid grid-cols-7 gap-1.5">
                 {schedulesByDay.map((day, index) => {
                   const isToday = isSameDay(day.date, new Date());
                   
@@ -258,18 +273,18 @@ const EmployeeSchedule = () => {
                     <div
                       key={index}
                       className={cn(
-                        "flex flex-col border rounded-lg overflow-hidden",
-                        isToday && "border-blue-500 border-2"
+                        "flex flex-col border rounded-md overflow-hidden",
+                        isToday && "border-primary border-2"
                       )}
                     >
                       {/* Day Header */}
                       <div className={cn(
-                        "p-2 text-center border-b",
-                        isToday ? "bg-blue-500 text-white" : "bg-muted"
+                        "p-1.5 text-center border-b text-xs",
+                        isToday ? "bg-primary text-primary-foreground" : "bg-muted"
                       )}>
-                        <div className="text-xs font-medium">{format(day.date, 'EEE')}</div>
+                        <div className="font-medium">{format(day.date, 'EEE')}</div>
                         <div className={cn(
-                          "text-lg font-bold mt-1",
+                          "text-base font-bold mt-0.5",
                           !isToday && day.schedules.length === 0 && "text-muted-foreground"
                         )}>
                           {format(day.date, 'd')}
@@ -277,10 +292,10 @@ const EmployeeSchedule = () => {
                       </div>
 
                       {/* Schedules for this day */}
-                      <ScrollArea className="flex-1 min-h-[200px] max-h-[300px]">
-                        <div className="p-2 space-y-2">
+                      <ScrollArea className="flex-1 min-h-[120px] max-h-[200px]">
+                        <div className="p-1.5 space-y-1">
                           {day.schedules.length === 0 ? (
-                            <div className="text-xs text-muted-foreground text-center mt-4">
+                            <div className="text-[10px] text-muted-foreground text-center mt-2">
                               No schedules
                             </div>
                           ) : (
@@ -288,18 +303,15 @@ const EmployeeSchedule = () => {
                               <div
                                 key={schedule._id}
                                 className={cn(
-                                  "p-2 rounded border text-xs",
+                                  "p-1.5 rounded border text-[10px]",
                                   getDepartmentColor(schedule.employeeDepartment || user?.department)
                                 )}
                               >
-                                <div className="font-medium truncate mb-1">
+                                <div className="font-medium truncate">
                                   {formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}
                                 </div>
-                                <div className="text-muted-foreground truncate mb-1">
+                                <div className="text-muted-foreground truncate mt-0.5">
                                   {schedule.jobCode}
-                                </div>
-                                <div className="text-muted-foreground">
-                                  {calculateHours(schedule.startTime, schedule.endTime)}h
                                 </div>
                               </div>
                             ))
@@ -310,10 +322,10 @@ const EmployeeSchedule = () => {
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
     </div>
   );
 };

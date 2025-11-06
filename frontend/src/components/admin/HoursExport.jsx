@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { format } from 'date-fns';
 
-const TimesheetExport = ({ 
+const HoursExport = ({ 
   data,
   filters,
   isLoading,
@@ -45,9 +45,9 @@ const TimesheetExport = ({
       const dateStr = format(new Date(), 'yyyy-MM-dd');
       
       // Build filename based on filters
-      let filename = `timesheets_${dateStr}`;
+      let filename = `hours_${dateStr}`;
       if (filters?.startDate && filters?.endDate) {
-        filename = `timesheets_${filters.startDate}_to_${filters.endDate}`;
+        filename = `hours_${filters.startDate}_to_${filters.endDate}`;
       }
       if (filters?.department && filters.department !== 'all') {
         filename += `_${filters.department}`;
@@ -88,15 +88,15 @@ const TimesheetExport = ({
 
       toast({
         title: "Success",
-        description: `Timesheets exported successfully as ${format.toUpperCase()}`,
+        description: `Hours exported successfully as ${format.toUpperCase()}`,
       });
 
       setShowDialog(false);
     } catch (error) {
-      console.error('Error exporting timesheets:', error);
+      console.error('Error exporting hours:', error);
       toast({
         title: "Error",
-        description: `Failed to export timesheets as ${format.toUpperCase()}`,
+        description: `Failed to export hours as ${format.toUpperCase()}`,
         variant: "destructive",
       });
     } finally {
@@ -106,7 +106,7 @@ const TimesheetExport = ({
   };
 
   const getExportSummary = () => {
-    let summary = `${data.length} timesheet${data.length !== 1 ? 's' : ''}`;
+    let summary = `${data.length} hour${data.length !== 1 ? 's' : ''} record${data.length !== 1 ? 's' : ''}`;
     
     if (filters?.startDate && filters?.endDate) {
       summary += ` from ${format(new Date(filters.startDate), 'MMM d, yyyy')} to ${format(new Date(filters.endDate), 'MMM d, yyyy')}`;
@@ -138,7 +138,7 @@ const TimesheetExport = ({
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Export Timesheets</DialogTitle>
+          <DialogTitle>Export Hours</DialogTitle>
           <DialogDescription>
             Export {getExportSummary()}
           </DialogDescription>
@@ -192,4 +192,4 @@ const TimesheetExport = ({
   );
 };
 
-export default TimesheetExport; 
+export default HoursExport; 

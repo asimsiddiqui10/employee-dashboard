@@ -1,11 +1,31 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/authContext';
 import { User } from 'lucide-react';
 import RoleSwitcher from './RoleSwitcher';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import api from '@/lib/axios';
 
 const Navbar = () => {
   const { user, logout } = useAuth();
-  console.log('Navbar user:', user);
+  const [profilePic, setProfilePic] = useState(null);
+
+  useEffect(() => {
+    fetchProfilePic();
+  }, []);
+
+  const fetchProfilePic = async () => {
+    try {
+      const response = await api.get('/employees/me');
+      const employee = response.data;
+      
+      if (employee && employee.profilePic) {
+        setProfilePic(employee.profilePic);
+      }
+    } catch (error) {
+      // Silently fail - fallback icon will show
+    }
+  };
+  
   return (
     <nav className="border-b border-gray-200 bg-white py-3 px-4 shadow-sm">
       <div className="mx-auto flex max-w-7xl items-center justify-between">
@@ -20,9 +40,15 @@ const Navbar = () => {
             {/* Role Switcher */}
             <RoleSwitcher />
             
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-              <User className="h-5 w-5 text-gray-600" />
-            </div>
+            <Avatar className="h-8 w-8">
+              <AvatarImage 
+                src={profilePic} 
+                alt={user?.name || 'User'} 
+              />
+              <AvatarFallback className="bg-gray-100">
+                <User className="h-5 w-5 text-gray-600" />
+              </AvatarFallback>
+            </Avatar>
             <button 
               onClick={logout}
               className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
