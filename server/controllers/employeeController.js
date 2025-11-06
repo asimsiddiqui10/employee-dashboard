@@ -493,10 +493,26 @@ export const uploadProfilePic = async (req, res) => {
 export const changeEmployeePassword = async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const { currentPassword, newPassword } = req.body;
+    const { newPassword } = req.body;
 
-    // Find the employee
-    const employee = await Employee.findOne({ employeeId });
+    if (!newPassword) {
+      return res.status(400).json({ message: 'New password is required' });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+    }
+
+    // Try to find employee by MongoDB _id first, then by employeeId string
+    let employee;
+    if (mongoose.Types.ObjectId.isValid(employeeId)) {
+      employee = await Employee.findById(employeeId);
+    }
+    
+    if (!employee) {
+      employee = await Employee.findOne({ employeeId });
+    }
+
     if (!employee) {
       return res.status(404).json({ message: 'Employee not found' });
     }
@@ -507,9 +523,15 @@ export const changeEmployeePassword = async (req, res) => {
       return res.status(404).json({ message: 'User account not found' });
     }
 
-    // If admin is making the change, skip current password verification
-    if (req.user.role !== 'admin') {
-      // Verify current password
+    // Check if admin is making the change (skip current password verification for admins)
+    const isAdmin = req.user.role === 'admin' || (req.user.roles && req.user.roles.includes('admin'));
+    
+    // If not admin, verify current password
+    if (!isAdmin) {
+      const { currentPassword } = req.body;
+      if (!currentPassword) {
+        return res.status(400).json({ message: 'Current password is required for non-admin users' });
+      }
       const isMatch = await bcrypt.compare(currentPassword, user.password);
       if (!isMatch) {
         return res.status(401).json({ message: 'Current password is incorrect' });
@@ -524,7 +546,7 @@ export const changeEmployeePassword = async (req, res) => {
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
     console.error('Error changing password:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
 

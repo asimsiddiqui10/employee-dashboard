@@ -1353,7 +1353,7 @@ const EmployeeDetails = () => {
 
                 {/* Email */}
                 <div className="text-sm text-muted-foreground">
-                  {form?.workEmail || 'aasymsiddiqui379@gmail.com'}
+                  {form?.email || form?.workEmail || 'No email'}
                 </div>
               </div>
             </div>
