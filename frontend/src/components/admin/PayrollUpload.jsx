@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from '@/hooks/use-toast';
-import { Upload, Search, Filter, Download, Calendar, User, FileText, Plus, FolderOpen, Folder, Grid3X3, List, ArrowLeft, CalendarPlus } from 'lucide-react';
+import { Upload, Search, Filter, Download, Calendar, User, FileText, Plus, FolderOpen, Folder, Grid3X3, List, ArrowLeft, CalendarPlus, Clock } from 'lucide-react';
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { format } from 'date-fns';
 
@@ -19,6 +20,7 @@ export default function PayrollUpload() {
   const [currentView, setCurrentView] = useState('folders'); // 'folders' or 'documents'
   const [selectedPayPeriod, setSelectedPayPeriod] = useState(null);
   const [viewMode, setViewMode] = useState('list'); // 'list' or 'grid'
+  const [activeTab, setActiveTab] = useState('documents'); // 'documents' or 'timesheets'
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -59,6 +61,12 @@ export default function PayrollUpload() {
   const [calendarPayPeriodEnd, setCalendarPayPeriodEnd] = useState('');
   const [calendarPayDate, setCalendarPayDate] = useState('');
   const [calendarNotes, setCalendarNotes] = useState('');
+
+  // Timesheet state
+  const [timesheetStartDate, setTimesheetStartDate] = useState('');
+  const [timesheetEndDate, setTimesheetEndDate] = useState('');
+  const [timesheets, setTimesheets] = useState([]);
+  const [timesheetLoading, setTimesheetLoading] = useState(false);
 
   useEffect(() => {
     fetchEmployees();
@@ -676,6 +684,164 @@ export default function PayrollUpload() {
     </div>
   );
 
+  // Calculate hours from schedule startTime and endTime
+  const calculateScheduleHours = (startTime, endTime) => {
+    const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
+    const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
+    
+    if (endMinutes > startMinutes) {
+      const totalMinutes = endMinutes - startMinutes;
+      return totalMinutes / 60;
+    }
+    return 0;
+  };
+
+  // Fetch timesheets for all employees
+  const fetchTimesheets = async () => {
+    if (!timesheetStartDate || !timesheetEndDate) {
+      toast({
+        title: "Error",
+        description: "Please select both start and end dates",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      setTimesheetLoading(true);
+      const timesheetData = [];
+
+      // Fetch all active employees
+      const employeesResponse = await api.get('/employees');
+      const allEmployees = Array.isArray(employeesResponse.data) 
+        ? employeesResponse.data 
+        : (employeesResponse.data?.data || []);
+      
+      const activeEmployees = allEmployees.filter(emp => emp.employmentStatus === 'Active');
+
+      // Fetch all time entries once for contract/hourly employees (more efficient)
+      let allTimeEntries = [];
+      try {
+        const timeEntriesResponse = await api.get('/time-clock/all/all');
+        // Endpoint returns array directly
+        allTimeEntries = Array.isArray(timeEntriesResponse.data) 
+          ? timeEntriesResponse.data 
+          : [];
+      } catch (error) {
+        console.error('Error fetching time entries:', error);
+      }
+
+      // Set up date range for filtering
+      const startDate = new Date(timesheetStartDate);
+      startDate.setHours(0, 0, 0, 0);
+      const endDate = new Date(timesheetEndDate);
+      endDate.setHours(23, 59, 59, 999);
+
+      // Process each employee
+      for (const employee of activeEmployees) {
+        let totalHours = 0;
+
+        if (employee.employmentType === 'Full-time/Part-time') {
+          // Fetch schedules for full-time/part-time employees
+          try {
+            const schedulesResponse = await api.get(`/schedules/employee/${employee.employeeId}`, {
+              params: {
+                startDate: timesheetStartDate,
+                endDate: timesheetEndDate
+              }
+            });
+
+            const schedules = schedulesResponse.data?.schedules || schedulesResponse.data || [];
+            const schedulesArray = Array.isArray(schedules) ? schedules : [];
+
+            // Calculate total hours from schedules
+            schedulesArray.forEach(schedule => {
+              if (schedule.startTime && schedule.endTime) {
+                totalHours += calculateScheduleHours(schedule.startTime, schedule.endTime);
+              }
+            });
+          } catch (error) {
+            console.error(`Error fetching schedules for ${employee.employeeId}:`, error);
+          }
+        } else if (employee.employmentType === 'Contract/Hourly') {
+          // Filter time entries for this employee within date range
+          const employeeIdStr = employee._id?.toString();
+          
+          allTimeEntries.forEach(entry => {
+            const entryEmployeeId = entry.employee?._id?.toString() || entry.employee?.toString();
+            const entryDate = new Date(entry.clockIn || entry.date);
+            
+            if (
+              entryEmployeeId === employeeIdStr &&
+              entryDate >= startDate &&
+              entryDate <= endDate &&
+              entry.status === 'completed' &&
+              entry.totalWorkTime
+            ) {
+              // totalWorkTime is in minutes, convert to hours
+              totalHours += entry.totalWorkTime / 60;
+            }
+          });
+        }
+
+        timesheetData.push({
+          employeeId: employee.employeeId,
+          name: employee.name,
+          employmentType: employee.employmentType,
+          hours: parseFloat(totalHours.toFixed(2))
+        });
+      }
+
+      // Sort by employee ID
+      timesheetData.sort((a, b) => a.employeeId.localeCompare(b.employeeId));
+      setTimesheets(timesheetData);
+    } catch (error) {
+      const { message } = handleApiError(error);
+      toast({
+        title: "Error",
+        description: message || "Failed to fetch timesheets",
+        variant: "destructive",
+      });
+    } finally {
+      setTimesheetLoading(false);
+    }
+  };
+
+  // Export timesheets to TXT file
+  const exportTimesheetsToTxt = () => {
+    if (timesheets.length === 0) {
+      toast({
+        title: "Error",
+        description: "No timesheet data to export",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Format: employeeId, hours
+    const content = timesheets
+      .map(ts => `${ts.employeeId},${ts.hours}`)
+      .join('\n');
+
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    
+    const dateRange = `${timesheetStartDate}_to_${timesheetEndDate}`;
+    link.download = `timesheets_${dateRange}.txt`;
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Success",
+      description: "Timesheets exported successfully",
+    });
+  };
+
   return (
     <div className="space-y-6">
       {/* Header Section */}
@@ -684,16 +850,17 @@ export default function PayrollUpload() {
           <div>
             <CardTitle className="text-2xl font-bold">Payroll Management</CardTitle>
             <p className="text-muted-foreground">
-              Manage payroll documents and calendar
+              Manage payroll documents and timesheets
             </p>
           </div>
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-            <DialogTrigger asChild>
-              <Button className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Upload Document
-              </Button>
-            </DialogTrigger>
+          {activeTab === 'documents' && (
+            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+              <DialogTrigger asChild>
+                <Button className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Upload Document
+                </Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-md">
               <DialogHeader>
                 <DialogTitle>Upload Payroll Document</DialogTitle>
@@ -850,11 +1017,130 @@ export default function PayrollUpload() {
               </form>
             </DialogContent>
           </Dialog>
+          )}
         </CardHeader>
       </Card>
 
-      {/* Main Content */}
-      {currentView === 'folders' ? renderFoldersView() : renderDocumentsView()}
+      {/* Main Content with Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="documents">
+            <FileText className="h-4 w-4 mr-2" />
+            Documents
+          </TabsTrigger>
+          <TabsTrigger value="timesheets">
+            <Clock className="h-4 w-4 mr-2" />
+            Timesheets
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="documents" className="mt-6">
+          {currentView === 'folders' ? renderFoldersView() : renderDocumentsView()}
+        </TabsContent>
+
+        <TabsContent value="timesheets" className="mt-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg font-semibold">Generate Timesheets</CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Generate timesheets for all employees based on schedules (Full-time/Part-time) and time entries (Contract/Hourly)
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="timesheetStartDate">Start Date *</Label>
+                  <Input
+                    id="timesheetStartDate"
+                    type="date"
+                    value={timesheetStartDate}
+                    onChange={(e) => setTimesheetStartDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="timesheetEndDate">End Date *</Label>
+                  <Input
+                    id="timesheetEndDate"
+                    type="date"
+                    value={timesheetEndDate}
+                    onChange={(e) => setTimesheetEndDate(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>&nbsp;</Label>
+                  <Button 
+                    onClick={fetchTimesheets} 
+                    disabled={timesheetLoading || !timesheetStartDate || !timesheetEndDate}
+                    className="w-full"
+                  >
+                    {timesheetLoading ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Generating...
+                      </>
+                    ) : (
+                      <>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Generate Timesheets
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+
+              {timesheets.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="text-sm text-muted-foreground">
+                      {timesheets.length} employees • Total: {timesheets.reduce((sum, ts) => sum + ts.hours, 0).toFixed(2)} hours
+                    </div>
+                    <Button onClick={exportTimesheetsToTxt} variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Export to TXT
+                    </Button>
+                  </div>
+
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Employee ID</TableHead>
+                          <TableHead>Name</TableHead>
+                          <TableHead>Employment Type</TableHead>
+                          <TableHead className="text-right">Hours</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {timesheets.map((timesheet) => (
+                          <TableRow key={timesheet.employeeId}>
+                            <TableCell className="font-medium">{timesheet.employeeId}</TableCell>
+                            <TableCell>{timesheet.name}</TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {timesheet.employmentType}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right font-medium">
+                              {timesheet.hours.toFixed(2)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+
+              {timesheets.length === 0 && !timesheetLoading && timesheetStartDate && timesheetEndDate && (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Click "Generate Timesheets" to fetch data for all employees</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 } 
