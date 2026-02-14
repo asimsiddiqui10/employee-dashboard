@@ -10,7 +10,12 @@ import {
   getAllTodayEntries,
   getTimeEntriesByPeriod,
   managerApprove,
-  cleanupOrphanedEntries
+  cleanupOrphanedEntries,
+  kioskClockIn,
+  kioskStartBreak,
+  kioskEndBreak,
+  kioskClockOut,
+  kioskGetStatus
 } from '../controllers/timeClockController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import { roleMiddleware } from '../middleware/roleMiddleware.js';
@@ -34,5 +39,12 @@ router.post('/cleanup', cleanupOrphanedEntries);
 router.get('/today/all', roleMiddleware(['admin']), getAllTodayEntries);
 router.get('/:period/all', roleMiddleware(['admin']), getTimeEntriesByPeriod);
 router.put('/:timeEntryId/approve', roleMiddleware(['admin']), managerApprove);
+
+// Kiosk routes (admin-only)
+router.post('/kiosk/clock-in', roleMiddleware(['admin']), kioskClockIn);
+router.post('/kiosk/break/start', roleMiddleware(['admin']), kioskStartBreak);
+router.post('/kiosk/break/end', roleMiddleware(['admin']), kioskEndBreak);
+router.post('/kiosk/clock-out', roleMiddleware(['admin']), kioskClockOut);
+router.get('/kiosk/status/:employeeId', roleMiddleware(['admin']), kioskGetStatus);
 
 export default router; 

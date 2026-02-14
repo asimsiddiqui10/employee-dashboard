@@ -8,7 +8,7 @@ const leaveRequestSchema = new mongoose.Schema({
   },
   leaveType: {
     type: String,
-    enum: ['Vacation', 'Sick', 'Personal', 'Family', 'Bereavement', 'Other'],
+    enum: ['Annual', 'Sick', 'Personal', 'Emergency', 'Maternity', 'Paternity', 'Vacation', 'Family', 'Bereavement', 'Other'],
     required: true
   },
   startDate: {
@@ -27,7 +27,9 @@ const leaveRequestSchema = new mongoose.Schema({
     type: Number,
     required: true,
     default: function() {
-      return Math.ceil((this.startDate - new Date()) / (1000 * 60 * 60 * 24));
+      if (!this.startDate) return 0;
+      const days = Math.ceil((new Date(this.startDate) - new Date()) / (1000 * 60 * 60 * 24));
+      return Math.max(0, days); // Ensure non-negative
     }
   },
   description: {
@@ -69,8 +71,11 @@ leaveRequestSchema.pre('save', function(next) {
     next(new Error('Start date cannot be after end date'));
   }
 
-  // Calculate notice days
-  this.noticeDays = Math.ceil((this.startDate - new Date()) / (1000 * 60 * 60 * 24));
+  // Calculate notice days (ensure non-negative)
+  if (this.startDate) {
+    const days = Math.ceil((new Date(this.startDate) - new Date()) / (1000 * 60 * 60 * 24));
+    this.noticeDays = Math.max(0, days);
+  }
 
   // If status is being updated to Approved/Rejected
   if (this.isModified('status') && this.status !== 'Pending') {

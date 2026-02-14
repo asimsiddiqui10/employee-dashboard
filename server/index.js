@@ -14,13 +14,10 @@ import notificationRoutes from './routes/notificationRoutes.js';
 import payrollRoutes from './routes/payrollRoutes.js';
 import documentRoutes from './routes/documentRoutes.js';
 import timeClockRoutes from './routes/timeClockRoutes.js';
+import scheduledWorkRoutes from './routes/scheduledWorkRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import reimbursementRoutes from './routes/reimbursementRoutes.js';
-import jobCodeRoutes from './routes/jobCodeRoutes.js';
-import companyDefaultRoutes from './routes/companyDefaultRoutes.js';
-import roleRoutes from './routes/roleRoutes.js';
-import scheduleRoutes from './routes/scheduleRoutes.js';
-import scheduleTemplateRoutes from './routes/scheduleTemplateRoutes.js';
+
 import { recoverActiveSessions } from './controllers/timeClockController.js';
 
 // Load environment variables
@@ -31,7 +28,8 @@ const app = express();
 // CORS configuration
 const allowedOrigins = [
   'http://localhost:5173',  // Local development
-  'http://localhost:3004',  // Local production build
+  'http://localhost:5174',  // Local development
+  'http://localhost:3000',  // Local production build
   'https://act-vj78.onrender.com',  // Render production backend URL
   'https://dev-staging.onrender.com', // Render dev backend URL
   'https://employee-dashboard-sable.vercel.app',  // Main Vercel deployment
@@ -81,13 +79,10 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/time-clock', timeClockRoutes);
+app.use('/api/scheduled-work', scheduledWorkRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/reimbursements', reimbursementRoutes);
-app.use('/api/job-codes', jobCodeRoutes);
-app.use('/api/company-defaults', companyDefaultRoutes);
-app.use('/api/roles', roleRoutes);
-app.use('/api/schedules', scheduleRoutes);
-app.use('/api/schedule-templates', scheduleTemplateRoutes);
+
 
 // Serve static files from the uploads directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
@@ -116,7 +111,7 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-const PORT = process.env.PORT || 3004;
+const PORT = process.env.PORT || 3000;
 
 // MongoDB connection with retry logic
 const connectDB = async (retries = 5) => {

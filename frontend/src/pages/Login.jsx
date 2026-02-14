@@ -140,6 +140,17 @@ const Login = () => {
                   Login
                 </Button>
               </form>
+              
+              {/* Timeclock Access Link */}
+              <div className="mt-4 text-center">
+                <Button 
+                  variant="link" 
+                  className="text-sm text-muted-foreground hover:text-primary"
+                  onClick={() => navigate('/timeclock-login')}
+                >
+                  Timeclock (Admin Only)
+                </Button>
+              </div>
             </CardContent>
           </Card>
           <div className="flex justify-center">

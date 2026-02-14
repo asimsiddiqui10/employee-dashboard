@@ -142,8 +142,7 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
       { field: 'department', label: 'Department' },
       { field: 'position', label: 'Position' },
       { field: 'employmentType', label: 'Employment Type' },
-      { field: 'compensationType', label: 'Compensation Type' },
-      { field: 'compensationValue', label: 'Compensation Value' }
+      { field: 'compensationType', label: 'Compensation Type' }
     ];
 
     const requiredFields = isAdmin ? basicFields : [...basicFields, ...employeeFields];
@@ -184,8 +183,8 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
         return false;
       }
 
-      // Validate compensation value
-      if (isNaN(form.compensationValue) || Number(form.compensationValue) <= 0) {
+      // Validate compensation value only if provided
+      if (form.compensationValue && (isNaN(form.compensationValue) || Number(form.compensationValue) <= 0)) {
         setError('Please enter a valid compensation value');
         return false;
       }
@@ -211,7 +210,7 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
     // Format the data for backend
     const formattedData = {
       ...form,
-      compensationValue: isAdmin ? undefined : Number(form.compensationValue),
+      compensationValue: isAdmin ? undefined : (form.compensationValue ? Number(form.compensationValue) : undefined),
       certifications: form.certifications ? form.certifications.split(',').map(cert => cert.trim()) : [],
       // Ensure these fields match the backend enum values
       employmentStatus: form.employmentStatus || 'Active',
@@ -397,11 +396,10 @@ const AddEmployeeForm = ({ onClose, onSubmit }) => {
                 <input
                   type="number"
                   name="compensationValue"
-                  placeholder="Compensation Value *"
+                  placeholder="Compensation Value"
                   value={form.compensationValue}
                   onChange={handleChange}
                   className="p-2 border rounded"
-                  required
                 />
                 <textarea
                   name="jobDescription"

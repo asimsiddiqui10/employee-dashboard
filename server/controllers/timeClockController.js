@@ -1,6 +1,7 @@
 import TimeEntry from '../models/TimeEntry.js';
 import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 import Employee from '../models/Employee.js'; // Added import for Employee
+import JobCode from '../models/JobCode.js';
 
 // Store active sessions in memory
 const activeSessions = new Map();
@@ -116,11 +117,11 @@ export const clockOut = async (req, res) => {
       }
     }
 
-    // Validate required fields
-    if (!jobCode || !rate) {
+    // Validate required fields (rate is now optional)
+    if (!jobCode) {
       return res.status(400).json({
         success: false,
-        message: 'Please provide jobCode and rate'
+        message: 'Please provide jobCode'
       });
     }
 
@@ -139,7 +140,9 @@ export const clockOut = async (req, res) => {
     timeEntry.breaks = session.breaks;
     timeEntry.totalBreakTime = session.totalBreakTime;
     timeEntry.jobCode = jobCode;
-    timeEntry.rate = rate;
+    if (rate !== undefined && rate !== null && rate !== '') {
+      timeEntry.rate = rate;
+    }
     timeEntry.timesheetNotes = timesheetNotes;
     timeEntry.managerApproval = {
       status: 'pending',
@@ -723,5 +726,562 @@ export const recoverActiveSessions = async () => {
   } catch (error) {
     console.error('Error recovering active sessions:', error);
     return { recoveredCount: 0, error: error.message };
+  }
+};
+
+// Kiosk Clock In - Admin-operated clock-in for employees
+export const kioskClockIn = async (req, res) => {
+  try {
+    const { employeeId } = req.body;
+    
+    console.log('Kiosk clock-in attempt for employee:', employeeId);
+    
+    // Validate input
+    if (!employeeId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee ID is required'
+      });
+    }
+
+    // Find employee by employeeId string (not MongoDB _id)
+    const employee = await Employee.findOne({ employeeId: employeeId.toString() })
+      .populate('primaryJobCode');
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    // Check if employee is active
+    if (employee.employmentStatus !== 'Active') {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee is not active'
+      });
+    }
+
+    // Check for existing active time entry for this employee
+    const existingActiveEntry = await TimeEntry.findOne({
+      employee: employee._id,
+      status: 'active'
+    });
+    
+    if (existingActiveEntry) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee is already clocked in',
+        data: existingActiveEntry
+      });
+    }
+
+    // Auto-resolve job code based on priority order
+    let jobCode = null;
+    let rate = null;
+
+    // Priority 1: Primary assignment in JobCode.assignedTo for that employee
+    const jobCodes = await JobCode.find({ 
+      isActive: true,
+      'assignedTo.employee': employee._id 
+    });
+    
+    // Find primary assignment
+    const primaryJobCode = jobCodes.find(jc => 
+      jc.assignedTo.some(assignment => 
+        assignment.employee.toString() === employee._id.toString() && assignment.isPrimary
+      )
+    );
+
+    if (primaryJobCode) {
+      jobCode = primaryJobCode.code;
+      const assignment = primaryJobCode.assignedTo.find(a => 
+        a.employee.toString() === employee._id.toString()
+      );
+      if (assignment?.assignedRate && assignment.assignedRate !== 'NA') {
+        rate = parseFloat(assignment.assignedRate);
+      }
+    } else if (jobCodes.length > 0) {
+      // Priority 2: Any assigned active job code
+      const firstAssigned = jobCodes[0];
+      jobCode = firstAssigned.code;
+      const assignment = firstAssigned.assignedTo.find(a => 
+        a.employee.toString() === employee._id.toString()
+      );
+      if (assignment?.assignedRate && assignment.assignedRate !== 'NA') {
+        rate = parseFloat(assignment.assignedRate);
+      }
+    } else if (employee.primaryJobCode) {
+      // Priority 3: Employee's primaryJobCode
+      jobCode = employee.primaryJobCode.code;
+      if (employee.primaryJobCode.rate && employee.primaryJobCode.rate !== 'NA') {
+        rate = parseFloat(employee.primaryJobCode.rate);
+      }
+    } else {
+      // Priority 4: Default active job code
+      const defaultJobCode = await JobCode.findOne({ isDefault: true, isActive: true });
+      if (defaultJobCode) {
+        jobCode = defaultJobCode.code;
+        if (defaultJobCode.rate && defaultJobCode.rate !== 'NA') {
+          rate = parseFloat(defaultJobCode.rate);
+        }
+      } else {
+        // Priority 5: Fallback
+        jobCode = 'ACT001';
+      }
+    }
+
+    // If rate is still null, try employee's default hourly rate or compensation
+    if (rate === null) {
+      if (employee.defaultHourlyRate) {
+        rate = employee.defaultHourlyRate;
+      } else if (employee.compensationType === 'Hourly Rate' && employee.compensationValue) {
+        rate = employee.compensationValue;
+      }
+    }
+
+    console.log('Auto-resolved job code:', jobCode, 'rate:', rate);
+
+    // Create new time entry
+    const timeEntry = new TimeEntry({
+      employee: employee._id,
+      clockIn: new Date(),
+      date: new Date(),
+      breaks: [],
+      totalBreakTime: 0,
+      status: 'active',
+      jobCode: jobCode,
+      rate: rate // Optional - can be null
+    });
+
+    // Save to database
+    await timeEntry.save();
+
+    // Also store in memory for quick access
+    const session = {
+      ...timeEntry.toObject(),
+      _id: timeEntry._id
+    };
+    activeSessions.set(employee._id.toString(), session);
+    
+    console.log('Kiosk clock-in successful for employee:', employee.employeeId);
+
+    // Populate employee details before sending response
+    const populatedEntry = await TimeEntry.findById(timeEntry._id)
+      .populate('employee', 'name employeeId profilePic department position');
+
+    res.status(201).json({
+      success: true,
+      message: `${employee.name} clocked in successfully`,
+      data: {
+        employee: {
+          name: employee.name,
+          employeeId: employee.employeeId,
+          department: employee.department,
+          position: employee.position
+        },
+        timeEntry: populatedEntry,
+        autoAssigned: {
+          jobCode,
+          rate
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error in kiosk clock-in:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing clock-in',
+      error: error.message
+    });
+  }
+};
+
+// Kiosk Get Status - Check employee's current time entry status
+export const kioskGetStatus = async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    
+    console.log('Kiosk status check for employee:', employeeId);
+    
+    // Find employee by employeeId string
+    const employee = await Employee.findOne({ employeeId: employeeId.toString() });
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    // Check for active time entry in database and memory
+    let activeEntry = activeSessions.get(employee._id.toString());
+    
+    if (!activeEntry) {
+      // Check database for active entry
+      const dbActiveEntry = await TimeEntry.findOne({
+        employee: employee._id,
+        status: 'active'
+      }).populate('employee', 'name employeeId profilePic department position');
+      
+      if (dbActiveEntry) {
+        // Restore to memory
+        activeEntry = {
+          ...dbActiveEntry.toObject(),
+          _id: dbActiveEntry._id
+        };
+        activeSessions.set(employee._id.toString(), activeEntry);
+        console.log('Found active entry in DB, restored to memory:', dbActiveEntry._id);
+      }
+    }
+
+    if (activeEntry) {
+      // Calculate current work time
+      const now = new Date();
+      const workTimeMinutes = Math.floor((now - new Date(activeEntry.clockIn)) / (1000 * 60));
+      const totalBreakTime = activeEntry.totalBreakTime || 0;
+      const netWorkTime = workTimeMinutes - totalBreakTime;
+      
+      // Check if currently on break
+      const currentBreak = activeEntry.breaks?.find(b => !b.endTime);
+      
+      return res.json({
+        success: true,
+        data: {
+          employee: {
+            name: employee.name,
+            employeeId: employee.employeeId,
+            department: employee.department,
+            position: employee.position
+          },
+          status: 'active',
+          clockIn: activeEntry.clockIn,
+          jobCode: activeEntry.jobCode,
+          rate: activeEntry.rate,
+          currentWorkTime: netWorkTime,
+          totalBreakTime: totalBreakTime,
+          onBreak: !!currentBreak,
+          currentBreakStart: currentBreak?.startTime || null,
+          breakCount: activeEntry.breaks?.length || 0
+        }
+      });
+    } else {
+      return res.json({
+        success: true,
+        data: {
+          employee: {
+            name: employee.name,
+            employeeId: employee.employeeId,
+            department: employee.department,
+            position: employee.position
+          },
+          status: 'not_clocked_in'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error getting kiosk status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error checking status',
+      error: error.message
+    });
+  }
+};
+
+// Kiosk Start Break - Admin-operated break start for employees
+export const kioskStartBreak = async (req, res) => {
+  try {
+    const { employeeId } = req.body;
+    
+    console.log('Kiosk start break for employee:', employeeId);
+    
+    // Find employee by employeeId string
+    const employee = await Employee.findOne({ employeeId: employeeId.toString() });
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    // Find active session
+    let session = activeSessions.get(employee._id.toString());
+
+    if (!session) {
+      // Check database for active entry
+      const activeEntry = await TimeEntry.findOne({
+        employee: employee._id,
+        status: 'active'
+      });
+      
+      if (activeEntry) {
+        session = {
+          ...activeEntry.toObject(),
+          _id: activeEntry._id
+        };
+        activeSessions.set(employee._id.toString(), session);
+        console.log('Found active entry in DB for break start:', activeEntry._id);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee is not clocked in'
+        });
+      }
+    }
+
+    // Check if there's an active break
+    const activeBreak = session.breaks?.find(b => !b.endTime);
+    if (activeBreak) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee is already on break'
+      });
+    }
+
+    // Add new break
+    if (!session.breaks) session.breaks = [];
+    session.breaks.push({
+      startTime: new Date()
+    });
+
+    console.log('Break started successfully for employee:', employee.employeeId);
+
+    res.json({
+      success: true,
+      message: `Break started for ${employee.name}`,
+      data: {
+        employee: {
+          name: employee.name,
+          employeeId: employee.employeeId,
+          department: employee.department,
+          position: employee.position
+        },
+        breakStartTime: session.breaks[session.breaks.length - 1].startTime
+      }
+    });
+  } catch (error) {
+    console.error('Error starting kiosk break:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error starting break',
+      error: error.message
+    });
+  }
+};
+
+// Kiosk End Break - Admin-operated break end for employees
+export const kioskEndBreak = async (req, res) => {
+  try {
+    const { employeeId } = req.body;
+    
+    console.log('Kiosk end break for employee:', employeeId);
+    
+    // Find employee by employeeId string
+    const employee = await Employee.findOne({ employeeId: employeeId.toString() });
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    // Find active session
+    let session = activeSessions.get(employee._id.toString());
+
+    if (!session) {
+      // Check database for active entry
+      const activeEntry = await TimeEntry.findOne({
+        employee: employee._id,
+        status: 'active'
+      });
+      
+      if (activeEntry) {
+        session = {
+          ...activeEntry.toObject(),
+          _id: activeEntry._id
+        };
+        activeSessions.set(employee._id.toString(), session);
+        console.log('Found active entry in DB for break end:', activeEntry._id);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee is not clocked in'
+        });
+      }
+    }
+
+    // Find active break
+    const activeBreak = session.breaks?.find(b => !b.endTime);
+    if (!activeBreak) {
+      return res.status(400).json({
+        success: false,
+        message: 'Employee is not on break'
+      });
+    }
+
+    // Update break
+    activeBreak.endTime = new Date();
+    activeBreak.duration = Math.floor(
+      (activeBreak.endTime - activeBreak.startTime) / (1000 * 60)
+    );
+
+    // Update total break time
+    session.totalBreakTime = session.breaks.reduce(
+      (total, b) => total + (b.duration || 0),
+      0
+    );
+
+    console.log('Break ended successfully for employee:', employee.employeeId);
+
+    res.json({
+      success: true,
+      message: `Break ended for ${employee.name}`,
+      data: {
+        employee: {
+          name: employee.name,
+          employeeId: employee.employeeId,
+          department: employee.department,
+          position: employee.position
+        },
+        breakDuration: activeBreak.duration,
+        totalBreakTime: session.totalBreakTime
+      }
+    });
+  } catch (error) {
+    console.error('Error ending kiosk break:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error ending break',
+      error: error.message
+    });
+  }
+};
+
+// Kiosk Clock Out - Admin-operated clock out for employees
+export const kioskClockOut = async (req, res) => {
+  try {
+    const { employeeId } = req.body;
+    
+    console.log('Kiosk clock-out for employee:', employeeId);
+    
+    // Find employee by employeeId string
+    const employee = await Employee.findOne({ employeeId: employeeId.toString() });
+    
+    if (!employee) {
+      return res.status(404).json({
+        success: false,
+        message: 'Employee not found'
+      });
+    }
+
+    // Find active session
+    let session = activeSessions.get(employee._id.toString());
+
+    if (!session) {
+      // Check database for active entry
+      const activeEntry = await TimeEntry.findOne({
+        employee: employee._id,
+        status: 'active'
+      });
+      
+      if (activeEntry) {
+        session = {
+          ...activeEntry.toObject(),
+          _id: activeEntry._id
+        };
+        activeSessions.set(employee._id.toString(), session);
+        console.log('Found active entry in DB for clock-out:', activeEntry._id);
+      } else {
+        return res.status(400).json({
+          success: false,
+          message: 'Employee is not clocked in'
+        });
+      }
+    }
+
+    // Check if employee is currently on break - end it automatically
+    const activeBreak = session.breaks?.find(b => !b.endTime);
+    if (activeBreak) {
+      activeBreak.endTime = new Date();
+      activeBreak.duration = Math.floor(
+        (activeBreak.endTime - activeBreak.startTime) / (1000 * 60)
+      );
+      
+      session.totalBreakTime = session.breaks.reduce(
+        (total, b) => total + (b.duration || 0),
+        0
+      );
+    }
+
+    // Find and update the existing time entry
+    const timeEntry = await TimeEntry.findById(session._id);
+    if (!timeEntry) {
+      return res.status(404).json({
+        success: false,
+        message: 'Time entry not found'
+      });
+    }
+
+    // Update the time entry
+    timeEntry.clockOut = new Date();
+    timeEntry.status = 'completed';
+    timeEntry.breaks = session.breaks;
+    timeEntry.totalBreakTime = session.totalBreakTime;
+    
+    // Keep existing job code and rate from clock-in
+    // (These were auto-assigned during kiosk clock-in)
+    
+    timeEntry.timesheetNotes = 'Kiosk clock-out';
+    timeEntry.managerApproval = {
+      status: 'pending',
+      approvedBy: null,
+      approvalDate: null,
+      approvalNotes: null
+    };
+
+    // Calculate total work time
+    timeEntry.calculateTotalTime();
+    
+    // Save to database
+    await timeEntry.save();
+
+    // Remove active session
+    activeSessions.delete(employee._id.toString());
+    
+    console.log('Kiosk clock-out successful for employee:', employee.employeeId);
+
+    // Calculate final times for response
+    const workTimeMinutes = Math.floor((timeEntry.clockOut - timeEntry.clockIn) / (1000 * 60));
+    const netWorkTime = workTimeMinutes - (timeEntry.totalBreakTime || 0);
+
+    res.json({
+      success: true,
+      message: `${employee.name} clocked out successfully`,
+      data: {
+        employee: {
+          name: employee.name,
+          employeeId: employee.employeeId,
+          department: employee.department,
+          position: employee.position
+        },
+        clockIn: timeEntry.clockIn,
+        clockOut: timeEntry.clockOut,
+        totalWorkTime: netWorkTime,
+        totalBreakTime: timeEntry.totalBreakTime,
+        jobCode: timeEntry.jobCode,
+        rate: timeEntry.rate
+      }
+    });
+  } catch (error) {
+    console.error('Error in kiosk clock-out:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error processing clock-out',
+      error: error.message
+    });
   }
 };

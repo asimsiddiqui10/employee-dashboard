@@ -32,6 +32,8 @@ import RequestManagement from './components/admin/RequestManagement';
 import Reimbursements from './components/employee/Reimbursements';
 import ReimbursementManagement from './components/admin/ReimbursementManagement';
 import JobCodes from './components/admin/JobCodes';
+import Timeclock from './pages/Timeclock';
+import TimeclockLogin from './pages/TimeclockLogin';
 import ScheduleManagement from './components/admin/ScheduleManagement';
 import EmployeeSchedule from './components/employee/EmployeeSchedule';
 
@@ -73,6 +75,16 @@ function App() {
           <Routes>
             <Route path="/" element={<Navigate to="/login" />}></Route>
             <Route path="/login" element={<Login />}></Route>
+            <Route path="/timeclock-login" element={<TimeclockLogin />}></Route>
+            
+            {/* Kiosk Timeclock - Admin only, outside dashboard layout */}
+            <Route path="/timeclock" element={
+              <PrivateRoutes>
+                <RoleBasedRoutes requiredRole={['admin']}>
+                  <Timeclock />
+                </RoleBasedRoutes>
+              </PrivateRoutes>
+            } />
             
             <Route path="/admin-dashboard" element={
               <PrivateRoutes>

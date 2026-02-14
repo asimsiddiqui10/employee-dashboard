@@ -55,9 +55,7 @@ const timeEntrySchema = new mongoose.Schema({
   },
   rate: {
     type: Number,
-    required: function() {
-      return this.status !== 'active'; // Required when clocking out
-    }
+    required: false // Made optional for kiosk mode
   },
   timesheetNotes: {
     type: String,

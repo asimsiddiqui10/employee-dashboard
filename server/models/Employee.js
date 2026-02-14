@@ -79,7 +79,7 @@ const employeeSchema = new mongoose.Schema({
   },
   compensationValue: { 
     type: Number,
-    required: true 
+    required: false // Made optional for flexible compensation setup
   },
   // Job Code Information
   primaryJobCode: {

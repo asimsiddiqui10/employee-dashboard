@@ -27,7 +27,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useToast } from "../../hooks/use-toast";
 import api from '../../lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
-import { Users, Coffee, Search, Filter } from 'lucide-react';
+import { Users, Coffee, Search, Filter, Calendar } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ export default function AdminTimeTracking() {
   const [timeFilter, setTimeFilter] = useState('all'); // all, today, week, month
   const [searchQuery, setSearchQuery] = useState('');
   const [showPendingOnly, setShowPendingOnly] = useState(false);
+  const [showAutomaticOnly, setShowAutomaticOnly] = useState(false);
   const { toast } = useToast();
   const [activeEmployees, setActiveEmployees] = useState([]);
   const [onBreakEmployees, setOnBreakEmployees] = useState([]);
@@ -119,10 +120,17 @@ export default function AdminTimeTracking() {
       setActiveEmployees(uniqueActiveEmployees);
       setOnBreakEmployees(uniqueOnBreakEmployees);
       setTimeEntries(pendingAndCompleted); // Show both pending and completed entries
+      // Count automatic timesheets
+      const automaticTimesheets = entries.filter(entry => 
+        entry.jobCode === 'AUTO001' || 
+        (entry.timesheetNotes && entry.timesheetNotes.includes('Auto-generated'))
+      ).length;
+
       setStats({
         pendingRequests,
         overtimeApprovals: 0, // You can implement this later if needed
-        currentlyWorking: uniqueActiveEmployees.length + uniqueOnBreakEmployees.length
+        currentlyWorking: uniqueActiveEmployees.length + uniqueOnBreakEmployees.length,
+        automaticTimesheets
       });
       setLoading(false);
     } catch (error) {
@@ -146,7 +154,7 @@ export default function AdminTimeTracking() {
       
       toast({
         title: "Success",
-        description: `Hours record ${status} successfully`,
+        description: `Timesheet ${status} successfully`,
       });
       
       // Refresh the data
@@ -273,6 +281,29 @@ export default function AdminTimeTracking() {
       }
     },
     {
+      accessorKey: "type",
+      header: "Type",
+      cell: ({ row }) => {
+        const entry = row.original;
+        const isAutomatic = entry.jobCode === 'AUTO001' || 
+                           (entry.timesheetNotes && entry.timesheetNotes.includes('Auto-generated'));
+        
+        if (isAutomatic) {
+          return (
+            <Badge variant="secondary" className="bg-blue-100 text-blue-800">
+              Automatic
+            </Badge>
+          );
+        } else {
+          return (
+            <Badge variant="outline">
+              Manual
+            </Badge>
+          );
+        }
+      }
+    },
+    {
       accessorKey: "managerApproval.status",
       header: "Status",
       cell: ({ row }) => {
@@ -334,12 +365,21 @@ export default function AdminTimeTracking() {
     }
   ];
 
-  // Filter entries based on pending status and search query
+  // Filter entries based on pending status, automatic status, and search query
   const filteredData = React.useMemo(() => {
     return timeEntries.filter(entry => {
       // First apply pending filter if active
       if (showPendingOnly) {
         if (!(entry.status === 'completed' && entry.managerApproval?.status === 'pending')) {
+          return false;
+        }
+      }
+
+      // Apply automatic filter if active
+      if (showAutomaticOnly) {
+        const isAutomatic = entry.jobCode === 'AUTO001' || 
+                           (entry.timesheetNotes && entry.timesheetNotes.includes('Auto-generated'));
+        if (!isAutomatic) {
           return false;
         }
       }
@@ -356,7 +396,7 @@ export default function AdminTimeTracking() {
 
       return true;
     });
-  }, [timeEntries, showPendingOnly, searchQuery]);
+  }, [timeEntries, showPendingOnly, showAutomaticOnly, searchQuery]);
 
   const table = useReactTable({
     data: filteredData,
@@ -401,7 +441,7 @@ export default function AdminTimeTracking() {
           <CardContent>
             <div className="text-2xl font-bold">{stats.pendingRequests}</div>
             <p className="text-xs text-muted-foreground">
-              Hours records awaiting approval
+              Timesheets awaiting approval
             </p>
           </CardContent>
         </Card>
@@ -433,6 +473,20 @@ export default function AdminTimeTracking() {
             </p>
           </CardContent>
         </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Automatic Timesheets
+            </CardTitle>
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.automaticTimesheets}</div>
+            <p className="text-xs text-muted-foreground">
+              Auto-generated timesheets
+            </p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Time Entries Table */}
@@ -440,7 +494,7 @@ export default function AdminTimeTracking() {
         <CardHeader>
           <CardTitle>Employee Time Entries</CardTitle>
           <CardDescription>
-            Manage and approve employee hours records
+            Manage and approve employee timesheets
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -480,6 +534,19 @@ export default function AdminTimeTracking() {
                 <Filter className="mr-2 h-4 w-4" />
                 Pending
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className={`${
+                  showAutomaticOnly 
+                    ? 'bg-blue-100 text-blue-900 hover:bg-blue-200' 
+                    : ''
+                }`}
+                onClick={() => setShowAutomaticOnly(!showAutomaticOnly)}
+              >
+                <Filter className="mr-2 h-4 w-4" />
+                Automatic
+              </Button>
             </div>
           </div>
           
@@ -517,7 +584,7 @@ export default function AdminTimeTracking() {
               <TableBody>
                 {table.getRowModel().rows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={9} className="text-center">
+                    <TableCell colSpan={10} className="text-center">
                       No time entries found
                     </TableCell>
                   </TableRow>

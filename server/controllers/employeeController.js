@@ -158,12 +158,13 @@ export const editEmployee = async (req, res) => {
 
     console.log('Edit request received:', { employeeId, supervisor }); // Debug log
 
-    // Validate compensation if being updated
-    if (compensationType || compensationValue) {
-      if (!(compensationType && compensationValue)) {
+    // Validate compensation if being updated (now more flexible)
+    if (compensationType && compensationValue !== undefined && compensationValue !== null && compensationValue !== '') {
+      // If compensationType is provided, validate that value is a valid number
+      if (isNaN(compensationValue) || Number(compensationValue) <= 0) {
         return res.status(400).json({
           success: false,
-          error: 'Both compensation type and value must be provided together'
+          error: 'Compensation value must be a valid positive number when compensation type is specified'
         });
       }
     }

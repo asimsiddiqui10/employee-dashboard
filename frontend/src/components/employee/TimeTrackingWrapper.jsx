@@ -4,8 +4,9 @@ import api from '@/lib/axios';
 import { handleApiError } from '@/utils/errorHandler';
 import { toast } from '@/hooks/use-toast';
 import TimeClock from './TimeClock';
+import ScheduleHours from './ScheduleHours';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Clock, AlertCircle } from 'lucide-react';
+import { Clock, AlertCircle, Calendar, Clock3 } from 'lucide-react';
 
 const TimeTrackingWrapper = () => {
   const { user } = useAuth();
@@ -77,9 +78,14 @@ const TimeTrackingWrapper = () => {
 
   console.log('Rendering TimeTrackingWrapper with employment type:', employmentType);
 
-  // All employees now use TimeClock for hours tracking
-  console.log('Rendering TimeClock component');
-  return <TimeClock key={`clock-${employmentType}`} />;
+  // Show different components based on employment type
+  if (employmentType === 'Full-time/Part-time') {
+    console.log('Rendering ScheduleHours component for Full-time/Part-time employee');
+    return <ScheduleHours key={`schedule-${employmentType}`} />;
+  } else {
+    console.log('Rendering TimeClock component for Contract/Hourly employee');
+    return <TimeClock key={`clock-${employmentType}`} />;
+  }
 };
 
 export default TimeTrackingWrapper; 

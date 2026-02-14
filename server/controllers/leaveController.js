@@ -12,6 +12,39 @@ export const requestLeave = async (req, res) => {
     const { leaveType, startDate, endDate, description, manualDays } = req.body;
     const employeeId = req.user.employee;
 
+    // Validate required fields
+    if (!leaveType || !startDate || !endDate) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Missing required fields: leaveType, startDate, and endDate are required' 
+      });
+    }
+
+    // Convert dates to Date objects
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    // Validate dates
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Invalid date format' 
+      });
+    }
+
+    if (start > end) {
+      await session.abortTransaction();
+      session.endSession();
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Start date cannot be after end date' 
+      });
+    }
+
     // Find employee and their current leave balance
     const employee = await Employee.findById(employeeId).session(session);
     if (!employee) {
@@ -26,7 +59,15 @@ export const requestLeave = async (req, res) => {
       totalDays = manualDays;
     } else {
       // Calculate total days (excluding weekends)
-      totalDays = differenceInBusinessDays(new Date(endDate), new Date(startDate)) + 1;
+      totalDays = differenceInBusinessDays(end, start) + 1;
+      if (totalDays <= 0) {
+        await session.abortTransaction();
+        session.endSession();
+        return res.status(400).json({ 
+          success: false, 
+          message: 'Invalid date range: total days must be greater than 0' 
+        });
+      }
     }
     
     // Validate leave balance
@@ -43,10 +84,10 @@ export const requestLeave = async (req, res) => {
     const leaveRequest = new LeaveRequest({
       employee: employeeId,
       leaveType,
-      startDate,
-      endDate,
+      startDate: start,
+      endDate: end,
       totalDays,
-      description,
+      description: description || '',
       status: 'Pending' // Explicitly set status
     });
 

@@ -99,8 +99,8 @@ const HoursForm = ({
       rate: parseFloat(formData.rate)
     };
 
-    // Validate required fields
-    if (!submissionData.jobCode || !submissionData.rate) {
+    // Validate required fields (rate is now optional)
+    if (!submissionData.jobCode) {
       return;
     }
 
@@ -154,7 +154,7 @@ const HoursForm = ({
           </div>
           
           <div className="space-y-2">
-            <Label htmlFor="rate">Rate (per hour) *</Label>
+            <Label htmlFor="rate">Rate (per hour)</Label>
             <Input
               id="rate"
               name="rate"
@@ -163,8 +163,7 @@ const HoursForm = ({
               min="0"
               value={formData.rate}
               onChange={handleChange}
-              required
-              placeholder="Enter hourly rate"
+              placeholder="Enter hourly rate (optional)"
             />
           </div>
 
@@ -202,7 +201,7 @@ const HoursForm = ({
             </Button>
             <Button
               type="submit"
-              disabled={loading || !formData.jobCode || !formData.rate}
+              disabled={loading || !formData.jobCode}
             >
               {loading ? "Submitting..." : "Submit Hours"}
             </Button>
