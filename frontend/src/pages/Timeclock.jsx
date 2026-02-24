@@ -133,186 +133,133 @@ const Timeclock = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header Navigation Bar - matching dashboard */}
-      <nav className="flex h-16 shrink-0 items-center justify-between border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-6">
-        <div className="flex items-center gap-4">
+    <div className="min-h-screen bg-background">
+      {/* Simple Header */}
+      <header className="border-b">
+        <div className="container mx-auto px-4 h-14 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Timer size={20} className="text-primary" />
-            <h2 className="text-lg font-semibold">Timeclock Kiosk</h2>
+            <Clock className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Timeclock</span>
           </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <Building2 size={20} className="text-muted-foreground" />
-          <h1 className="text-lg font-semibold hidden sm:block">American Completion Tools</h1>
-        </div>
-
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Calendar size={16} />
-            <span className="hidden sm:inline">{getCurrentDate()}</span>
-            <Separator orientation="vertical" className="h-4" />
-            <Clock size={16} />
-            <span className="font-mono tabular-nums">{getCurrentTime()}</span>
+          
+          <div className="text-xs font-mono text-muted-foreground tabular-nums">
+            {getCurrentTime()}
           </div>
+          
           {user && (
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="gap-1">
-                <User size={12} />
-                {user.name}
-              </Badge>
-              <Button 
-                variant="ghost" 
-                size="sm"
-                onClick={handleLogout}
-                className="flex items-center gap-2"
-              >
-                <LogOut size={16} />
-                Logout
-              </Button>
-            </div>
+            <Button variant="ghost" size="sm" onClick={handleLogout}>
+              <LogOut className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Logout</span>
+            </Button>
           )}
         </div>
-      </nav>
+      </header>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <div className="w-full max-w-2xl">
-          {/* Company Logo */}
-          <div className="text-center mb-8">
+      <main className="container mx-auto px-4 py-8">
+        <div className="max-w-md mx-auto space-y-6">
+          
+          {/* Logo */}
+          <div className="text-center">
             <img 
               src={companyLogo} 
               alt="American Completion Tools" 
-              className="h-20 w-auto mx-auto mb-4" 
+              className="h-12 w-auto mx-auto" 
             />
           </div>
 
-          {/* Main Kiosk Card */}
-          <Card className="border shadow-lg">
-            <CardHeader className="text-center space-y-2">
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <Activity className="text-primary" size={28} />
-                <CardTitle className="text-2xl">Employee Time Clock</CardTitle>
-              </div>
-              <CardDescription className="text-base">
-                Enter your employee ID and select your desired action
+          {/* Main Card */}
+          <Card>
+            <CardHeader className="text-center pb-4">
+              <CardTitle className="text-xl">Employee Time Clock</CardTitle>
+              <CardDescription>
+                Enter your ID and select an action
               </CardDescription>
             </CardHeader>
             
             <CardContent className="space-y-6">
-              {/* ID Input Section */}
-              <div className="space-y-4">
-                <div className="text-center">
-                  <h3 className="text-lg font-semibold mb-2">Employee ID</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Please enter your identification number
-                  </p>
-                </div>
-                
+              
+              {/* Employee ID Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Employee ID</label>
                 <Input
                   type="text"
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder="Enter Employee ID"
-                  className="text-center text-xl h-16 font-mono tracking-wider font-semibold border-2"
+                  placeholder="Enter your ID"
+                  className="text-center h-12 font-mono"
                   disabled={loading}
                   autoFocus
                 />
               </div>
 
-              <Separator />
-
-              {/* Action Buttons Grid */}
-              <div className="space-y-4">
-                <div className="text-center mb-4">
-                  <h3 className="text-lg font-semibold">Select Action</h3>
-                </div>
+              {/* Action Buttons */}
+              <div className="grid grid-cols-2 gap-3">
+                <Button
+                  onClick={() => handleAction('clockIn')}
+                  disabled={loading}
+                  className="h-12"
+                >
+                  <LogIn className="h-4 w-4 mr-2" />
+                  Clock In
+                </Button>
                 
-                {/* Primary Actions */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button
-                    onClick={() => handleAction('clockIn')}
-                    disabled={loading}
-                    size="lg"
-                    className="h-16 text-lg font-semibold bg-green-600 hover:bg-green-700"
-                  >
-                    <LogIn size={24} className="mr-3" />
-                    Clock In
-                  </Button>
-                  
-                  <Button
-                    onClick={() => handleAction('clockOut')}
-                    disabled={loading}
-                    size="lg"
-                    variant="destructive"
-                    className="h-16 text-lg font-semibold"
-                  >
-                    <LogOut size={24} className="mr-3" />
-                    Clock Out
-                  </Button>
-                </div>
-
-                {/* Break Actions */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Button
-                    onClick={() => handleAction('startBreak')}
-                    disabled={loading}
-                    size="lg"
-                    variant="outline"
-                    className="h-14 text-base font-medium border-2 hover:bg-orange-50 hover:border-orange-200"
-                  >
-                    <Coffee size={20} className="mr-2" />
-                    Start Break
-                  </Button>
-                  
-                  <Button
-                    onClick={() => handleAction('endBreak')}
-                    disabled={loading}
-                    size="lg"
-                    variant="outline" 
-                    className="h-14 text-base font-medium border-2 hover:bg-blue-50 hover:border-blue-200"
-                  >
-                    <RotateCcw size={20} className="mr-2" />
-                    End Break
-                  </Button>
-                </div>
+                <Button
+                  onClick={() => handleAction('clockOut')}
+                  disabled={loading}
+                  variant="destructive"
+                  className="h-12"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Clock Out
+                </Button>
+                
+                <Button
+                  onClick={() => handleAction('startBreak')}
+                  disabled={loading}
+                  variant="outline"
+                  className="h-10"
+                >
+                  <Coffee className="h-4 w-4 mr-2" />
+                  Start Break
+                </Button>
+                
+                <Button
+                  onClick={() => handleAction('endBreak')}
+                  disabled={loading}
+                  variant="outline"
+                  className="h-10"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  End Break
+                </Button>
               </div>
 
-              {/* Loading State */}
+              {/* Loading */}
               {loading && (
-                <div className="flex items-center justify-center gap-3 py-6">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                  <span className="text-base font-medium">Processing your request...</span>
+                <div className="flex items-center justify-center gap-2 py-4 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Processing...
                 </div>
               )}
 
-              {/* Message Display */}
+              {/* Messages */}
               {message && (
                 <Alert variant={messageType === 'success' ? 'default' : 'destructive'}>
-                  <div className="flex items-center gap-2">
-                    {messageType === 'success' ? (
-                      <CheckCircle2 className="h-5 w-5" />
-                    ) : (
-                      <XCircle className="h-5 w-5" />
-                    )}
-                    <AlertDescription className="text-base font-medium">
-                      {message}
-                    </AlertDescription>
-                  </div>
+                  <AlertDescription>{message}</AlertDescription>
                 </Alert>
               )}
+              
             </CardContent>
           </Card>
 
-          {/* Help Footer */}
-          <div className="text-center mt-8">
-            <p className="text-sm text-muted-foreground">
-              Having trouble? Contact your supervisor or IT support for assistance.
-            </p>
-          </div>
+          {/* Footer */}
+          <p className="text-center text-xs text-muted-foreground">
+            Need help? Contact your supervisor
+          </p>
+          
         </div>
-      </div>
+      </main>
     </div>
   );
 };
