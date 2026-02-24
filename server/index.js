@@ -17,6 +17,7 @@ import timeClockRoutes from './routes/timeClockRoutes.js';
 import scheduledWorkRoutes from './routes/scheduledWorkRoutes.js';
 import requestRoutes from './routes/requestRoutes.js';
 import reimbursementRoutes from './routes/reimbursementRoutes.js';
+import roleRoutes from './routes/roleRoutes.js';
 
 import { recoverActiveSessions } from './controllers/timeClockController.js';
 
@@ -82,6 +83,7 @@ app.use('/api/time-clock', timeClockRoutes);
 app.use('/api/scheduled-work', scheduledWorkRoutes);
 app.use('/api/requests', requestRoutes);
 app.use('/api/reimbursements', reimbursementRoutes);
+app.use('/api/roles', roleRoutes);
 
 
 // Serve static files from the uploads directory
