@@ -75,6 +75,80 @@ const Timeclock = () => {
     }, 2000);
   };
 
+  // Check employee status to determine appropriate action
+  const checkEmployeeStatus = async (empId) => {
+    try {
+      const response = await api.get(`/time-clock/kiosk/status/${empId.trim()}`);
+      return response.data;
+    } catch (error) {
+      console.error('Status check error:', error);
+      throw error;
+    }
+  };
+
+  // Smart action handler for Enter key - automatically determines clock in vs clock out
+  const handleSmartAction = async () => {
+    if (!employeeId.trim()) {
+      toast.error('Please enter an Employee ID');
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // First check employee status
+      const statusResponse = await checkEmployeeStatus(employeeId);
+      
+      if (statusResponse.success) {
+        const { employee, isActive } = statusResponse.data;
+        
+        // Determine action based on current status
+        const action = isActive ? 'clockOut' : 'clockIn';
+        
+        // Show what action is being performed
+        const actionText = isActive ? 'Clocking out' : 'Clocking in';
+        console.log(`${actionText} employee: ${employee.name || employeeId}`);
+        
+        // Execute the appropriate action using the direct API call pattern
+        let endpoint;
+        switch (action) {
+          case 'clockIn':
+            endpoint = '/time-clock/kiosk/clock-in';
+            break;
+          case 'clockOut':
+            endpoint = '/time-clock/kiosk/clock-out';
+            break;
+        }
+
+        const response = await api.post(endpoint, {
+          employeeId: employeeId.trim()
+        });
+
+        if (response.data.success) {
+          toast.success(response.data.message);
+          clearEmployeeId();
+        } else {
+          toast.error(response.data.message || 'Action failed');
+        }
+      } else {
+        toast.error(statusResponse.message || 'Employee not found');
+      }
+    } catch (error) {
+      console.error('Smart action error:', error);
+      const errorMessage = error.response?.data?.message || 'Unable to determine employee status';
+      toast.error(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle Enter key press in input field
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter' && !loading) {
+      handleSmartAction();
+    }
+  };
+
   const handleAction = async (action) => {
     if (!employeeId.trim()) {
       toast.error('Please enter an Employee ID');
@@ -195,7 +269,7 @@ const Timeclock = () => {
             <CardHeader className="text-center pb-4">
               <CardTitle className="text-xl">Employee Time Clock</CardTitle>
               <CardDescription>
-                Enter your ID and select an action
+                Enter your ID and press Enter, or select an action below
               </CardDescription>
             </CardHeader>
             
@@ -209,11 +283,15 @@ const Timeclock = () => {
                   type="text"
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
-                  placeholder="Enter your ID"
+                  onKeyDown={handleKeyDown}
+                  placeholder="Enter your ID and press Enter"
                   className="text-center h-12 font-mono"
                   disabled={loading}
                   autoFocus
                 />
+                <p className="text-xs text-muted-foreground text-center">
+                  Press Enter to automatically clock in or out
+                </p>
               </div>
 
               {/* Action Buttons */}
