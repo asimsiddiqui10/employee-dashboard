@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
@@ -24,6 +24,7 @@ const Timeclock = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
   const { logout, user } = useAuth();
+  const inputRef = useRef(null);
 
   // Update time every second
   useEffect(() => {
@@ -31,6 +32,40 @@ const Timeclock = () => {
       setCurrentTime(new Date());
     }, 1000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Auto-focus input when typing anywhere on the page
+  useEffect(() => {
+    const handleKeyDown = (event) => {
+      // Don't interfere if user is typing in an input, textarea, or other form elements
+      if (event.target.tagName === 'INPUT' || 
+          event.target.tagName === 'TEXTAREA' || 
+          event.target.tagName === 'BUTTON' ||
+          event.target.isContentEditable) {
+        return;
+      }
+
+      // Only capture alphanumeric characters and some special keys
+      if ((event.key.length === 1 && /[a-zA-Z0-9]/.test(event.key)) ||
+          event.key === 'Backspace' || event.key === 'Delete') {
+        
+        // Focus the input
+        if (inputRef.current) {
+          inputRef.current.focus();
+          
+          // If it's a character, add it to the input
+          if (event.key.length === 1 && /[a-zA-Z0-9]/.test(event.key)) {
+            // Don't prevent default here, let the input handle the character
+            return;
+          }
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
   }, []);
 
   // Auto-clear employee ID after successful actions
@@ -121,9 +156,7 @@ const Timeclock = () => {
             <span className="text-sm font-medium">Timeclock</span>
           </div>
           
-          <div className="text-xs font-mono text-muted-foreground tabular-nums">
-            {getCurrentTime()}
-          </div>
+          <div></div>
           
           {user && (
             <Button variant="ghost" size="sm" onClick={handleLogout}>
@@ -139,12 +172,22 @@ const Timeclock = () => {
         <div className="max-w-md mx-auto space-y-6">
           
           {/* Logo */}
-          <div className="text-center">
+          <div className="text-center space-y-4">
             <img 
               src={companyLogo} 
               alt="American Completion Tools" 
               className="h-12 w-auto mx-auto" 
             />
+            
+            {/* Current Time Display */}
+            <div className="space-y-1">
+              <div className="text-sm text-muted-foreground">
+                {getCurrentDate()}
+              </div>
+              <div className="text-2xl font-mono font-semibold tabular-nums">
+                {getCurrentTime()}
+              </div>
+            </div>
           </div>
 
           {/* Main Card */}
@@ -162,6 +205,7 @@ const Timeclock = () => {
               <div className="space-y-2">
                 <label className="text-sm font-medium">Employee ID</label>
                 <Input
+                  ref={inputRef}
                   type="text"
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
