@@ -2,23 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
-import { Alert, AlertDescription } from '../components/ui/alert';
 import { Badge } from '../components/ui/badge';
 import { Separator } from '../components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '../components/ui/avatar';
+import { toast } from 'sonner';
 import { 
-  CheckCircle2, 
-  XCircle, 
   Clock, 
   LogIn, 
   LogOut, 
   Coffee, 
   RotateCcw,
-  Calendar,
-  Building2,
-  User,
-  Timer,
-  Activity,
   Loader2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -29,8 +21,6 @@ import companyLogo from '../assets/ACT New Logo HD.png';
 const Timeclock = () => {
   const [employeeId, setEmployeeId] = useState('');
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState(null);
-  const [messageType, setMessageType] = useState(''); // 'success' or 'error'
   const [currentTime, setCurrentTime] = useState(new Date());
   const navigate = useNavigate();
   const { logout, user } = useAuth();
@@ -43,29 +33,20 @@ const Timeclock = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Auto-clear messages after success/error
-  useEffect(() => {
-    if (message) {
-      const timer = setTimeout(() => {
-        setMessage(null);
-        setMessageType('');
-        if (messageType === 'success') {
-          setEmployeeId('');
-        }
-      }, messageType === 'success' ? 3000 : 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [message, messageType]);
+  // Auto-clear employee ID after successful actions
+  const clearEmployeeId = () => {
+    setTimeout(() => {
+      setEmployeeId('');
+    }, 2000);
+  };
 
   const handleAction = async (action) => {
     if (!employeeId.trim()) {
-      setMessage('Please enter an Employee ID');
-      setMessageType('error');
+      toast.error('Please enter an Employee ID');
       return;
     }
 
     setLoading(true);
-    setMessage(null);
 
     try {
       let response;
@@ -93,17 +74,15 @@ const Timeclock = () => {
       });
 
       if (response.data.success) {
-        setMessage(response.data.message);
-        setMessageType('success');
+        toast.success(response.data.message);
+        clearEmployeeId();
       } else {
-        setMessage(response.data.message || 'Action failed');
-        setMessageType('error');
+        toast.error(response.data.message || 'Action failed');
       }
     } catch (error) {
       console.error('Action error:', error);
       const errorMessage = error.response?.data?.message || 'Action failed. Please try again.';
-      setMessage(errorMessage);
-      setMessageType('error');
+      toast.error(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -241,13 +220,6 @@ const Timeclock = () => {
                   <Loader2 className="h-4 w-4 animate-spin" />
                   Processing...
                 </div>
-              )}
-
-              {/* Messages */}
-              {message && (
-                <Alert variant={messageType === 'success' ? 'default' : 'destructive'}>
-                  <AlertDescription>{message}</AlertDescription>
-                </Alert>
               )}
               
             </CardContent>

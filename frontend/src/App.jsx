@@ -36,6 +36,7 @@ import Timeclock from './pages/Timeclock';
 import TimeclockLogin from './pages/TimeclockLogin';
 import ScheduleManagement from './components/admin/ScheduleManagement';
 import EmployeeSchedule from './components/employee/EmployeeSchedule';
+import { Toaster } from 'sonner';
 
 
 // Error Boundary Component
@@ -147,6 +148,7 @@ function App() {
             <Route path="/unauthorized" element={<Unauthorized />} />
           </Routes>
         </BrowserRouter>
+        <Toaster position="bottom-right" richColors />
       </ErrorBoundary>
     </ThemeProvider>
   )
