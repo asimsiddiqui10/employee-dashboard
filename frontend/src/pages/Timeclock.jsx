@@ -99,15 +99,21 @@ const Timeclock = () => {
       // First check employee status
       const statusResponse = await checkEmployeeStatus(employeeId);
       
+      // Debug: log the full response to help with troubleshooting
+      console.log('Status response:', statusResponse);
+      
       if (statusResponse.success) {
-        const { employee, isActive } = statusResponse.data;
+        const { employee, status } = statusResponse.data;
+        
+        // Determine if employee is currently clocked in
+        const isActive = status === 'active';
         
         // Determine action based on current status
         const action = isActive ? 'clockOut' : 'clockIn';
         
         // Show what action is being performed
         const actionText = isActive ? 'Clocking out' : 'Clocking in';
-        console.log(`${actionText} employee: ${employee.name || employeeId}`);
+        console.log(`${actionText} employee: ${employee.name || employeeId} (current status: ${status})`);
         
         // Execute the appropriate action using the direct API call pattern
         let endpoint;
@@ -284,14 +290,12 @@ const Timeclock = () => {
                   value={employeeId}
                   onChange={(e) => setEmployeeId(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Enter your ID and press Enter"
+                  placeholder="Enter your ID "
                   className="text-center h-12 font-mono"
                   disabled={loading}
                   autoFocus
                 />
-                <p className="text-xs text-muted-foreground text-center">
-                  Press Enter to automatically clock in or out
-                </p>
+               
               </div>
 
               {/* Action Buttons */}
