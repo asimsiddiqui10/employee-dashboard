@@ -16,12 +16,14 @@ import { useToast } from "@/hooks/use-toast";
 const EmployeeScheduleWidget = () => {
   const { user } = useAuth();
   const [upcomingSchedules, setUpcomingSchedules] = useState([]);
+  const [jobCodeMap, setJobCodeMap] = useState({});
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     fetchUpcomingSchedules();
+    fetchJobCodes();
   }, []);
 
   const fetchUpcomingSchedules = async () => {
@@ -85,6 +87,23 @@ const EmployeeScheduleWidget = () => {
     }
   };
 
+  const fetchJobCodes = async () => {
+    try {
+      const response = await api.get('/job-codes/active/all');
+      const jobCodes = response.data || [];
+      const map = {};
+      jobCodes.forEach((jc, index) => {
+        map[jc.code] = {
+          title: jc.title,
+          colorIndex: index,
+        };
+      });
+      setJobCodeMap(map);
+    } catch (error) {
+      console.error('Error fetching job codes for schedule widget:', error);
+    }
+  };
+
   const calculateHours = (startTime, endTime) => {
     const startMinutes = parseInt(startTime.split(':')[0]) * 60 + parseInt(startTime.split(':')[1]);
     const endMinutes = parseInt(endTime.split(':')[0]) * 60 + parseInt(endTime.split(':')[1]);
@@ -142,6 +161,18 @@ const EmployeeScheduleWidget = () => {
                 if (isToday) dateLabel = 'Today';
                 else if (isTomorrow) dateLabel = 'Tomorrow';
 
+                const jobCodeInfo = jobCodeMap[schedule.jobCode];
+                const jobCodeLabel = jobCodeInfo?.title || schedule.jobCode;
+                const colorIndex = jobCodeInfo?.colorIndex ?? 0;
+                const jobCodeColors = [
+                  "bg-blue-50 text-blue-700 border-blue-100",
+                  "bg-emerald-50 text-emerald-700 border-emerald-100",
+                  "bg-amber-50 text-amber-700 border-amber-100",
+                  "bg-purple-50 text-purple-700 border-purple-100",
+                  "bg-rose-50 text-rose-700 border-rose-100",
+                  "bg-slate-50 text-slate-700 border-slate-200",
+                ];
+
                 return (
                   <div
                     key={schedule._id}
@@ -151,8 +182,13 @@ const EmployeeScheduleWidget = () => {
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant="secondary" className="text-xs font-medium">
-                            {schedule.jobCode}
+                          <Badge
+                            className={cn(
+                              "text-xs font-medium border px-2 py-0.5",
+                              jobCodeColors[colorIndex % jobCodeColors.length]
+                            )}
+                          >
+                            {jobCodeLabel}
                           </Badge>
                           <span className={cn(
                             "text-xs font-medium",

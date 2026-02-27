@@ -24,6 +24,23 @@ const formatType = (type) => {
   return type.charAt(0).toUpperCase() + type.slice(1);
 };
 
+const getTypeBadgeClass = (type) => {
+  switch (type) {
+    case 'personal':
+      return 'bg-blue-50 text-blue-700 border-blue-100';
+    case 'company':
+      return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+    case 'onboarding':
+      return 'bg-amber-50 text-amber-700 border-amber-100';
+    case 'benefits':
+      return 'bg-purple-50 text-purple-700 border-purple-100';
+    case 'training':
+      return 'bg-rose-50 text-rose-700 border-rose-100';
+    default:
+      return 'bg-slate-50 text-slate-700 border-slate-200';
+  }
+};
+
 const AllDocuments = () => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -93,7 +110,22 @@ const AllDocuments = () => {
                 </TableRow>
               ) : (
                 documents.map((doc) => (
-                  <TableRow key={doc._id}>
+                  <TableRow
+                    key={doc._id}
+                    className="cursor-pointer hover:bg-muted/40"
+                    onClick={async () => {
+                      try {
+                        const response = await api.get(`/documents/download/${doc._id}`);
+                        const url = response.data?.downloadUrl;
+                        if (url) {
+                          window.open(url, '_blank', 'noopener,noreferrer');
+                        }
+                      } catch (err) {
+                        // Optional: you could integrate toast here if desired
+                        console.error('Error opening document:', err);
+                      }
+                    }}
+                  >
                     <TableCell className="font-medium text-sm">
                       {doc.title || doc.fileName}
                     </TableCell>
@@ -101,7 +133,10 @@ const AllDocuments = () => {
                       {doc.employeeId?.name || 'Unknown'}
                     </TableCell>
                     <TableCell className="text-sm">
-                      <Badge variant="outline" className="text-xs">
+                      <Badge
+                        variant="outline"
+                        className={`text-xs border ${getTypeBadgeClass(doc.documentType)}`}
+                      >
                         {formatType(doc.documentType)}
                       </Badge>
                     </TableCell>
