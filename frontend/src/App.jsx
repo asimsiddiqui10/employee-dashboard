@@ -80,7 +80,7 @@ function App() {
             
             {/* Kiosk Timeclock - Admin only, outside dashboard layout */}
             <Route path="/timeclock" element={
-              <PrivateRoutes>
+              <PrivateRoutes allowKiosk={true}>
                 <RoleBasedRoutes requiredRole={['admin']}>
                   <Timeclock />
                 </RoleBasedRoutes>

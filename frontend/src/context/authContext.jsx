@@ -74,6 +74,7 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('activeRole'); // Clear stored active role
+        localStorage.removeItem('kioskSession'); // Clear kiosk session flag
         delete api.defaults.headers.common['Authorization'];
     };
     
