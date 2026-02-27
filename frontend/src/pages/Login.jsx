@@ -44,6 +44,9 @@ const Login = () => {
             console.log('Login response:', response.data);
             
             if (response.data.token) {
+                // Ensure kiosk flag is cleared for normal logins
+                localStorage.removeItem('kioskSession');
+
                 login(response.data.user);
                 localStorage.setItem('token', response.data.token);
                 

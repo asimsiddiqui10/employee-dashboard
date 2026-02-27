@@ -150,6 +150,7 @@ const EmployeeDashboard = () => {
                 <p className="text-muted-foreground">Here's what's happening with your team today.</p>
               </div>
               <div className="grid gap-6">
+                {/* Top row: key widgets */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0 animate-in slide-in-from-bottom-4 duration-700 delay-150">
                   <div className="min-w-0">
                     <NotificationsCard isLoading={loading} />
@@ -157,39 +158,14 @@ const EmployeeDashboard = () => {
                   <div className="min-w-0">
                     <TimeOffCard isLoading={loading} />
                   </div>
-                  {/* Time Clock for all employees */}
-                  <div className="min-w-0">
-                    <TimeClockCard isLoading={loading} />
-                  </div>
-                </div>
-                <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
-                  <MyTeamCard isLoading={loading} />
-                </div>
-                {/* Schedule Widget Row */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 min-w-0 animate-in slide-in-from-bottom-4 duration-700 delay-500">
                   <div className="min-w-0">
                     <EmployeeScheduleWidget />
                   </div>
-                  <div className="min-w-0">
-                    <Card className="h-96">
-                      <CardHeader>
-                        <CardTitle className="text-lg font-semibold">Placeholder</CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex items-center justify-center h-[calc(100%-5rem)]">
-                        <p className="text-muted-foreground text-sm">Coming soon</p>
-                      </CardContent>
-                    </Card>
-                  </div>
-                  <div className="min-w-0">
-                    <Card className="h-96">
-                      <CardHeader>
-                        <CardTitle className="text-lg font-semibold">Placeholder</CardTitle>
-                      </CardHeader>
-                      <CardContent className="flex items-center justify-center h-[calc(100%-5rem)]">
-                        <p className="text-muted-foreground text-sm">Coming soon</p>
-                      </CardContent>
-                    </Card>
-                  </div>
+                </div>
+
+                {/* Team widget row */}
+                <div className="animate-in slide-in-from-bottom-4 duration-700 delay-300">
+                  <MyTeamCard isLoading={loading} />
                 </div>
               </div>
             </div>

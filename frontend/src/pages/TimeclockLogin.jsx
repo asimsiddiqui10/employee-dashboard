@@ -93,7 +93,10 @@ const TimeclockLogin = () => {
                     return;
                 }
 
-                // Login the user
+                // Mark this as a kiosk session
+                localStorage.setItem('kioskSession', 'true');
+
+                // Login the user for kiosk-only access
                 login(userData);
                 localStorage.setItem('token', response.data.token);
                 
