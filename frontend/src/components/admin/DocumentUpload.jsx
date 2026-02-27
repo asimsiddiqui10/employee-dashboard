@@ -6,6 +6,7 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
+  CardDescription,
 } from "@/components/ui/card";
 import {
   Select,
@@ -34,6 +35,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
+import AllDocuments from "./AllDocuments";
 
 const DOCUMENT_TYPES = {
   PERSONAL: 'personal',
@@ -107,12 +109,17 @@ export default function DocumentUpload() {
   };
 
   return (
-    <Card className="max-w-2xl mx-auto">
-      <CardHeader>
-        <CardTitle>Upload Document</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="h-[calc(100vh-6rem)] flex flex-col lg:flex-row gap-4">
+      {/* Upload form - left side */}
+      <Card className="w-full lg:w-1/2 h-full flex flex-col">
+        <CardHeader>
+          <CardTitle>Upload Document</CardTitle>
+          <CardDescription className="text-xs mt-1">
+            Share documents with employees. Required fields are marked with *.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex-1 overflow-auto pb-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
             <Alert variant="destructive">
               <AlertDescription>{error}</AlertDescription>
@@ -250,8 +257,14 @@ export default function DocumentUpload() {
             <Upload className="w-4 h-4 mr-2" />
             Upload Document
           </Button>
-        </form>
-      </CardContent>
-    </Card>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* All documents table - right side */}
+      <div className="w-full lg:w-1/2 h-full">
+        <AllDocuments />
+      </div>
+    </div>
   );
 }

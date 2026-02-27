@@ -14,9 +14,6 @@ import { handleApiError } from '@/utils/errorHandler';
 import { format } from 'date-fns';
 import PageLoader from '../common/PageLoader';
 import LoadingBar from '../common/LoadingBar';
-import ScheduleWidget from './ScheduleWidget';
-
-
 
 const AdminHome = () => {
   const [leaveRequests, setLeaveRequests] = useState([]);
@@ -30,6 +27,11 @@ const AdminHome = () => {
     departments: true
   });
   const [departmentData, setDepartmentData] = useState({ departments: [], total: 0 });
+  const [timeStats, setTimeStats] = useState({
+    currentlyWorking: 0,
+    onBreak: 0,
+    automaticTimesheets: 0,
+  });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -73,6 +75,18 @@ const AdminHome = () => {
         entry.managerApproval?.status === 'pending'
       );
       setPendingTimeEntries(pendingEntries);
+
+      // Derive time-related stats
+      const currentlyWorking = entries.filter(entry => entry.status === 'active').length;
+      const onBreak = entries.filter(entry => 
+        entry.status === 'active' && entry.breaks?.some(b => !b.endTime)
+      ).length;
+      const automaticTimesheets = entries.filter(entry => 
+        typeof entry.timesheetNotes === 'string' &&
+        entry.timesheetNotes.startsWith('Auto-generated')
+      ).length;
+
+      setTimeStats({ currentlyWorking, onBreak, automaticTimesheets });
     } catch (error) {
       console.error('Error fetching pending time entries:', error);
       const { message } = handleApiError(error);
@@ -213,10 +227,41 @@ const AdminHome = () => {
       {/* Main Content */}
       <div className="flex w-full flex-col gap-4 lg:w-3/4 min-w-0">
         {/* Stats Section */}
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 animate-in slide-in-from-bottom-4 duration-700">
+        <div className="grid gap-3 grid-cols-1 md:grid-cols-4 animate-in slide-in-from-bottom-4 duration-700">
+          {/* Pending timesheet requests */}
+          <Card 
+            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+            onClick={() => navigate('/admin-dashboard/time-tracking')}
+          >
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-xs font-medium text-muted-foreground">On Hours</CardTitle>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Pending Requests</p>
+              </div>
+              <Badge className={cn(
+                "font-medium transition-colors text-[10px] px-2 py-0.5",
+                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
+                "dark:bg-yellow-500/20 dark:text-yellow-400 dark:hover:bg-yellow-500/30"
+              )}>
+                <Bell className="mr-1 h-2.5 w-2.5" />
+                Timesheets
+              </Badge>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold tracking-tight">
+                {loading ? '...' : pendingTimeEntries.length}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">Timesheets awaiting approval</p>
+            </CardContent>
+          </Card>
+
+          {/* Currently working */}
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Currently Working</CardTitle>
+              <div>
+                <CardTitle className="text-xs font-medium text-muted-foreground">Currently Working</CardTitle>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Live attendance</p>
+              </div>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
                 "bg-green-500/10 text-green-500 hover:bg-green-500/20",
@@ -227,68 +272,58 @@ const AdminHome = () => {
               </Badge>
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="text-2xl font-bold tracking-tight">20</div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-            onClick={() => navigate('/admin-dashboard/time-tracking')}
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Pending Hours</CardTitle>
-              <Badge className={cn(
-                "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
-                "dark:bg-yellow-500/20 dark:text-yellow-400 dark:hover:bg-yellow-500/30"
-              )}>
-                <Bell className="mr-1 h-2.5 w-2.5" />
-                Awaiting
-              </Badge>
-            </CardHeader>
-            <CardContent className="pt-0">
               <div className="text-2xl font-bold tracking-tight">
-                {loading ? '...' : pendingTimeEntries.length}
+                {loading ? '...' : timeStats.currentlyWorking}
               </div>
+              <p className="text-[11px] text-muted-foreground mt-1">Employees clocked in</p>
             </CardContent>
           </Card>
 
+          {/* On Break */}
           <Card className="overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Overtime Approvals</CardTitle>
+              <div>
+                <CardTitle className="text-xs font-medium text-muted-foreground">On Break</CardTitle>
+                <p className="text-[11px] text-muted-foreground mt-0.5">Short breaks in progress</p>
+              </div>
               <Badge className={cn(
                 "font-medium transition-colors text-[10px] px-2 py-0.5",
                 "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20",
                 "dark:bg-blue-500/20 dark:text-blue-400 dark:hover:bg-blue-500/30"
               )}>
                 <Clock className="mr-1 h-2.5 w-2.5" />
-                Pending
-              </Badge>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <div className="text-2xl font-bold tracking-tight">15</div>
-            </CardContent>
-          </Card>
-
-          <Card 
-            className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow" 
-            onClick={() => navigate('/admin-dashboard/leave')}
-          >
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-medium text-muted-foreground">Leave Requests</CardTitle>
-              <Badge className={cn(
-                "font-medium transition-colors text-[10px] px-2 py-0.5",
-                "bg-yellow-500/10 text-yellow-500 hover:bg-yellow-500/20",
-                "dark:bg-yellow-500/20 dark:text-yellow-400 dark:hover:bg-yellow-500/30"
-              )}>
-                <Clock className="mr-1 h-2.5 w-2.5" />
-                Pending
+                Break
               </Badge>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="text-2xl font-bold tracking-tight">
-                {loading ? '...' : leaveRequests.length}
+                {loading ? '...' : timeStats.onBreak}
               </div>
+              <p className="text-[11px] text-muted-foreground mt-1">Employees on break</p>
+            </CardContent>
+          </Card>
+
+          {/* Automatic Timesheets */}
+          <Card className="overflow-hidden">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <div>
+                <CardTitle className="text-xs font-medium text-muted-foreground">Automatic Timesheets</CardTitle>
+                <p className="text-[11px] text-muted-foreground mt-0.5">From schedules</p>
+              </div>
+              <Badge className={cn(
+                "font-medium transition-colors text-[10px] px-2 py-0.5",
+                "bg-slate-500/10 text-slate-700 hover:bg-slate-500/20",
+                "dark:bg-slate-500/20 dark:text-slate-200 dark:hover:bg-slate-500/30"
+              )}>
+                <FileText className="mr-1 h-2.5 w-2.5" />
+                Auto
+              </Badge>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="text-2xl font-bold tracking-tight">
+                {loading ? '...' : timeStats.automaticTimesheets}
+              </div>
+              <p className="text-[11px] text-muted-foreground mt-1">Generated from schedules</p>
             </CardContent>
           </Card>
         </div>
@@ -384,84 +419,7 @@ const AdminHome = () => {
       </Card>
       </div>
 
-      {/* Bottom Section: Schedule Widget and Pending Requests */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 min-w-0 animate-in slide-in-from-bottom-4 duration-700 delay-500">
-        {/* Schedule Widget */}
-        <ScheduleWidget />
-
-        {/* Pending Leave Requests Widget */}
-        <Card className="w-full min-w-0 overflow-hidden">
-          <CardHeader className="flex-shrink-0 pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle 
-                className="text-lg font-semibold cursor-pointer hover:text-primary transition-colors flex items-center gap-2"
-                onClick={() => navigate('/admin-dashboard/leave')}
-              >
-                <Calendar className="h-5 w-5 text-primary" />
-                Pending Leave Requests
-              </CardTitle>
-              <Badge variant="secondary" className="text-xs font-medium">
-                {leaveRequests.length}
-              </Badge>
-            </div>
-            <CardDescription className="text-xs mt-1">Leave requests awaiting approval</CardDescription>
-          </CardHeader>
-          <CardContent className="flex-1 overflow-hidden p-0">
-            <ScrollArea className="h-full px-3 pb-3">
-              <div className="flex flex-col gap-2">
-                {leaveRequests.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <Calendar className="h-10 w-10 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">No pending leave requests</p>
-                  </div>
-                ) : (
-                  <>
-                    {leaveRequests.slice(0, 6).map((request) => (
-                      <div
-                        key={request._id}
-                        className="flex items-start gap-3 rounded-lg border p-3 hover:bg-accent/50 transition-colors cursor-pointer group"
-                        onClick={() => navigate('/admin-dashboard/leave')}
-                      >
-                        <div className="p-2 rounded-md bg-primary/10 text-primary flex-shrink-0 group-hover:bg-primary/20 transition-colors">
-                          <Calendar className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2 mb-1">
-                            <h4 className="font-medium text-sm truncate">
-                              {request.employee?.name || 'Unknown Employee'}
-                            </h4>
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex-shrink-0">
-                              {request.leaveType}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground truncate mb-1">
-                            {request.employee?.employeeId || 'No ID'}
-                          </p>
-                          <p className="text-xs text-muted-foreground line-clamp-2">
-                            {format(new Date(request.startDate), 'MMM d')} - {format(new Date(request.endDate), 'MMM d, yyyy')} • {request.totalDays} days
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {leaveRequests.length > 6 && (
-                      <div className="text-center pt-2 border-t">
-                        <Button 
-                          variant="ghost"
-                          className="text-xs h-auto py-1"
-                          onClick={() => navigate('/admin-dashboard/leave')}
-                        >
-                          View all {leaveRequests.length} requests
-                          <ChevronRight className="h-3 w-3 ml-1" />
-                        </Button>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Bottom Section removed: Upcoming schedules and pending leave requests widgets */}
     </div>
     </>
   );

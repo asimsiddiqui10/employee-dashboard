@@ -21,6 +21,7 @@ import roleRoutes from './routes/roleRoutes.js';
 import scheduleRoutes from './routes/scheduleRoutes.js';
 import scheduleTemplateRoutes from './routes/scheduleTemplateRoutes.js';
 import jobCodeRoutes from './routes/jobCodeRoutes.js';
+import onboardingRoutes from './routes/onboardingRoutes.js';
 
 import { recoverActiveSessions } from './controllers/timeClockController.js';
 
@@ -90,6 +91,7 @@ app.use('/api/roles', roleRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/schedule-templates', scheduleTemplateRoutes);
 app.use('/api/job-codes', jobCodeRoutes);
+app.use('/api/onboarding', onboardingRoutes);
 
 
 // Serve static files from the uploads directory

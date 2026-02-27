@@ -9,6 +9,7 @@ import payrollRoutes from './payrollRoutes.js';
 import requestRoutes from './requestRoutes.js';
 import reimbursementRoutes from './reimbursementRoutes.js';
 import roleRoutes from './roleRoutes.js';
+import onboardingRoutes from './onboardingRoutes.js';
 
 const router = express.Router();
 
@@ -22,5 +23,6 @@ router.use('/payroll', payrollRoutes);
 router.use('/requests', requestRoutes);
 router.use('/reimbursements', reimbursementRoutes);
 router.use('/roles', roleRoutes);
+router.use('/onboarding', onboardingRoutes);
 
 export default router; 

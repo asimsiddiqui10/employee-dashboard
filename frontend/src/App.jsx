@@ -36,6 +36,8 @@ import Timeclock from './pages/Timeclock';
 import TimeclockLogin from './pages/TimeclockLogin';
 import ScheduleManagement from './components/admin/ScheduleManagement';
 import EmployeeSchedule from './components/employee/EmployeeSchedule';
+import Onboarding from './pages/Onboarding';
+import OnboardingInvites from './components/admin/OnboardingInvites';
 import { Toaster } from 'sonner';
 
 
@@ -77,6 +79,7 @@ function App() {
             <Route path="/" element={<Navigate to="/login" />}></Route>
             <Route path="/login" element={<Login />}></Route>
             <Route path="/timeclock-login" element={<TimeclockLogin />}></Route>
+            <Route path="/onboard/:token" element={<Onboarding />} />
             
             {/* Kiosk Timeclock - Admin only, outside dashboard layout */}
             <Route path="/timeclock" element={
@@ -117,6 +120,7 @@ function App() {
               <Route path="departments" element={<Departments />} />
               <Route path="departments/:departmentId" element={<DepartmentDetails />} />
               <Route path="job-codes" element={<JobCodes />} />
+              <Route path="onboarding" element={<OnboardingInvites />} />
             </Route>
 
             <Route path="/employee-dashboard" element={

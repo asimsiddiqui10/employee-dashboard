@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { 
+import {
   LayoutDashboard,
   Users,
   Bell,
@@ -22,7 +22,8 @@ import {
   Menu,
   CheckCircle,
   FileText,
-  Calendar
+  Calendar,
+  UserPlus
 } from 'lucide-react';
 import { useAuth } from '../../context/authContext';
 import { useSidebar } from '../ui/sidebar';
@@ -61,6 +62,7 @@ export function AdminSidebarNew() {
       icon: Users,
       path: "/admin-dashboard/employees"
     },
+    
     {
       title: "Notifications",
       icon: Bell,
@@ -87,6 +89,11 @@ export function AdminSidebarNew() {
       path: "/admin-dashboard/departments"
     },
     {
+      title: "Onboarding",
+      icon: UserPlus,
+      path: "/admin-dashboard/onboarding"
+    },
+    {
       title: "Job Codes",
       icon: GraduationCap,
       path: "/admin-dashboard/job-codes"
@@ -101,11 +108,7 @@ export function AdminSidebarNew() {
       icon: CalendarDays,
       path: "/admin-dashboard/leave"
     },
-    {
-      title: "Meetings",
-      icon: Calendar,
-      path: "/admin-dashboard/meetings"
-    },
+    
     {
       title: "Requests",
       icon: FileText,
@@ -115,6 +118,11 @@ export function AdminSidebarNew() {
       title: "Reimbursements",
       icon: Receipt,
       path: "/admin-dashboard/reimbursements"
+    },
+    {
+      title: "Meetings",
+      icon: Calendar,
+      path: "/admin-dashboard/meetings"
     },
     {
       title: "Tasks & Projects",

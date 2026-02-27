@@ -5,15 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
-
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-
-
 import { useToast } from '@/hooks/use-toast';
 import { Plus, Search, Edit, Trash2 } from 'lucide-react';
 import api from '@/lib/axios';
+import { cn } from '@/lib/utils';
 
 const JobCodes = () => {
   const [jobCodes, setJobCodes] = useState([]);
@@ -379,9 +376,25 @@ const JobCodes = () => {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    jobCodes.map((jobCode) => (
+                    jobCodes.map((jobCode, index) => (
                       <TableRow key={jobCode._id}>
-                        <TableCell className="font-mono">{jobCode.code}</TableCell>
+                        <TableCell>
+                          <Badge
+                            className={cn(
+                              "font-mono text-xs px-2 py-1 border",
+                              [
+                                "bg-blue-50 text-blue-700 border-blue-100",
+                                "bg-emerald-50 text-emerald-700 border-emerald-100",
+                                "bg-amber-50 text-amber-700 border-amber-100",
+                                "bg-purple-50 text-purple-700 border-purple-100",
+                                "bg-rose-50 text-rose-700 border-rose-100",
+                                "bg-slate-50 text-slate-700 border-slate-200",
+                              ][index % 6]
+                            )}
+                          >
+                            {jobCode.code}
+                          </Badge>
+                        </TableCell>
                         <TableCell>{jobCode.title}</TableCell>
                         <TableCell>{jobCode.description || 'No description'}</TableCell>
                         <TableCell>{jobCode.rate || 'NA'}</TableCell>
@@ -407,7 +420,8 @@ const JobCodes = () => {
                             </Button>
                             <Button
                               size="sm"
-                              variant="destructive"
+                              variant="outline"
+                              className="text-destructive border-destructive/30 hover:bg-destructive/5"
                               onClick={() => handleDeleteJobCode(jobCode._id)}
                             >
                               <Trash2 className="h-4 w-4" />
