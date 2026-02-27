@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, ChevronRight } from 'lucide-react';
-import { format, isSameDay, addDays } from 'date-fns';
+import { format, isSameDay, addDays, startOfDay } from 'date-fns';
 import { formatTime12Hour } from '@/lib/date-utils';
 import { getDepartmentConfig } from '@/lib/departments';
 import api from '@/lib/axios';
@@ -45,7 +45,7 @@ const EmployeeScheduleWidget = () => {
       }
 
       // Fetch upcoming schedules (next 30 days)
-      const today = new Date();
+      const today = startOfDay(new Date());
       const futureDate = new Date();
       futureDate.setDate(futureDate.getDate() + 30);
       
@@ -58,12 +58,11 @@ const EmployeeScheduleWidget = () => {
 
       const schedules = response.data?.schedules || response.data || [];
       
-      // Get schedules starting from today
-      const todayStr = format(today, 'yyyy-MM-dd');
+      // Get schedules starting from today (exclude anything before today)
       const upcoming = schedules
         .filter(schedule => {
-          const scheduleDateStr = schedule.date?.split('T')[0] || format(new Date(schedule.date), 'yyyy-MM-dd');
-          return scheduleDateStr >= todayStr;
+          const scheduleDate = new Date(schedule.date);
+          return scheduleDate >= today;
         })
         .sort((a, b) => {
           const dateA = new Date(a.date);
@@ -84,11 +83,6 @@ const EmployeeScheduleWidget = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const getDepartmentColor = (department) => {
-    const deptConfig = getDepartmentConfig(department || 'Other');
-    return deptConfig.bgColor || 'bg-blue-50';
   };
 
   const calculateHours = (startTime, endTime) => {
@@ -151,10 +145,7 @@ const EmployeeScheduleWidget = () => {
                 return (
                   <div
                     key={schedule._id}
-                    className={cn(
-                      "p-3 rounded-lg border transition-all hover:shadow-sm cursor-pointer",
-                      getDepartmentColor(schedule.employeeDepartment || user?.department)
-                    )}
+                    className="p-3 rounded-lg border bg-background transition-all hover:shadow-sm cursor-pointer"
                     onClick={() => navigate('/employee-dashboard/schedule')}
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -173,7 +164,7 @@ const EmployeeScheduleWidget = () => {
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
                           <Clock className="h-3 w-3" />
                           <span>{formatTime12Hour(schedule.startTime)} - {formatTime12Hour(schedule.endTime)}</span>
-                          <span className="ml-2">({calculateHours(schedule.startTime, schedule.endTime)}h)</span>
+                          <span className="ml-2">({calculateHours(schedule.startTime, schedule.endTime)} hr)</span>
                         </div>
                       </div>
                     </div>
